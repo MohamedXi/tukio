@@ -18,6 +18,8 @@
     "declaration": true,
     "baseUrl": ".",
     "paths": {
+      "@tukio/contracts": ["./packages/contracts/src/index.ts"],
+      "@tukio/contracts/*": ["./packages/contracts/src/*"],
       "@tukio/*": ["./packages/*/src"]
     }
   }

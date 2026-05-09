@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tukio.one/schemas/booking/booking-requested.v1.json",
+  "title": "BookingRequestedV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "eventType", "eventVersion", "occurredAt", "correlationId", "causationId", "actor", "aggregate", "payload"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "type": "string", "const": "booking.requested.v1" },
+    "eventVersion": { "type": "string", "const": "v1" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": {
+      "anyOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }]
+    },
+    "actor": {
+      "type": "object",
+      "required": ["userId", "role", "locale"],
+      "additionalProperties": false,
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["client", "pro", "admin-support", "admin-modo", "admin-super", "system", "anonymous"] },
+        "locale": { "type": "string", "enum": ["fr", "en"] }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "const": "booking" },
+        "id": { "type": "string" }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bookingId", "customerId", "listingId", "proId", "requestedDate", "totalAmount"],
+      "properties": {
+        "bookingId": { "type": "string", "format": "uuid" },
+        "customerId": { "type": "string", "format": "uuid" },
+        "listingId": { "type": "string", "format": "uuid" },
+        "proId": { "type": "string", "format": "uuid" },
+        "requestedDate": { "type": "string", "format": "date" },
+        "totalAmount": {
+          "type": "object",
+          "required": ["amount", "currency"],
+          "additionalProperties": false,
+          "properties": {
+            "amount": { "type": "integer", "minimum": 0 },
+            "currency": { "type": "string", "const": "EUR" }
+          }
+        }
+      }
+    }
+  }
+}

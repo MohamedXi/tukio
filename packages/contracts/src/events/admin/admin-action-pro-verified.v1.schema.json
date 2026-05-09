@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tukio.one/schemas/admin/admin-action-pro-verified.v1.json",
+  "title": "AdminActionProVerifiedV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "eventType", "eventVersion", "occurredAt", "correlationId", "causationId", "actor", "aggregate", "payload"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "type": "string", "const": "admin.action.pro-verified.v1" },
+    "eventVersion": { "type": "string", "const": "v1" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": {
+      "anyOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }]
+    },
+    "actor": {
+      "type": "object",
+      "required": ["userId", "role", "locale"],
+      "additionalProperties": false,
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["client", "pro", "admin-support", "admin-modo", "admin-super", "system", "anonymous"] },
+        "locale": { "type": "string", "enum": ["fr", "en"] }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "const": "admin-action" },
+        "id": { "type": "string" }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proId", "adminId", "decision", "reason", "decidedAt"],
+      "properties": {
+        "proId": { "type": "string", "format": "uuid" },
+        "adminId": { "type": "string", "format": "uuid" },
+        "decision": { "type": "string", "enum": ["approved", "rejected"] },
+        "reason": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }]
+        },
+        "decidedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

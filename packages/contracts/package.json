@@ -2,11 +2,52 @@
   "name": "@tukio/contracts",
   "version": "0.0.0",
   "private": true,
-  "description": "DTOs, REST envelope types, NATS event contracts (single source of truth).",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "description": "Single source of truth: REST envelope types, NATS event schemas, shared DTOs.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./envelope": "./src/envelope/index.ts",
+    "./types": "./src/types/index.ts",
+    "./types/Actor": "./src/types/Actor.ts",
+    "./types/Locale": "./src/types/Locale.ts",
+    "./types/Currency": "./src/types/Currency.ts",
+    "./types/Money": "./src/types/Money.ts",
+    "./types/DomainEvent": "./src/types/DomainEvent.ts",
+    "./events/catalog/listing-published.v1": "./src/events/catalog/listing-published.v1.ts",
+    "./events/booking/booking-requested.v1": "./src/events/booking/booking-requested.v1.ts",
+    "./events/booking/booking-accepted.v1": "./src/events/booking/booking-accepted.v1.ts",
+    "./events/payment/payment-intent-captured.v1": "./src/events/payment/payment-intent-captured.v1.ts",
+    "./events/admin/admin-action-pro-verified.v1": "./src/events/admin/admin-action-pro-verified.v1.ts",
+    "./events/*": "./src/events/*.ts",
+    "./dtos": "./src/dtos/index.ts",
+    "./dtos/auth": "./src/dtos/auth.ts",
+    "./dtos/booking": "./src/dtos/booking.ts",
+    "./dtos/catalog": "./src/dtos/catalog.ts",
+    "./dtos/payment": "./src/dtos/payment.ts"
+  },
   "scripts": {
-    "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "check:compat": "node scripts/check-schema-compat.mjs",
+    "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.0.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "json-schema-diff-validator": "^0.4.2",
+    "tsd": "^0.33.0",
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.0",
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "typescript-eslint": "^8.0.0"
   }
 }

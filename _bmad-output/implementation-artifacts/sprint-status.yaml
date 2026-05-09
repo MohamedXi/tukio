@@ -1,5 +1,5 @@
 # generated: 2026-05-09
-# last_updated: 2026-05-09 (Story 0.1 DONE — review patches applied, lint/typecheck/test 22+22+14 passing)
+# last_updated: 2026-05-09 (Story 0.2 → review, @tukio/contracts initialized)
 # project: tukio.one
 # project_key: NOKEY
 # tracking_system: file-system
@@ -45,7 +45,7 @@ development_status:
   # ─── Epic 0 — Sprint 0 Foundation (MVP) ───────────────────────────────
   epic-0: in-progress
   0-1-bootstrap-monorepo-turborepo-scaffold-nextjs-apps-nestjs-services: done
-  0-2-initialize-tukio-contracts-envelope-nats-events-dtos: ready-for-dev
+  0-2-initialize-tukio-contracts-envelope-nats-events-dtos: review
   0-3-setup-design-system-tailwind-v4-tukio-ui: ready-for-dev
   0-4-implement-atomic-components-tukio-ui: ready-for-dev
   0-5-implement-composite-patterns-tukio-ui: ready-for-dev
@@ -80,7 +80,7 @@ development_status:
   2-3-admin-verification-queue: ready-for-dev
   2-4-admin-kyc-review-detail-screen: ready-for-dev
   2-5-pro-acceptation-rejet-workflow: ready-for-dev
-  2-6-premiere-fiche-service-integree-wizard-onboarding: backlog
+  2-6-premiere-fiche-service-integree-wizard-onboarding: ready-for-dev
   2-7-audit-trail-actions-admin-immutabilite: backlog
   2-8-pro-verification-reminder-auto-rejection: backlog
   epic-2-retrospective: optional
