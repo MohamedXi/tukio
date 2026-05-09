@@ -33,10 +33,21 @@ describe('tukio/no-barrel-import-contracts — valid cases (no warning)', () => 
   it('allows subpath import from types', () => {
     expect(verify("import { Actor } from '@tukio/contracts/types';")).toHaveLength(0);
   });
+
+  it('allows side-effect import (no specifiers)', () => {
+    // Side-effect imports have no specifiers — not a barrel import
+    expect(verify("import '@tukio/contracts/events/catalog/listing-published.v1';")).toHaveLength(
+      0,
+    );
+  });
+
+  it('allows re-export from a subpath', () => {
+    expect(verify("export { Money } from '@tukio/contracts/types';")).toHaveLength(0);
+  });
 });
 
 describe('tukio/no-barrel-import-contracts — invalid cases (warns)', () => {
-  it('warns on named barrel import from @tukio/contracts', () => {
+  it('warns on named barrel import', () => {
     const msgs = verify("import { SuccessEnvelope } from '@tukio/contracts';");
     expect(msgs.length).toBeGreaterThanOrEqual(1);
     expect(msgs[0]?.messageId).toBe('barrelImport');
@@ -44,6 +55,33 @@ describe('tukio/no-barrel-import-contracts — invalid cases (warns)', () => {
 
   it('warns on multiple named imports from barrel', () => {
     const msgs = verify("import { Actor, Money } from '@tukio/contracts';");
+    expect(msgs.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('warns on namespace import (import * as)', () => {
+    const msgs = verify("import * as Tukio from '@tukio/contracts';");
+    expect(msgs.length).toBeGreaterThanOrEqual(1);
+    expect(msgs[0]?.messageId).toBe('barrelImport');
+  });
+
+  it('warns on default import from barrel', () => {
+    const msgs = verify("import Contracts from '@tukio/contracts';");
+    expect(msgs.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('warns on re-export from barrel', () => {
+    const msgs = verify("export { Money } from '@tukio/contracts';");
+    expect(msgs.length).toBeGreaterThanOrEqual(1);
+    expect(msgs[0]?.messageId).toBe('barrelImport');
+  });
+
+  it('warns on export * from barrel', () => {
+    const msgs = verify("export * from '@tukio/contracts';");
+    expect(msgs.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('warns on dynamic import() of barrel', () => {
+    const msgs = verify("const c = await import('@tukio/contracts');");
     expect(msgs.length).toBeGreaterThanOrEqual(1);
   });
 });

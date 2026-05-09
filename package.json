@@ -5,7 +5,7 @@
   "description": "Tukio — Event-services marketplace (B2B2C). Pays de la Loire pilot.",
   "packageManager": "pnpm@10.12.1",
   "engines": {
-    "node": ">=22.0.0",
+    "node": ">=22.16.0",
     "pnpm": ">=10.0.0"
   },
   "scripts": {
@@ -34,7 +34,7 @@
     "eslint": "^9.0.0",
     "eslint-plugin-boundaries": "^5.0.0",
     "husky": "^9.1.0",
-    "lint-staged": "^17.0.0",
+    "lint-staged": "^16.1.0",
     "prettier": "^3.5.0",
     "turbo": "^2.9.0",
     "typescript": "^5.6.0"

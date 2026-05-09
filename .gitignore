@@ -35,6 +35,11 @@ Thumbs.db
 *.tsbuildinfo
 .eslintcache
 
+# Editor backups (sed -i.bak, vim swap, etc.)
+*.bak
+*.swp
+*~
+
 # Next.js
 .vercel
 next-env.d.ts

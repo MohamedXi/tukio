@@ -1,5 +1,5 @@
 # generated: 2026-05-09
-# last_updated: 2026-05-09 (Story 0.2 → review, @tukio/contracts initialized)
+# last_updated: 2026-05-09 (Story 3.1 ready-for-dev — catalog data model + 2 catégories pilotes ; Epic 3 in-progress)
 # project: tukio.one
 # project_key: NOKEY
 # tracking_system: file-system
@@ -45,7 +45,7 @@ development_status:
   # ─── Epic 0 — Sprint 0 Foundation (MVP) ───────────────────────────────
   epic-0: in-progress
   0-1-bootstrap-monorepo-turborepo-scaffold-nextjs-apps-nestjs-services: done
-  0-2-initialize-tukio-contracts-envelope-nats-events-dtos: review
+  0-2-initialize-tukio-contracts-envelope-nats-events-dtos: done
   0-3-setup-design-system-tailwind-v4-tukio-ui: ready-for-dev
   0-4-implement-atomic-components-tukio-ui: ready-for-dev
   0-5-implement-composite-patterns-tukio-ui: ready-for-dev
@@ -81,13 +81,13 @@ development_status:
   2-4-admin-kyc-review-detail-screen: ready-for-dev
   2-5-pro-acceptation-rejet-workflow: ready-for-dev
   2-6-premiere-fiche-service-integree-wizard-onboarding: ready-for-dev
-  2-7-audit-trail-actions-admin-immutabilite: backlog
-  2-8-pro-verification-reminder-auto-rejection: backlog
+  2-7-audit-trail-actions-admin-immutabilite: ready-for-dev
+  2-8-pro-verification-reminder-auto-rejection: ready-for-dev
   epic-2-retrospective: optional
 
   # ─── Epic 3 — Catalog Publication & Discovery (MVP) ───────────────────
-  epic-3: backlog
-  3-1-catalog-data-model-categories-pilotes-seed: backlog
+  epic-3: in-progress
+  3-1-catalog-data-model-categories-pilotes-seed: ready-for-dev
   3-2-catalog-svc-pretre-implementation: backlog
   3-3-pro-create-listing-wizard-frontend: backlog
   3-4-photo-upload-cloudflare-images-integration: backlog

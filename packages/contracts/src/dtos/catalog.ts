@@ -20,7 +20,7 @@ export const CreateListingSchema = z.object({
   categorySlug: z.string().min(1),
   translations: z.array(TranslationSchema).min(1),
   basePrice: MoneySchema,
-  photos: z.array(z.string().url()).min(4).max(12),
+  photos: z.array(z.url()).min(4).max(12),
   deliveryRadius: z.number().int().min(0).max(200),
 });
 

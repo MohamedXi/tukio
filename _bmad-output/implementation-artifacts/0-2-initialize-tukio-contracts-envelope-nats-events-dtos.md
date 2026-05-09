@@ -1,6 +1,6 @@
 # Story 0.2: Initialize @tukio/contracts (envelope types + 5 critical NATS event JSON Schemas + core DTOs)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -698,3 +698,45 @@ Claude Opus 4.7 (1M context) — `bmad-dev-story` workflow, Story 0.2.
   - **Toutes les stories Epic 1+** qui touchent un endpoint ou un event NATS dépendent de cette story
 - **FRs covered** : aucun FR direct (foundational, prerequis to all)
 - **NFRs touchés** : NFR69 (events convention + versioning + JSON Schema dans `@tukio/contracts`), NFR70 (ADRs préparés mais matérialisés Story 0.13), NFR74 (conventions naming enforced via lint), NFR67 (pattern `@tukio/contracts` figé), NFR58 (paths/code EN strict — préparé)
+
+---
+
+## Senior Developer Review (AI)
+
+**Review date:** 2026-05-09 | **Reviewer:** Claude Opus 4.7 (3 reviewers parallèles : Blind Hunter, Edge Case Hunter, Acceptance Auditor) | **Outcome:** ✅ Approved (3 décisions résolues + 11 patches appliqués)
+
+**Layers run:** 3 reviewers adversariaux indépendants. **Caveat:** même modèle que l'implémentation (angles morts possibles).
+**Stats:** 30 findings consolidés · **Dismissed:** 7 · **Decisions:** 3 · **Patches:** 11 · **Deferred:** 8
+
+### Action Items
+
+**Decisions (résolues)**
+
+- [x] [Review][Decision] DN1 — ESM `.js` imports → `.ts` files runtime resolution → **DEFERRED** : typecheck passe (paths TS), bundlers (Next.js, Vitest) OK. Build `dist/` ajouté en Story 0.6 quand NestJS commence à consommer au runtime. Documenté dans deferred-work.md.
+- [x] [Review][Decision] DN2 — `SuccessEnvelope<T>` discriminator → **REVERT TO AC1 VERBATIM** : single interface avec `data: TData | TData[] | null`, narrowing via `Array.isArray(env.data)`. Discrimination via présence de pagination conservée mais sans union split (élimine l'ambiguïté du double `pagination?: never`).
+- [x] [Review][Decision] DN3 — `engine-strict` disabled → **PIN + RE-ENABLE** : `engines.node: ">=22.22.1"` dans `package.json`, `.nvmrc` 22.22.1, `engine-strict=true` ré-activé dans `.npmrc`. Volta sera bumpé séparément.
+
+**Patches (appliqués)**
+
+- [x] [Review][Patch] P1 — Suppression `dtos.spec.ts.bak` (committé par erreur lors de l'édition sed -i.bak) + ajout `*.bak` à `.gitignore` [packages/contracts/src/dtos/__tests__/, .gitignore]
+- [x] [Review][Patch] P2 — Retrait `./events/*` wildcard de `package.json#exports` (5 entrées explicites suffisent — wildcard exposait test files / internals) [packages/contracts/package.json]
+- [x] [Review][Patch] P3 — `no-barrel-import-contracts` : ajout couverture `import * as`, `export {} from`, `export *`, `import()` dynamique [tools/eslint-plugin-tukio/src/rules/no-barrel-import-contracts.js + tests]
+- [x] [Review][Patch] P4 — `check-schema-compat.mjs` : détection des schemas SUPPRIMÉS via `git ls-tree origin/main` [packages/contracts/scripts/check-schema-compat.mjs]
+- [x] [Review][Patch] P5 — `check-schema-compat.mjs` : vérification que `origin/main` existe au démarrage (`git rev-parse --verify`), erreur explicite sinon [packages/contracts/scripts/check-schema-compat.mjs]
+- [x] [Review][Patch] P6 — `check-schema-compat.mjs` : try/catch sur `JSON.parse(currentSchema)` [packages/contracts/scripts/check-schema-compat.mjs]
+- [x] [Review][Patch] P7 — `type-alignment.spec.ts` : remplacement des `undefined as unknown as X` par helper `AssertEqual<A,B>` [packages/contracts/src/__tests__/type-alignment.spec.ts]
+- [x] [Review][Patch] P8 — `BookingResponseSchema.requestedDate` : regex `^\d{4}-\d{2}-\d{2}$` cohérent avec CreateBookingSchema (DateOnlySchema partagé) [packages/contracts/src/dtos/booking.ts]
+- [x] [Review][Patch] P9 — `vitest.config.ts` : `coverage.include` + `coverage.exclude` (exclut scripts/, __tests__/, .bak) [packages/contracts/vitest.config.ts]
+- [x] [Review][Patch] P10 — DTO tests : assertions `ZodError.issues[].path/code` (per Task 5.6 spec) [packages/contracts/src/dtos/__tests__/dtos.spec.ts]
+- [x] [Review][Patch] P11 — Zod 4 modernisation : `z.string().email()` → `z.email()`, `z.string().uuid()` → `z.uuid()`, `z.string().datetime()` → `z.iso.datetime()` [packages/contracts/src/dtos/*.ts]
+
+**Defer (8 items — voir deferred-work.md)**
+
+- [x] [Review][Defer] D1 — `tukioCode` constraint regex (Story 0.6 — convention codes erreur) — deferred, pre-existing
+- [x] [Review][Defer] D2 — UUID v4 strict (acceptable — Keycloak/Stripe varient) — deferred, pre-existing
+- [x] [Review][Defer] D3 — Money branded `Cents` type (Story 0.7+ messaging validation) — deferred, pre-existing
+- [x] [Review][Defer] D4 — `@tukio/*` directory mapping (W2 déjà déféré) — deferred, pre-existing
+- [x] [Review][Defer] D5 — Sync auto des 14 tsconfigs (Story 0.11 CI) — deferred, pre-existing
+- [x] [Review][Defer] D6 — event-naming AST coverage (publish/subscribe args) (story scope MVP) — deferred, pre-existing
+- [x] [Review][Defer] D7 — Password complexity (Epic 1 auth — placeholder Sprint 0) — deferred, pre-existing
+- [x] [Review][Defer] D8 — `@tukio/contracts` build → `dist/` pour NestJS runtime (Story 0.6) — deferred, DN1 resolution

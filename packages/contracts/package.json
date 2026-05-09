@@ -19,7 +19,6 @@
     "./events/booking/booking-accepted.v1": "./src/events/booking/booking-accepted.v1.ts",
     "./events/payment/payment-intent-captured.v1": "./src/events/payment/payment-intent-captured.v1.ts",
     "./events/admin/admin-action-pro-verified.v1": "./src/events/admin/admin-action-pro-verified.v1.ts",
-    "./events/*": "./src/events/*.ts",
     "./dtos": "./src/dtos/index.ts",
     "./dtos/auth": "./src/dtos/auth.ts",
     "./dtos/booking": "./src/dtos/booking.ts",
