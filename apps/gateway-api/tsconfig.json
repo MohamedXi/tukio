@@ -5,9 +5,7 @@
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
     "target": "ES2023",
-    "lib": [
-      "ES2022"
-    ],
+    "lib": ["ES2022"],
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "removeComments": true,
@@ -15,15 +13,9 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "@tukio/contracts": [
-        "../../packages/contracts/src/index.ts"
-      ],
-      "@tukio/contracts/*": [
-        "../../packages/contracts/src/*"
-      ],
-      "@tukio/*": [
-        "../../packages/*/src"
-      ]
+      "@tukio/contracts": ["../../packages/contracts/src/index.ts"],
+      "@tukio/contracts/*": ["../../packages/contracts/src/*"],
+      "@tukio/*": ["../../packages/*/src"]
     },
     "incremental": true
   }

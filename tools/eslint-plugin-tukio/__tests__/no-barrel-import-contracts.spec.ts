@@ -4,7 +4,8 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-const rule = require('../src/rules/no-barrel-import-contracts.js') as import('eslint').Rule.RuleModule;
+const rule =
+  require('../src/rules/no-barrel-import-contracts.js') as import('eslint').Rule.RuleModule;
 
 const linter = new Linter({ configType: 'flat' });
 
@@ -24,7 +25,9 @@ describe('tukio/no-barrel-import-contracts — valid cases (no warning)', () => 
   });
 
   it('allows subpath import from dtos/booking', () => {
-    expect(verify("import { CreateBookingSchema } from '@tukio/contracts/dtos/booking';")).toHaveLength(0);
+    expect(
+      verify("import { CreateBookingSchema } from '@tukio/contracts/dtos/booking';"),
+    ).toHaveLength(0);
   });
 
   it('allows subpath import from types', () => {

@@ -37,7 +37,8 @@ describe('Zod schema ↔ TypeScript type alignment', () => {
 describe('DomainEvent type extensions', () => {
   it('ListingPublishedV1 extends DomainEvent<ListingPublishedV1Payload>', () => {
     // Compile-time check: ListingPublishedV1 must be assignable to DomainEvent<Payload>
-    const _check: DomainEvent<ListingPublishedV1Payload> = undefined as unknown as ListingPublishedV1;
+    const _check: DomainEvent<ListingPublishedV1Payload> =
+      undefined as unknown as ListingPublishedV1;
     expect(true).toBe(true);
     void _check;
   });

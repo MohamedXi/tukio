@@ -4,7 +4,17 @@
   "title": "BookingAcceptedV1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["eventId", "eventType", "eventVersion", "occurredAt", "correlationId", "causationId", "actor", "aggregate", "payload"],
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "correlationId",
+    "causationId",
+    "actor",
+    "aggregate",
+    "payload"
+  ],
   "properties": {
     "eventId": { "type": "string", "format": "uuid" },
     "eventType": { "type": "string", "const": "booking.accepted.v1" },
@@ -20,7 +30,18 @@
       "additionalProperties": false,
       "properties": {
         "userId": { "type": "string" },
-        "role": { "type": "string", "enum": ["client", "pro", "admin-support", "admin-modo", "admin-super", "system", "anonymous"] },
+        "role": {
+          "type": "string",
+          "enum": [
+            "client",
+            "pro",
+            "admin-support",
+            "admin-modo",
+            "admin-super",
+            "system",
+            "anonymous"
+          ]
+        },
         "locale": { "type": "string", "enum": ["fr", "en"] }
       }
     },

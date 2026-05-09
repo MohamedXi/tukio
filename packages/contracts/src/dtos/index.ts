@@ -1,7 +1,4 @@
-export {
-  RegisterCustomerSchema,
-  type RegisterCustomerDto,
-} from './auth.js';
+export { RegisterCustomerSchema, type RegisterCustomerDto } from './auth.js';
 
 export {
   CreateBookingSchema,
@@ -13,10 +10,7 @@ export {
   BOOKING_STATUSES,
 } from './booking.js';
 
-export {
-  CreateListingSchema,
-  type CreateListingDto,
-} from './catalog.js';
+export { CreateListingSchema, type CreateListingDto } from './catalog.js';
 
 export {
   PaymentIntentResponseSchema,

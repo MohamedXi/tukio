@@ -17,20 +17,20 @@ import { SuccessEnvelope } from '@tukio/contracts';
 
 ## Available subpaths
 
-| Subpath | Contents |
-|---|---|
-| `@tukio/contracts` | `Actor`, `Locale`, `Currency`, `Money`, `DomainEvent` only |
-| `@tukio/contracts/envelope` | `SuccessEnvelope<T>`, `ErrorEnvelope`, `Pagination`, `Meta`, `ErrorBody`, `ValidationIssue`, `EnvelopeMethod` |
-| `@tukio/contracts/types` | All base types |
-| `@tukio/contracts/events/catalog/listing-published.v1` | `ListingPublishedV1`, `LISTING_PUBLISHED_V1_TYPE` |
-| `@tukio/contracts/events/booking/booking-requested.v1` | `BookingRequestedV1`, `BOOKING_REQUESTED_V1_TYPE` |
-| `@tukio/contracts/events/booking/booking-accepted.v1` | `BookingAcceptedV1`, `BOOKING_ACCEPTED_V1_TYPE` |
-| `@tukio/contracts/events/payment/payment-intent-captured.v1` | `PaymentIntentCapturedV1`, `PAYMENT_INTENT_CAPTURED_V1_TYPE` |
-| `@tukio/contracts/events/admin/admin-action-pro-verified.v1` | `AdminActionProVerifiedV1`, `ADMIN_ACTION_PRO_VERIFIED_V1_TYPE` |
-| `@tukio/contracts/dtos/auth` | `RegisterCustomerSchema`, `RegisterCustomerDto` |
-| `@tukio/contracts/dtos/booking` | `CreateBookingSchema`, `BookingResponseSchema`, `BookingStatusEnum`, etc. |
-| `@tukio/contracts/dtos/catalog` | `CreateListingSchema`, `CreateListingDto` |
-| `@tukio/contracts/dtos/payment` | `PaymentIntentResponseSchema`, `PaymentIntentResponseDto` |
+| Subpath                                                      | Contents                                                                                                      |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `@tukio/contracts`                                           | `Actor`, `Locale`, `Currency`, `Money`, `DomainEvent` only                                                    |
+| `@tukio/contracts/envelope`                                  | `SuccessEnvelope<T>`, `ErrorEnvelope`, `Pagination`, `Meta`, `ErrorBody`, `ValidationIssue`, `EnvelopeMethod` |
+| `@tukio/contracts/types`                                     | All base types                                                                                                |
+| `@tukio/contracts/events/catalog/listing-published.v1`       | `ListingPublishedV1`, `LISTING_PUBLISHED_V1_TYPE`                                                             |
+| `@tukio/contracts/events/booking/booking-requested.v1`       | `BookingRequestedV1`, `BOOKING_REQUESTED_V1_TYPE`                                                             |
+| `@tukio/contracts/events/booking/booking-accepted.v1`        | `BookingAcceptedV1`, `BOOKING_ACCEPTED_V1_TYPE`                                                               |
+| `@tukio/contracts/events/payment/payment-intent-captured.v1` | `PaymentIntentCapturedV1`, `PAYMENT_INTENT_CAPTURED_V1_TYPE`                                                  |
+| `@tukio/contracts/events/admin/admin-action-pro-verified.v1` | `AdminActionProVerifiedV1`, `ADMIN_ACTION_PRO_VERIFIED_V1_TYPE`                                               |
+| `@tukio/contracts/dtos/auth`                                 | `RegisterCustomerSchema`, `RegisterCustomerDto`                                                               |
+| `@tukio/contracts/dtos/booking`                              | `CreateBookingSchema`, `BookingResponseSchema`, `BookingStatusEnum`, etc.                                     |
+| `@tukio/contracts/dtos/catalog`                              | `CreateListingSchema`, `CreateListingDto`                                                                     |
+| `@tukio/contracts/dtos/payment`                              | `PaymentIntentResponseSchema`, `PaymentIntentResponseDto`                                                     |
 
 ## Adding a new event
 

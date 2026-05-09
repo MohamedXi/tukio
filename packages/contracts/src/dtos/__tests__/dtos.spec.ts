@@ -125,7 +125,8 @@ describe('CreateListingSchema', () => {
         {
           locale: 'fr',
           title: 'Traiteur mariage haut de gamme',
-          description: 'Un traiteur spécialisé pour vos mariages. Cuisine gastronomique, service impeccable et présentation soignée pour faire de votre journée un souvenir inoubliable.',
+          description:
+            'Un traiteur spécialisé pour vos mariages. Cuisine gastronomique, service impeccable et présentation soignée pour faire de votre journée un souvenir inoubliable.',
           slug: 'traiteur-mariage-haut-de-gamme',
         },
       ],
@@ -149,7 +150,8 @@ describe('CreateListingSchema', () => {
           {
             locale: 'fr',
             title: 'Traiteur mariage haut de gamme',
-            description: 'Un traiteur spécialisé pour vos mariages avec service complet et cuisine gastronomique.',
+            description:
+              'Un traiteur spécialisé pour vos mariages avec service complet et cuisine gastronomique.',
             slug: 'traiteur-mariage',
           },
         ],

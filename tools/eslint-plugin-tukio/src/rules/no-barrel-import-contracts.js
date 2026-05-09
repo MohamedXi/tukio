@@ -10,8 +10,7 @@ module.exports = {
   meta: {
     type: 'suggestion',
     docs: {
-      description:
-        'Disallow barrel imports from @tukio/contracts — use specific subpath imports.',
+      description: 'Disallow barrel imports from @tukio/contracts — use specific subpath imports.',
       recommended: true,
     },
     messages: {

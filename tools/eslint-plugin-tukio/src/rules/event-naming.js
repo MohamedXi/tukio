@@ -7,8 +7,7 @@ module.exports = {
   meta: {
     type: 'problem',
     docs: {
-      description:
-        'Enforce NATS event type naming convention: <service>.<aggregate>.<event>.v<n>',
+      description: 'Enforce NATS event type naming convention: <service>.<aggregate>.<event>.v<n>',
       recommended: true,
     },
     messages: {
