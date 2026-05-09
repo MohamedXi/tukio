@@ -37,7 +37,7 @@ The `prepare` script wires Husky on first install (pre-commit + commit-msg hooks
 - **Code, DB, API, events: English only.** No French in URL paths, identifiers,
   table names, or event names. UI/content stays bilingual (FR/EN via `next-intl`).
 - **Conventional commits** enforced by commitlint. Allowed types: `feat | fix |
-  docs | chore | refactor | test | perf | ci | build | style`.
+docs | chore | refactor | test | perf | ci | build | style`.
 - **Clean Architecture (Pretre pattern)** in NestJS services: `domain/` (pure),
   `usecases/` (orchestration), `infrastructure/` (adapters).
 - **REST envelope** standard: `{ method, code, data | error, pagination?, meta }`.
