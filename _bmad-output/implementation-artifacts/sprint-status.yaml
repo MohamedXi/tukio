@@ -1,5 +1,5 @@
 # generated: 2026-05-09
-# last_updated: 2026-05-09 (Story 0.1 IMPLEMENTED → review — monorepo bootstrapped, 14 codebases, lint/typecheck/test 22+22+14 passing)
+# last_updated: 2026-05-09 (Story 0.1 DONE — review patches applied, lint/typecheck/test 22+22+14 passing)
 # project: tukio.one
 # project_key: NOKEY
 # tracking_system: file-system
@@ -44,7 +44,7 @@ story_location: _bmad-output/implementation-artifacts
 development_status:
   # ─── Epic 0 — Sprint 0 Foundation (MVP) ───────────────────────────────
   epic-0: in-progress
-  0-1-bootstrap-monorepo-turborepo-scaffold-nextjs-apps-nestjs-services: review
+  0-1-bootstrap-monorepo-turborepo-scaffold-nextjs-apps-nestjs-services: done
   0-2-initialize-tukio-contracts-envelope-nats-events-dtos: ready-for-dev
   0-3-setup-design-system-tailwind-v4-tukio-ui: ready-for-dev
   0-4-implement-atomic-components-tukio-ui: ready-for-dev

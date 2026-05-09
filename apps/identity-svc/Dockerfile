@@ -4,7 +4,7 @@ ARG NODE_VERSION=22-alpine
 
 FROM node:${NODE_VERSION}
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@10 --activate
+RUN corepack enable && corepack prepare pnpm@10.12.1 --activate
 
 COPY package.json ./
 RUN pnpm install --prod

@@ -7,14 +7,14 @@
 
 - **Frontends** — 4 Next.js 16 apps (App Router, Turbopack, React 19, Tailwind v4)
   - `public` (3000), `customer` (3001), `seller` (3002), `admin` (3003)
-- **Backends** — 10 NestJS 11 services (Fastify, Clean Architecture / Pretre pattern)
+- **Backends** — 10 NestJS 11 services (Express adapter par défaut; migration Fastify planifiée — ADR)
   - `gateway-api` (4000), `identity-svc` (4001), `catalog-svc` (4002),
     `booking-svc` (4003), `order-svc` (4004), `payment-svc` (4005),
     `messaging-svc` (4006), `review-svc` (4007), `notification-svc` (4008),
     `media-svc` (4009)
 - **Shared packages** — `@tukio/contracts`, `messaging`, `auth`, `testing`, `ui`,
   `api-client`, `i18n-client`, `auth-client`
-- **Tooling** — Turborepo 2, pnpm 10, TypeScript 6 strict, ESLint 10, Prettier 3,
+- **Tooling** — Turborepo 2, pnpm 10, TypeScript 5 strict, ESLint 9, Prettier 3,
   Husky 9, commitlint 21, lint-staged 17, Vitest 4 (frontends) / Jest (backends)
 
 ## Getting started

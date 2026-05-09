@@ -35,9 +35,6 @@ Thumbs.db
 *.tsbuildinfo
 .eslintcache
 
-# Test coverage
-coverage/
-
 # Next.js
 .vercel
 next-env.d.ts
