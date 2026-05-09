@@ -1,0 +1,156 @@
+/* packages/ui/src/styles/theme.css
+   Tukio Design System — extracted from Cloud Design bundle (tokens.css).
+   Tailwind v4 @theme directive — CSS-first config. */
+
+@theme {
+  /* ─── Brand: terracotta ────────────────────────────────────── */
+  --color-brand-50: #fcf3ee;
+  --color-brand-100: #f8e0d0;
+  --color-brand-200: #f1b996;
+  --color-brand-300: #e89160;
+  --color-brand-400: #dc6e33;
+  --color-brand-500: #c2410c;
+  --color-brand-600: #9a340a;
+  --color-brand-700: #7a2a09;
+  --color-brand-800: #5c2008;
+  --color-brand-900: #3e1606;
+
+  /* ─── Neutres chauds ───────────────────────────────────────── */
+  --color-cream-50: #faf7f2;
+  --color-cream-100: #f5f1ea;
+  --color-cream-200: #ebe5d9;
+  --color-cream-300: #ddd4c2;
+  --color-charcoal-400: #6b6657;
+  --color-charcoal-500: #4a453a;
+  --color-charcoal-600: #2f2c25;
+  --color-charcoal-700: #1f1d18;
+  --color-charcoal-800: #14130f;
+  --color-charcoal-900: #0a0a07;
+
+  /* ─── Functional désaturés ─────────────────────────────────── */
+  --color-success-50: #ecf1ed;
+  --color-success-500: #4d7c5e;
+  --color-success-700: #345240;
+  --color-warning-50: #f8ecd9;
+  --color-warning-200: #f0d8b8;
+  --color-warning-500: #b45309;
+  --color-warning-700: #7a380a;
+  --color-error-50: #fce8e8;
+  --color-error-500: #b91c1c;
+  --color-error-700: #7f1414;
+  --color-danger-50: #fce8e8;
+  --color-danger-500: #c84838;
+  --color-danger-600: #b53a2b;
+  --color-danger-700: #8e2c20;
+  --color-info-50: #e2eef3;
+  --color-info-500: #1e5f7e;
+  --color-info-700: #143f54;
+
+  /* ─── Typography ───────────────────────────────────────────── */
+  /* Reference next/font/google CSS variables injected on <html> by each app's layout.tsx.
+     Fallback string preserves graceful degradation if the variable is absent (Storybook, SSR). */
+  --font-display: var(--font-fraunces, 'Fraunces'), 'Tiempos Headline', Georgia, serif;
+  --font-body:
+    var(--font-inter, 'Inter'), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:
+    var(--font-jetbrains-mono, 'JetBrains Mono'), ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Modular scale 1.250 (Major Third) */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 25px;
+  --text-2xl: 31px;
+  --text-3xl: 39px;
+  --text-4xl: 49px;
+  --text-5xl: 61px;
+  --text-6xl: 76px;
+
+  /* ─── Spacing (base 4px) ───────────────────────────────────── */
+  --spacing-0: 0px;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+
+  /* ─── Radius ───────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ─── Shadows (warm-tinted, charcoal-700 base) ─────────────── */
+  --shadow-sm: 0 1px 2px rgba(31, 29, 24, 0.05);
+  --shadow: 0 2px 8px rgba(31, 29, 24, 0.06);
+  --shadow-md: 0 4px 16px rgba(31, 29, 24, 0.08);
+  --shadow-lg: 0 12px 32px rgba(31, 29, 24, 0.12);
+  --shadow-xl: 0 24px 64px rgba(31, 29, 24, 0.16);
+
+  /* ─── Breakpoints ──────────────────────────────────────────── */
+  --breakpoint-xs: 0px;
+  --breakpoint-sm: 481px;
+  --breakpoint-md: 641px;
+  --breakpoint-lg: 1025px;
+  --breakpoint-xl: 1281px;
+  --breakpoint-2xl: 1537px;
+
+  /* ─── Animations ───────────────────────────────────────────── */
+  --animate-typing: tk-typing 1.4s ease-in-out infinite;
+}
+
+/* ─── Keyframes (defined outside @theme) ───────────────────────── */
+@keyframes tk-typing {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+@keyframes tk-modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tk-shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* ─── prefers-reduced-motion (RGAA AA NFR54 — non négociable) ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

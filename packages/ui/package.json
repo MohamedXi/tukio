@@ -2,11 +2,46 @@
   "name": "@tukio/ui",
   "version": "0.0.0",
   "private": true,
-  "description": "Atomic components + composite patterns (Tailwind v4 design system).",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "description": "Tukio design system — Tailwind v4 tokens (CSS-first), TS tokens, themes, components.",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles/theme.css": "./src/styles/theme.css",
+    "./styles/globals.css": "./src/styles/globals.css",
+    "./tokens": "./src/tokens/index.ts",
+    "./tokens/colors": "./src/tokens/colors.ts",
+    "./tokens/typography": "./src/tokens/typography.ts",
+    "./tokens/spacing": "./src/tokens/spacing.ts",
+    "./tokens/radius": "./src/tokens/radius.ts",
+    "./tokens/shadows": "./src/tokens/shadows.ts",
+    "./tokens/breakpoints": "./src/tokens/breakpoints.ts",
+    "./tokens/animations": "./src/tokens/animations.ts",
+    "./themes/stripe-elements": "./src/themes/stripe-elements.theme.ts"
+  },
   "scripts": {
-    "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@stripe/stripe-js": "^9.0.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.0.0",
+    "eslint": "^9.0.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.0.0"
   }
 }

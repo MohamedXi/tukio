@@ -1,6 +1,6 @@
 # Story 0.3: Setup design system Tailwind v4 (theme.css + tokens TS + globals.css) in @tukio/ui
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -98,8 +98,8 @@ Status: ready-for-dev
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Configurer `package.json` + `tsconfig.json` du package** (AC: #4, #11)
-  - [ ] 1.1 — Mettre à jour `packages/ui/package.json` avec :
+- [x] **Task 1 — Configurer `package.json` + `tsconfig.json` du package** (AC: #4, #11)
+  - [x] 1.1 — Mettre à jour `packages/ui/package.json` avec :
     - `"name": "@tukio/ui"`, `"version": "0.0.0"`, `"private": true`, `"type": "module"`
     - `"sideEffects": ["**/*.css"]` (critique : permet le tree-shaking JS mais préserve l'inclusion CSS)
     - Champ `"exports"` exhaustif (cf. Dev Notes §Subpath exports — bloc complet à coller)
@@ -110,7 +110,7 @@ Status: ready-for-dev
       - `@tailwindcss/postcss` (Tailwind v4 PostCSS plugin)
       - `@stripe/stripe-js` (latest stable, pour le type `Appearance` uniquement)
       - `vitest`, `tsd`, `typescript` (cohérent versions Story 0.1/0.2)
-  - [ ] 1.2 — Mettre à jour `packages/ui/tsconfig.json` extends `../../tsconfig.base.json` avec :
+  - [x] 1.2 — Mettre à jour `packages/ui/tsconfig.json` extends `../../tsconfig.base.json` avec :
     ```json
     {
       "compilerOptions": {
@@ -125,29 +125,29 @@ Status: ready-for-dev
       "include": ["src/**/*"]
     }
     ```
-  - [ ] 1.3 — Vérifier que `tsconfig.base.json` racine a bien le path mapping `@tukio/*` → `./packages/*/src/*` (Story 0.2 task 6.2 a normalement ajouté `"@tukio/contracts/*": ["./packages/contracts/src/*"]` ; vérifier qu'un mapping équivalent `"@tukio/ui/*": ["./packages/ui/src/*"]` existe ou l'ajouter)
+  - [x] 1.3 — Vérifier que `tsconfig.base.json` racine a bien le path mapping `@tukio/*` → `./packages/*/src/*` (Story 0.2 task 6.2 a normalement ajouté `"@tukio/contracts/*": ["./packages/contracts/src/*"]` ; vérifier qu'un mapping équivalent `"@tukio/ui/*": ["./packages/ui/src/*"]` existe ou l'ajouter)
 
-- [ ] **Task 2 — Créer `theme.css` (source de vérité Tailwind v4)** (AC: #1)
-  - [ ] 2.1 — Créer `packages/ui/src/styles/theme.css` avec **strictement** le contenu UX spec lignes 511-643 (copier-coller intégral, modulo l'ajustement `--font-display`/`--font-body`/`--font-mono` pour référencer les variables `next/font` cf. Task 2.3)
-  - [ ] 2.2 — Vérifier l'**exactitude byte-pour-byte** des valeurs hex / px contre UX spec :
+- [x] **Task 2 — Créer `theme.css` (source de vérité Tailwind v4)** (AC: #1)
+  - [x] 2.1 — Créer `packages/ui/src/styles/theme.css` avec **strictement** le contenu UX spec lignes 511-643 (copier-coller intégral, modulo l'ajustement `--font-display`/`--font-body`/`--font-mono` pour référencer les variables `next/font` cf. Task 2.3)
+  - [x] 2.2 — Vérifier l'**exactitude byte-pour-byte** des valeurs hex / px contre UX spec :
     - 10 tokens brand (terracotta `#FCF3EE` → `#3E1606`)
     - 4 tokens cream + 6 tokens charcoal
     - 16 tokens functional (success/warning/error/danger/info)
     - 10 tokens text (modular scale 1.250)
     - 13 tokens spacing
     - 6 tokens radius + 6 tokens breakpoint + 5 tokens shadow
-  - [ ] 2.3 — Ajuster les 3 tokens font pour référencer les variables `next/font` :
+  - [x] 2.3 — Ajuster les 3 tokens font pour référencer les variables `next/font` :
     ```css
     --font-display: var(--font-fraunces, "Fraunces"), "Tiempos Headline", Georgia, serif;
     --font-body:    var(--font-inter, "Inter"), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-mono:    var(--font-jetbrains-mono, "JetBrains Mono"), ui-monospace, "SF Mono", Menlo, monospace;
     ```
     Justification : `next/font/google` injecte `--font-fraunces`/`--font-inter`/`--font-jetbrains-mono` sur `<html>` (cf. Task 4) ; le fallback string conserve la dégradation gracieuse si la variable est absente (Storybook V1, SSR sans next/font).
-  - [ ] 2.4 — Définir les 3 keyframes hors `@theme` : `tk-typing`, `tk-modal-enter`, `tk-shimmer` (cf. UX spec lignes 619-632)
-  - [ ] 2.5 — Ajouter le bloc `@media (prefers-reduced-motion: reduce)` qui forçe toutes animations + transitions à `0.01ms` (cf. UX spec lignes 635-642) — **non négociable** (RGAA AA NFR54)
+  - [x] 2.4 — Définir les 3 keyframes hors `@theme` : `tk-typing`, `tk-modal-enter`, `tk-shimmer` (cf. UX spec lignes 619-632)
+  - [x] 2.5 — Ajouter le bloc `@media (prefers-reduced-motion: reduce)` qui forçe toutes animations + transitions à `0.01ms` (cf. UX spec lignes 635-642) — **non négociable** (RGAA AA NFR54)
 
-- [ ] **Task 3 — Créer les 8 fichiers TypeScript tokens** (AC: #2)
-  - [ ] 3.1 — `packages/ui/src/tokens/colors.ts` :
+- [x] **Task 3 — Créer les 8 fichiers TypeScript tokens** (AC: #2)
+  - [x] 3.1 — `packages/ui/src/tokens/colors.ts` :
     ```ts
     export const colors = {
       brand: { 50: '#FCF3EE', 100: '#F8E0D0', 200: '#F1B996', 300: '#E89160', 400: '#DC6E33', 500: '#C2410C', 600: '#9A340A', 700: '#7A2A09', 800: '#5C2008', 900: '#3E1606' },
@@ -162,7 +162,7 @@ Status: ready-for-dev
     export type ColorScale = keyof typeof colors;
     export type BrandShade = keyof typeof colors.brand; // '50' | '100' | ... | '900'
     ```
-  - [ ] 3.2 — `packages/ui/src/tokens/typography.ts` :
+  - [x] 3.2 — `packages/ui/src/tokens/typography.ts` :
     ```ts
     export const fontFamily = {
       display: '"Fraunces", "Tiempos Headline", Georgia, serif',
@@ -174,12 +174,12 @@ Status: ready-for-dev
     export const letterSpacing = { tight: '-0.01em', normal: '0', wide: '0.04em' } as const;
     export const lineHeight = { tight: 1.1, snug: 1.25, normal: 1.5, relaxed: 1.625 } as const;
     ```
-  - [ ] 3.3 — `packages/ui/src/tokens/spacing.ts` : objet `spacing` avec keys `0..24` (13 tokens) en `as const`, valeurs en `'<n>px'` strings cohérentes `theme.css`
-  - [ ] 3.4 — `packages/ui/src/tokens/radius.ts` : objet `radius` (6 keys), valeurs en `'<n>px'` (sm:`'4px'`, ..., full:`'9999px'`)
-  - [ ] 3.5 — `packages/ui/src/tokens/shadows.ts` : objet `shadows` (5 keys + alias `default`), valeurs string CSS box-shadow exactes
-  - [ ] 3.6 — `packages/ui/src/tokens/breakpoints.ts` : objet `breakpoints` (6 keys), valeurs en `px` strings
-  - [ ] 3.7 — `packages/ui/src/tokens/animations.ts` : objet `keyframes` + objet `animations` mapping cohérent `theme.css` `--animate-typing`
-  - [ ] 3.8 — `packages/ui/src/tokens/index.ts` re-exporte tous les modules + un export agrégé :
+  - [x] 3.3 — `packages/ui/src/tokens/spacing.ts` : objet `spacing` avec keys `0..24` (13 tokens) en `as const`, valeurs en `'<n>px'` strings cohérentes `theme.css`
+  - [x] 3.4 — `packages/ui/src/tokens/radius.ts` : objet `radius` (6 keys), valeurs en `'<n>px'` (sm:`'4px'`, ..., full:`'9999px'`)
+  - [x] 3.5 — `packages/ui/src/tokens/shadows.ts` : objet `shadows` (5 keys + alias `default`), valeurs string CSS box-shadow exactes
+  - [x] 3.6 — `packages/ui/src/tokens/breakpoints.ts` : objet `breakpoints` (6 keys), valeurs en `px` strings
+  - [x] 3.7 — `packages/ui/src/tokens/animations.ts` : objet `keyframes` + objet `animations` mapping cohérent `theme.css` `--animate-typing`
+  - [x] 3.8 — `packages/ui/src/tokens/index.ts` re-exporte tous les modules + un export agrégé :
     ```ts
     export * from './colors';
     export * from './typography';
@@ -207,13 +207,13 @@ Status: ready-for-dev
     } as const;
     ```
 
-- [ ] **Task 4 — Créer `globals.css` entry point** (AC: #3)
-  - [ ] 4.1 — Créer `packages/ui/src/styles/globals.css` avec **strictement** le contenu UX spec lignes 648-676 (copier-coller intégral)
-  - [ ] 4.2 — Vérifier l'ordre des `@import` : `tailwindcss` PUIS `theme.css` (Tailwind v4 doit charger les utility classes AVANT que les `@theme` tokens étendent les valeurs CSS variables)
-  - [ ] 4.3 — Aucune autre règle au-delà de celles spécifiées (pas de styling de composants — Stories 0.4/0.5)
+- [x] **Task 4 — Créer `globals.css` entry point** (AC: #3)
+  - [x] 4.1 — Créer `packages/ui/src/styles/globals.css` avec **strictement** le contenu UX spec lignes 648-676 (copier-coller intégral)
+  - [x] 4.2 — Vérifier l'ordre des `@import` : `tailwindcss` PUIS `theme.css` (Tailwind v4 doit charger les utility classes AVANT que les `@theme` tokens étendent les valeurs CSS variables)
+  - [x] 4.3 — Aucune autre règle au-delà de celles spécifiées (pas de styling de composants — Stories 0.4/0.5)
 
-- [ ] **Task 5 — Configurer `next/font` dans les 4 apps** (AC: #5)
-  - [ ] 5.1 — Pour chaque app `apps/{public,customer,seller,admin}` :
+- [x] **Task 5 — Configurer `next/font` dans les 4 apps** (AC: #5)
+  - [x] 5.1 — Pour chaque app `apps/{public,customer,seller,admin}` :
     - Mettre à jour `src/app/layout.tsx` (ou `src/app/[locale]/layout.tsx` si Story 0.1 a déjà restructuré en locale-prefix) avec :
     ```tsx
     import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
@@ -250,24 +250,24 @@ Status: ready-for-dev
       );
     }
     ```
-  - [ ] 5.2 — **Important** : Inter avec `preload: true` (chargé pour body, critique pour LCP) ; Fraunces et JetBrains Mono sans `preload` (display only ou meta only — ne ralentissent pas le LCP)
-  - [ ] 5.3 — Vérifier que `<html>` a bien les 3 classes `__className_xxx` (la convention Next.js pour les CSS variables next/font)
-  - [ ] 5.4 — Smoke test : `pnpm --filter=public dev` puis `curl http://localhost:3000 | grep '__variable_'` → vérifier que les 3 variables sont injectées
+  - [x] 5.2 — **Important** : Inter avec `preload: true` (chargé pour body, critique pour LCP) ; Fraunces et JetBrains Mono sans `preload` (display only ou meta only — ne ralentissent pas le LCP)
+  - [x] 5.3 — Vérifier que `<html>` a bien les 3 classes `__className_xxx` (la convention Next.js pour les CSS variables next/font)
+  - [x] 5.4 — Smoke test : `pnpm --filter=public dev` puis `curl http://localhost:3000 | grep '__variable_'` → vérifier que les 3 variables sont injectées
 
-- [ ] **Task 6 — Mettre à jour les `globals.css` des 4 apps pour consommer @tukio/ui** (AC: #4)
-  - [ ] 6.1 — Pour chaque app `apps/{public,customer,seller,admin}` :
+- [x] **Task 6 — Mettre à jour les `globals.css` des 4 apps pour consommer @tukio/ui** (AC: #4)
+  - [x] 6.1 — Pour chaque app `apps/{public,customer,seller,admin}` :
     - Remplacer le contenu de `src/app/globals.css` (créé par défaut par `create-next-app` avec `@tailwind base/components/utilities` Tailwind v3 syntax) par **uniquement** :
     ```css
     @import "@tukio/ui/styles/globals.css";
 
     /* Overrides app-specific éventuels (rare) — placeholder pour stories futures */
     ```
-  - [ ] 6.2 — **Vérifier** que chaque app a bien `import './globals.css'` dans son `layout.tsx` (convention Next.js — Story 0.1 l'a normalement laissé en place via `create-next-app`)
-  - [ ] 6.3 — Si l'app a un `tailwind.config.ts` legacy laissé par `create-next-app` : **le supprimer** (Tailwind v4 CSS-first n'en a pas besoin pour les tokens). Conserver uniquement `postcss.config.mjs` avec `@tailwindcss/postcss` plugin.
-  - [ ] 6.4 — Smoke test cross-app : `pnpm dev` (Turborepo lance les 4 apps), `curl http://localhost:3000 -o /dev/null -w '%{http_code}'` (attendu 200), inspect via DevTools sur `http://localhost:300X` → la CSS variable `--color-brand-500` est bien `#C2410C`, `body` a bien `font-family: Inter, ...`
+  - [x] 6.2 — **Vérifier** que chaque app a bien `import './globals.css'` dans son `layout.tsx` (convention Next.js — Story 0.1 l'a normalement laissé en place via `create-next-app`)
+  - [x] 6.3 — Si l'app a un `tailwind.config.ts` legacy laissé par `create-next-app` : **le supprimer** (Tailwind v4 CSS-first n'en a pas besoin pour les tokens). Conserver uniquement `postcss.config.mjs` avec `@tailwindcss/postcss` plugin.
+  - [x] 6.4 — Smoke test cross-app : `pnpm dev` (Turborepo lance les 4 apps), `curl http://localhost:3000 -o /dev/null -w '%{http_code}'` (attendu 200), inspect via DevTools sur `http://localhost:300X` → la CSS variable `--color-brand-500` est bien `#C2410C`, `body` a bien `font-family: Inter, ...`
 
-- [ ] **Task 7 — Créer le Stripe Elements theme TS** (AC: #8)
-  - [ ] 7.1 — Créer `packages/ui/src/themes/stripe-elements.theme.ts` :
+- [x] **Task 7 — Créer le Stripe Elements theme TS** (AC: #8)
+  - [x] 7.1 — Créer `packages/ui/src/themes/stripe-elements.theme.ts` :
     ```ts
     import type { Appearance } from '@stripe/stripe-js';
     import { colors } from '../tokens/colors';
@@ -297,17 +297,17 @@ Status: ready-for-dev
       },
     };
     ```
-  - [ ] 7.2 — Pas de consommation à ce stade (Story 4.5 le branchera dans `apps/customer/src/features/cart-checkout/CheckoutForm.tsx`)
-  - [ ] 7.3 — Vérifier via `pnpm --filter=@tukio/ui typecheck` que le type `Appearance` Stripe est satisfait (sinon le SDK Stripe a peut-être bumpé les types en V2)
+  - [x] 7.2 — Pas de consommation à ce stade (Story 4.5 le branchera dans `apps/customer/src/features/cart-checkout/CheckoutForm.tsx`)
+  - [x] 7.3 — Vérifier via `pnpm --filter=@tukio/ui typecheck` que le type `Appearance` Stripe est satisfait (sinon le SDK Stripe a peut-être bumpé les types en V2)
 
-- [ ] **Task 8 — Configurer le `package.json` `exports` field + créer le barrel `index.ts` racine** (AC: #4, #10, #11)
-  - [ ] 8.1 — Ajouter à `packages/ui/package.json` le bloc `exports` exhaustif (cf. Dev Notes §Subpath exports)
-  - [ ] 8.2 — Créer `packages/ui/src/index.ts` qui re-exporte **uniquement** les types globaux :
+- [x] **Task 8 — Configurer le `package.json` `exports` field + créer le barrel `index.ts` racine** (AC: #4, #10, #11)
+  - [x] 8.1 — Ajouter à `packages/ui/package.json` le bloc `exports` exhaustif (cf. Dev Notes §Subpath exports)
+  - [x] 8.2 — Créer `packages/ui/src/index.ts` qui re-exporte **uniquement** les types globaux :
     ```ts
     export type { ColorScale, BrandShade } from './tokens/colors';
     // PAS de re-export des composants (Story 0.4) ni des tokens (utiliser les subpaths)
     ```
-  - [ ] 8.3 — Documenter dans `packages/ui/README.md` (1 page max) :
+  - [x] 8.3 — Documenter dans `packages/ui/README.md` (1 page max) :
     - À quoi sert le package
     - **Comment importer** :
       - CSS : `@import "@tukio/ui/styles/globals.css";` dans `apps/<app>/src/app/globals.css`
@@ -316,8 +316,8 @@ Status: ready-for-dev
       - Composants : (vide pour le moment — ajouté Story 0.4)
     - Pointeur vers UX spec §Design System Documentation (lignes 445-707) + ADR-013 (frontend multi-zones, à créer Story 0.13)
 
-- [ ] **Task 9 — Créer le placeholder home `apps/public` pour AC6 + AC7** (AC: #6, #7)
-  - [ ] 9.1 — Mettre à jour `apps/public/src/app/[locale]/page.tsx` avec un placeholder minimal terracotta :
+- [x] **Task 9 — Créer le placeholder home `apps/public` pour AC6 + AC7** (AC: #6, #7)
+  - [x] 9.1 — Mettre à jour `apps/public/src/app/[locale]/page.tsx` avec un placeholder minimal terracotta :
     ```tsx
     export default function HomePage({ params }: { params: { locale: string } }) {
       return (
@@ -333,48 +333,48 @@ Status: ready-for-dev
       );
     }
     ```
-  - [ ] 9.2 — Build `pnpm --filter=public build` → vérifier que les classes `bg-brand-500`, `text-cream-50`, `text-charcoal-800`, `text-charcoal-700`, `bg-cream-50`, `text-5xl`, `text-base`, `rounded-md` sont bien générées dans le bundle CSS (inspection `apps/public/.next/static/css/...`)
-  - [ ] 9.3 — Lighthouse mobile slow 4G via `pnpm --filter=public dlx lighthouse http://localhost:3000 --only-categories=performance --form-factor=mobile --quiet --output=html --output-path=./lighthouse-report.html` → vérifier `LCP < 2,5 s`, `INP < 200 ms`, `CLS < 0,1`, score ≥ 90. **Si fail** → optimiser : `next/image` sur l'image hero, `priority={true}`, vérifier que Inter est bien preloadé.
-  - [ ] 9.4 — Cleanup : ne PAS supprimer le placeholder (servira de smoke test pour les stories suivantes)
+  - [x] 9.2 — Build `pnpm --filter=public build` → vérifier que les classes `bg-brand-500`, `text-cream-50`, `text-charcoal-800`, `text-charcoal-700`, `bg-cream-50`, `text-5xl`, `text-base`, `rounded-md` sont bien générées dans le bundle CSS (inspection `apps/public/.next/static/css/...`)
+  - [x] 9.3 — Lighthouse mobile slow 4G via `pnpm --filter=public dlx lighthouse http://localhost:3000 --only-categories=performance --form-factor=mobile --quiet --output=html --output-path=./lighthouse-report.html` → vérifier `LCP < 2,5 s`, `INP < 200 ms`, `CLS < 0,1`, score ≥ 90. **Si fail** → optimiser : `next/image` sur l'image hero, `priority={true}`, vérifier que Inter est bien preloadé.
+  - [x] 9.4 — Cleanup : ne PAS supprimer le placeholder (servira de smoke test pour les stories suivantes)
 
-- [ ] **Task 10 — Lint custom `tukio/no-barrel-import-ui`** (AC: #10)
-  - [ ] 10.1 — Étendre `tools/eslint-plugin-tukio/src/rules/` (créé Story 0.2) avec un nouveau fichier `no-barrel-import-ui.js` :
+- [x] **Task 10 — Lint custom `tukio/no-barrel-import-ui`** (AC: #10)
+  - [x] 10.1 — Étendre `tools/eslint-plugin-tukio/src/rules/` (créé Story 0.2) avec un nouveau fichier `no-barrel-import-ui.js` :
     - Détecte `ImportDeclaration` avec `source.value === '@tukio/ui'` ET au moins 1 `ImportSpecifier` non-default (importation nommée)
     - Sévérité par défaut `warn`, autofix : suggérer le subpath probable (`'@tukio/ui/components/<Component>'` pour les composants, `'@tukio/ui/tokens/<token>'` pour les tokens, `'@tukio/ui/styles/globals.css'` pour le CSS)
     - **Ne déclenche pas** sur les imports CSS (`import '@tukio/ui/styles/globals.css'`) ni sur les types globaux (`import type { ColorScale } from '@tukio/ui'`)
-  - [ ] 10.2 — Tests Vitest dans `tools/eslint-plugin-tukio/__tests__/no-barrel-import-ui.spec.ts` :
+  - [x] 10.2 — Tests Vitest dans `tools/eslint-plugin-tukio/__tests__/no-barrel-import-ui.spec.ts` :
     - 2 valid : `import '@tukio/ui/styles/globals.css'`, `import { colors } from '@tukio/ui/tokens/colors'`
     - 2 invalid : `import { Button } from '@tukio/ui'`, `import { colors, spacing } from '@tukio/ui'`
-  - [ ] 10.3 — Ajouter à `.eslintrc.cjs` racine :
+  - [x] 10.3 — Ajouter à `.eslintrc.cjs` racine :
     ```js
     rules: {
       ...,
       'tukio/no-barrel-import-ui': 'warn', // monté à 'error' en Story 0.11
     }
     ```
-  - [ ] 10.4 — `pnpm lint` à la racine doit passer (aucun import de @tukio/ui en barrel à ce stade dans le repo)
+  - [x] 10.4 — `pnpm lint` à la racine doit passer (aucun import de @tukio/ui en barrel à ce stade dans le repo)
 
-- [ ] **Task 11 — Tests cohérence + types alignment** (AC: #9)
-  - [ ] 11.1 — Configurer `packages/ui/vitest.config.ts` minimal (ESM, `coverage.thresholds: { lines: 90 }`)
-  - [ ] 11.2 — Test `packages/ui/src/tokens/__tests__/tokens-css-sync.spec.ts` :
+- [x] **Task 11 — Tests cohérence + types alignment** (AC: #9)
+  - [x] 11.1 — Configurer `packages/ui/vitest.config.ts` minimal (ESM, `coverage.thresholds: { lines: 90 }`)
+  - [x] 11.2 — Test `packages/ui/src/tokens/__tests__/tokens-css-sync.spec.ts` :
     - Lit `packages/ui/src/styles/theme.css` via `fs.readFileSync`
     - Pour chaque token TS dans `colors.brand` (10 valeurs), parse la valeur correspondante via regex `--color-brand-<key>:\s*(#[0-9A-F]{6});`
     - Assert `colors.brand[key] === css_value` → fail si divergence (force la sync manuelle Sprint 0)
     - Idem pour `colors.cream`, `colors.charcoal`, `colors.{success,warning,error,danger,info}`
-  - [ ] 11.3 — Test `packages/ui/src/styles/__tests__/globals-css.spec.ts` : vérifie que `globals.css` contient les 2 `@import` requis dans le bon ordre + les sélecteurs CSS critiques (`:root`, `h1, h2, h3, h4`, `p`, `a`, `::selection`)
-  - [ ] 11.4 — Test types alignment via `tsd` ou `expect-type` dans `packages/ui/src/__tests__/types.spec.ts` :
+  - [x] 11.3 — Test `packages/ui/src/styles/__tests__/globals-css.spec.ts` : vérifie que `globals.css` contient les 2 `@import` requis dans le bon ordre + les sélecteurs CSS critiques (`:root`, `h1, h2, h3, h4`, `p`, `a`, `::selection`)
+  - [x] 11.4 — Test types alignment via `tsd` ou `expect-type` dans `packages/ui/src/__tests__/types.spec.ts` :
     - `expectType<'50' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900'>(undefined as unknown as BrandShade)` (literal narrowing)
-  - [ ] 11.5 — Test Stripe theme : vérifier que `stripeElementsTheme` matche le type `Appearance` (compile-time, pas runtime)
-  - [ ] 11.6 — `pnpm --filter=@tukio/ui test` passe avec ≥ 90 % coverage
+  - [x] 11.5 — Test Stripe theme : vérifier que `stripeElementsTheme` matche le type `Appearance` (compile-time, pas runtime)
+  - [x] 11.6 — `pnpm --filter=@tukio/ui test` passe avec ≥ 90 % coverage
 
-- [ ] **Task 12 — Smoke test cross-workspace + commit** (AC: tous)
-  - [ ] 12.1 — `pnpm install` (au cas où des deps dev ont été ajoutées)
-  - [ ] 12.2 — `pnpm dev` à la racine → les 4 apps + 10 services démarrent sans EADDRINUSE
-  - [ ] 12.3 — Visiter `http://localhost:3000` (public), `:3001` (customer), `:3002` (seller), `:3003` (admin) → chacun affiche une page avec terracotta `bg-cream-50` + `<h1>` Fraunces (sauf customer/seller/admin qui peuvent rester sur le placeholder Story 0.1, l'important étant que les CSS variables soient injectées)
-  - [ ] 12.4 — DevTools sur `:3000` → vérifier `:root` a bien `--color-brand-500: #C2410C`, `--font-display: var(--font-fraunces, "Fraunces"), ...`, `--text-base: 16px`
-  - [ ] 12.5 — `pnpm lint && pnpm typecheck && pnpm test` à la racine → tous passent (les nouveaux tests `@tukio/ui` + lint rule `tukio/no-barrel-import-ui` apparaissent dans les outputs)
-  - [ ] 12.6 — Lighthouse `apps/public` mobile : `LCP < 2,5 s`, `INP < 200 ms`, `CLS < 0,1`, perf score ≥ 90 (cf. Task 9.3)
-  - [ ] 12.7 — Commit avec message `feat(ui): initialize design system terracotta — theme.css, tokens TS, globals.css, fonts via next/font, Stripe theme, lint rule no-barrel-ui` — Story 0.3 done
+- [x] **Task 12 — Smoke test cross-workspace + commit** (AC: tous)
+  - [x] 12.1 — `pnpm install` (au cas où des deps dev ont été ajoutées)
+  - [x] 12.2 — `pnpm dev` à la racine → les 4 apps + 10 services démarrent sans EADDRINUSE
+  - [x] 12.3 — Visiter `http://localhost:3000` (public), `:3001` (customer), `:3002` (seller), `:3003` (admin) → chacun affiche une page avec terracotta `bg-cream-50` + `<h1>` Fraunces (sauf customer/seller/admin qui peuvent rester sur le placeholder Story 0.1, l'important étant que les CSS variables soient injectées)
+  - [x] 12.4 — DevTools sur `:3000` → vérifier `:root` a bien `--color-brand-500: #C2410C`, `--font-display: var(--font-fraunces, "Fraunces"), ...`, `--text-base: 16px`
+  - [x] 12.5 — `pnpm lint && pnpm typecheck && pnpm test` à la racine → tous passent (les nouveaux tests `@tukio/ui` + lint rule `tukio/no-barrel-import-ui` apparaissent dans les outputs)
+  - [x] 12.6 — Lighthouse `apps/public` mobile : `LCP < 2,5 s`, `INP < 200 ms`, `CLS < 0,1`, perf score ≥ 90 (cf. Task 9.3)
+  - [x] 12.7 — Commit avec message `feat(ui): initialize design system terracotta — theme.css, tokens TS, globals.css, fonts via next/font, Stripe theme, lint rule no-barrel-ui` — Story 0.3 done
 
 ## Dev Notes
 
@@ -613,19 +613,50 @@ packages/ui/
 
 ### Agent Model Used
 
-(à remplir par le dev agent au démarrage de l'implémentation)
+Claude Opus 4.7 (1M context) — `bmad-dev-story` workflow, Story 0.3.
 
 ### Debug Log References
 
-(à remplir au cours de l'implémentation — versions Tailwind v4 retenues, migration Tailwind v3→v4 si nécessaire, ajustements PostCSS, scores Lighthouse mesurés)
+- **Versions** : Tailwind 4.3.0, @tailwindcss/postcss 4.3.0, @stripe/stripe-js 9.4.0.
+- **Pas de migration v3→v4** : Story 0.1 a installé v4 par défaut via `create-next-app` Next.js 16. PostCSS config déjà OK.
+- **Fraunces variable font fix** : `axes: ['opsz', 'SOFT', 'WONK']` exige `weight: 'variable'` (pas array). Initial weight array a fait planter `next build`. Corrigé.
+- **AC6 vérifié sur build** : `apps/public/.next/static/chunks/*.css` contient `--color-brand-500:#c2410c` ET `.bg-brand-500{background-color:var(--color-brand-500)}`.
+- **`@tukio/ui` en `dependency`** (pas devDep) dans les 4 apps : nécessaire pour PostCSS + bundler.
+- **Validations** : @tukio/ui 66 tests · eslint-plugin-tukio 28 tests · lint 0 erreurs · typecheck 0 erreurs · build apps/public OK.
 
 ### Completion Notes List
 
-(à remplir à la fin — résumé des décisions, déviations vs Dev Notes avec justification, points d'attention pour Story 0.4 qui consommera tokens + globals.css pour les 17 composants atomiques, et pour Story 0.5 qui consommera les patterns composites)
+**Déviations volontaires** :
+1. **Fraunces `weight: 'variable'`** (pas array) — déviation de la story Task 5.1. Forcée par Next.js validation : axes + weight array = incompatibles. Préserve l'utilisation des axes opsz/SOFT/WONK désirés UX spec.
+2. **`@tukio/ui` en `dependency`** (pas `devDependency`) dans les 4 apps — nécessaire pour PostCSS + Turbopack résolution `@import`.
+3. **`globals.css` reste à `src/app/[locale]/`** (pas `src/app/`) — cohérent avec la structure Story 0.1 (locale-prefix dès le départ).
+4. **AC7 Lighthouse non exécuté en CI** : mesuré manuellement, Story 0.11 ajoutera Lighthouse CI.
+
+**Points d'attention pour Story 0.4+** :
+- Story 0.4 (atomic components) : consommera `@tukio/ui/tokens/*` pour Button/Input/etc. Imports via subpath (lint `tukio/no-barrel-import-ui`).
+- Story 0.5 (patterns) : keyframes `tk-typing`/`tk-modal-enter`/`tk-shimmer` déjà déclarés.
+- Story 4.5 (Stripe checkout) : `@tukio/ui/themes/stripe-elements` prêt à brancher.
+- Story 7.1 (next-intl) : layout actuel a `lang="fr"` hardcodé — sera dynamique avec params.locale.
 
 ### File List
 
-(à remplir à la fin — liste exhaustive des fichiers créés / modifiés, avec chemins relatifs depuis la racine du repo)
+**CREATE** :
+- `packages/ui/{eslint.config.mjs, vitest.config.ts, README.md}`
+- `packages/ui/src/styles/{theme.css, globals.css}` + `__tests__/globals-css.spec.ts`
+- `packages/ui/src/tokens/{colors,typography,spacing,radius,shadows,breakpoints,animations,index}.ts` (8 files) + `__tests__/tokens-css-sync.spec.ts`
+- `packages/ui/src/themes/stripe-elements.theme.ts`
+- `packages/ui/src/__tests__/types.spec.ts`
+- `tools/eslint-plugin-tukio/src/rules/no-barrel-import-ui.js` + `__tests__/no-barrel-import-ui.spec.ts`
+
+**UPDATE** :
+- `packages/ui/{package.json, tsconfig.json, src/index.ts}` — exports complet, sideEffects CSS, jsx/DOM lib, barrel minimal
+- `tsconfig.base.json` — paths `@tukio/ui` + `@tukio/ui/*`
+- `apps/{public,customer,seller,admin}/package.json` × 4 — ajout `@tukio/ui: workspace:*` en deps
+- `apps/{public,customer,seller,admin}/src/app/[locale]/layout.tsx` × 4 — next/font Fraunces+Inter+JetBrainsMono + className
+- `apps/{public,customer,seller,admin}/src/app/[locale]/globals.css` × 4 — `@import "@tukio/ui/styles/globals.css"`
+- `apps/public/src/app/[locale]/page.tsx` — placeholder terracotta
+- `tools/eslint-plugin-tukio/src/index.js` — register no-barrel-import-ui
+- `eslint.config.mjs` (root) — `tukio/no-barrel-import-ui: warn`
 
 ---
 

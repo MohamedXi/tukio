@@ -20,6 +20,8 @@
     "paths": {
       "@tukio/contracts": ["./packages/contracts/src/index.ts"],
       "@tukio/contracts/*": ["./packages/contracts/src/*"],
+      "@tukio/ui": ["./packages/ui/src/index.ts"],
+      "@tukio/ui/*": ["./packages/ui/src/*"],
       "@tukio/*": ["./packages/*/src"]
     }
   }
