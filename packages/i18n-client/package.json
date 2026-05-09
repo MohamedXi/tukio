@@ -1,0 +1,12 @@
+{
+  "name": "@tukio/i18n-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "next-intl wrapper, locale negotiation, and shared translation helpers.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  }
+}

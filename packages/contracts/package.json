@@ -1,0 +1,12 @@
+{
+  "name": "@tukio/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "DTOs, REST envelope types, NATS event contracts (single source of truth).",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  }
+}

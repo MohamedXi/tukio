@@ -1,0 +1,278 @@
+/* ──────────────────────────────────────────────────────────────
+   tukio.one — Design tokens
+   Terracotta palette + cream/charcoal neutres + fonctionnels désaturés
+   Refs : tukio_design_brief.md (B et C)
+   ────────────────────────────────────────────────────────────── */
+
+@keyframes tk-typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+:root {
+  /* ── Brand: terracotta ───────────────────────────────────── */
+  --brand-50:  #FCF3EE;
+  --brand-100: #F8E0D0;
+  --brand-200: #F1B996;
+  --brand-300: #E89160;
+  --brand-400: #DC6E33;
+  --brand-500: #C2410C;
+  --brand-600: #9A340A;
+  --brand-700: #7A2A09;
+  --brand-800: #5C2008;
+  --brand-900: #3E1606;
+
+  /* ── Neutres chauds ──────────────────────────────────────── */
+  --cream-50:  #FAF7F2;
+  --cream-100: #F5F1EA;
+  --cream-200: #EBE5D9;
+  --cream-300: #DDD4C2;
+  --charcoal-400: #6B6657;
+  --charcoal-500: #4A453A;
+  --charcoal-600: #2F2C25;
+  --charcoal-700: #1F1D18;
+  --charcoal-800: #14130F;
+  --charcoal-900: #0A0A07;
+
+  /* ── Functional (désaturés) ──────────────────────────────── */
+  --success-50:  #ECF1ED;
+  --success-500: #4D7C5E;
+  --success-700: #345240;
+  --warning-50:  #F8ECD9;
+  --warning-200: #F0D8B8;
+  --warning-500: #B45309;
+  --warning-700: #7A380A;
+  --error-50:    #FCE8E8;
+  --error-500:   #B91C1C;
+  --danger-50:   #FCE8E8;
+  --danger-500:  #C84838;
+  --danger-600:  #B53A2B;
+  --danger-700:  #8E2C20;
+  --error-700:   #7F1414;
+  --info-50:     #E2EEF3;
+  --info-500:    #1E5F7E;
+  --info-700:    #143F54;
+
+  /* ── Type ────────────────────────────────────────────────── */
+  --font-display: "Fraunces", "Tiempos Headline", Georgia, serif;
+  --font-body:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Modular scale 1.250 */
+  --text-xs:   12px;
+  --text-sm:   14px;
+  --text-base: 16px;
+  --text-lg:   20px;
+  --text-xl:   25px;
+  --text-2xl:  31px;
+  --text-3xl:  39px;
+  --text-4xl:  49px;
+  --text-5xl:  61px;
+  --text-6xl:  76px;
+
+  /* ── Spacing (4px base) ──────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ── Radius ──────────────────────────────────────────────── */
+  --radius-sm:  4px;
+  --radius:     8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows (warm-tinted) ───────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(31, 29, 24, 0.05);
+  --shadow:    0 2px 8px rgba(31, 29, 24, 0.06);
+  --shadow-md: 0 4px 16px rgba(31, 29, 24, 0.08);
+  --shadow-lg: 0 12px 32px rgba(31, 29, 24, 0.12);
+  --shadow-xl: 0 24px 64px rgba(31, 29, 24, 0.16);
+}
+
+/* ── Reset léger pour les artboards ────────────────────────── */
+.tk-root, .tk-root * { box-sizing: border-box; }
+.tk-root {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--charcoal-700);
+  background: var(--cream-50);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.tk-root h1, .tk-root h2, .tk-root h3, .tk-root h4 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--charcoal-800);
+  text-wrap: balance;
+}
+.tk-root p { margin: 0; text-wrap: pretty; }
+.tk-root a { color: inherit; text-decoration: none; }
+.tk-root button {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+.tk-root input, .tk-root textarea, .tk-root select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+.tk-root ::selection { background: var(--brand-200); color: var(--charcoal-800); }
+
+/* ── Boxed content — cap inner content on wide artboards ────
+   We cap section content to --tk-page-max by overriding horizontal padding.
+   When the artboard is wider than --tk-page-max, the extra space is added
+   to left/right padding so content stays centered at most 1280px wide.
+   Sections that explicitly want full-bleed (image hero, dark band) opt out
+   with the .tk-bleed class. */
+:root {
+  --tk-page-max: 1280px;
+  --tk-page-gutter: 40px;
+}
+.tk-root > section,
+.tk-root > footer {
+  padding-left:  max(var(--tk-page-gutter), calc((100% - var(--tk-page-max)) / 2)) !important;
+  padding-right: max(var(--tk-page-gutter), calc((100% - var(--tk-page-max)) / 2)) !important;
+}
+.tk-root > section.tk-bleed,
+.tk-root > footer.tk-bleed {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* ── Mono labels for placeholders ────────────────────────── */
+.tk-mono { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--charcoal-400); }
+
+/* ── Striped image placeholder ───────────────────────────── */
+.tk-ph {
+  position: relative;
+  background-color: var(--cream-100);
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 10px,
+    rgba(194, 65, 12, 0.06) 10px,
+    rgba(194, 65, 12, 0.06) 11px
+  );
+  border: 1px solid var(--cream-200);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.tk-ph-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--charcoal-400);
+  background: var(--cream-50);
+  padding: 4px 8px;
+  border: 1px solid var(--cream-300);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  max-width: calc(100% - 16px);
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.tk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding: 0 16px;
+  font-size: var(--text-base);
+  font-weight: 500;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.tk-btn-sm { height: 32px; padding: 0 12px; font-size: var(--text-sm); }
+.tk-btn-lg { height: 48px; padding: 0 20px; }
+.tk-btn-primary { background: var(--brand-500); color: var(--cream-50); }
+.tk-btn-primary:hover { background: var(--brand-400); }
+.tk-btn-secondary { background: var(--cream-100); color: var(--charcoal-700); border-color: var(--cream-300); }
+.tk-btn-secondary:hover { background: var(--cream-200); }
+.tk-btn-tertiary { background: transparent; color: var(--brand-700); }
+.tk-btn-tertiary:hover { background: var(--brand-50); }
+.tk-btn-ghost { background: transparent; color: var(--charcoal-600); }
+.tk-btn-ghost:hover { background: var(--cream-100); }
+
+/* ── Inputs ──────────────────────────────────────────────── */
+.tk-input {
+  height: 40px;
+  padding: 0 12px;
+  background: var(--cream-50);
+  border: 1px solid var(--cream-300);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  color: var(--charcoal-700);
+  width: 100%;
+  outline: none;
+}
+.tk-input:focus { border-color: var(--brand-500); box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.18); }
+.tk-input::placeholder { color: var(--charcoal-400); }
+.tk-label { display: block; font-size: var(--text-sm); color: var(--charcoal-500); font-weight: 600; margin-bottom: 6px; }
+.tk-helper { font-size: var(--text-xs); color: var(--charcoal-400); margin-top: 4px; }
+
+/* ── Badges ──────────────────────────────────────────────── */
+.tk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  background: var(--cream-100);
+  color: var(--charcoal-600);
+  border: 1px solid var(--cream-200);
+  letter-spacing: 0.01em;
+}
+.tk-badge-brand   { background: var(--brand-50); color: var(--brand-700); border-color: var(--brand-100); }
+.tk-badge-success { background: var(--success-50); color: var(--success-700); border-color: transparent; }
+.tk-badge-warning { background: var(--warning-50); color: var(--warning-700); border-color: transparent; }
+.tk-badge-info    { background: var(--info-50); color: var(--info-700); border-color: transparent; }
+.tk-badge-neutral { background: var(--cream-100); color: var(--charcoal-600); border-color: var(--cream-200); }
+
+/* ── Card ─────────────────────────────────────────────────── */
+.tk-card {
+  background: var(--cream-50);
+  border: 1px solid var(--cream-200);
+  border-radius: var(--radius-md);
+}
+
+/* ── Divider ──────────────────────────────────────────────── */
+.tk-hr { border: 0; border-top: 1px solid var(--cream-200); margin: 0; }
+
+/* ── Star rating ──────────────────────────────────────────── */
+.tk-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.tk-stars-icon { color: var(--brand-500); font-size: 14px; line-height: 1; }

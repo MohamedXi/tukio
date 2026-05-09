@@ -1,0 +1,12 @@
+{
+  "name": "@tukio/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed HTTP client wrapping gateway-api endpoints (TanStack Query hooks).",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  }
+}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>tukio.one — Flat export for Figma</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- Design tokens -->
+<link rel="stylesheet" href="styles/tokens.css" />
+
+<!-- React + Babel (pinned) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #E8E4DB;
+    color: var(--charcoal-700);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Disable interactive states for cleaner export */
+  * { animation: none !important; transition: none !important; }
+  /* No sticky / fixed inside frames — flatten positioning */
+  [data-figma-frame] *[style*="position: sticky"],
+  [data-figma-frame] *[style*="position:sticky"] { position: relative !important; top: auto !important; }
+  [data-figma-frame] *[style*="position: fixed"],
+  [data-figma-frame] *[style*="position:fixed"] { position: absolute !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Starters -->
+<script type="text/babel" src="ios-frame.jsx"></script>
+
+<!-- Shared -->
+<script type="text/babel" src="screens/_shared.jsx"></script>
+
+<!-- All screens -->
+<script type="text/babel" src="screens/design-system.jsx"></script>
+<script type="text/babel" src="screens/logo.jsx"></script>
+<script type="text/babel" src="screens/home.jsx"></script>
+<script type="text/babel" src="screens/search.jsx"></script>
+<script type="text/babel" src="screens/service.jsx"></script>
+<script type="text/babel" src="screens/pro-profile.jsx"></script>
+<script type="text/babel" src="screens/checkout.jsx"></script>
+<script type="text/babel" src="screens/confirmation.jsx"></script>
+<script type="text/babel" src="screens/bookings-list.jsx"></script>
+<script type="text/babel" src="screens/booking-detail.jsx"></script>
+<script type="text/babel" src="screens/cancel-flow.jsx"></script>
+<script type="text/babel" src="screens/review-form.jsx"></script>
+<script type="text/babel" src="screens/messages.jsx"></script>
+<script type="text/babel" src="screens/account-settings.jsx"></script>
+<script type="text/babel" src="screens/seller-bookings.jsx"></script>
+<script type="text/babel" src="screens/seller-calendar.jsx"></script>
+<script type="text/babel" src="screens/seller-profile-edit.jsx"></script>
+<script type="text/babel" src="screens/seller-reviews.jsx"></script>
+<script type="text/babel" src="screens/seller-service-create.jsx"></script>
+<script type="text/babel" src="screens/pro-dashboard.jsx"></script>
+<script type="text/babel" src="screens/pro-onboarding.jsx"></script>
+<script type="text/babel" src="screens/mobile.jsx"></script>
+<script type="text/babel" src="screens/mobile-extra.jsx"></script>
+<script type="text/babel" src="screens/mobile-account.jsx"></script>
+
+<!-- Flat layout app -->
+<script type="text/babel" src="flat-app.jsx"></script>
+</body>
+</html>

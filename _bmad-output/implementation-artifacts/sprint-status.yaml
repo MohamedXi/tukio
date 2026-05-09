@@ -1,0 +1,226 @@
+# generated: 2026-05-09
+# last_updated: 2026-05-09 (Story 0.1 IMPLEMENTED → review — monorepo bootstrapped, 14 codebases, lint/typecheck/test 22+22+14 passing)
+# project: tukio.one
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-05-09
+last_updated: 2026-05-09
+project: tukio.one
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # ─── Epic 0 — Sprint 0 Foundation (MVP) ───────────────────────────────
+  epic-0: in-progress
+  0-1-bootstrap-monorepo-turborepo-scaffold-nextjs-apps-nestjs-services: review
+  0-2-initialize-tukio-contracts-envelope-nats-events-dtos: ready-for-dev
+  0-3-setup-design-system-tailwind-v4-tukio-ui: ready-for-dev
+  0-4-implement-atomic-components-tukio-ui: ready-for-dev
+  0-5-implement-composite-patterns-tukio-ui: ready-for-dev
+  0-6-pattern-pretre-scaffolding-template-identity-svc: ready-for-dev
+  0-7-setup-tukio-messaging-nats-jetstream: ready-for-dev
+  0-8-setup-tukio-auth-backend-frontend: ready-for-dev
+  0-9-setup-tukio-api-client-i18n-client-testing: ready-for-dev
+  0-10-docker-compose-dev-local-bootstrap-scripts: ready-for-dev
+  0-11-ci-github-actions-pipeline: ready-for-dev
+  0-12-helm-charts-k8s-argocd-staging-observability: ready-for-dev
+  0-13-initialize-adrs-vercel-multi-zones-acquisition-schema: ready-for-dev
+  epic-0-retrospective: optional
+
+  # ─── Epic 1 — Identity & Authentication Backbone (MVP) ────────────────
+  epic-1: in-progress
+  1-1-provision-keycloak-realm-tukio-roles-clients-phasetwo: ready-for-dev
+  1-2-customer-b2c-registration: ready-for-dev
+  1-3-pro-registration-pending-admin-review: ready-for-dev
+  1-4-login-flow-keycloak-authorization-code-pkce: ready-for-dev
+  1-5-password-reset-flow: ready-for-dev
+  1-6-email-verification-flow-landing-page: ready-for-dev
+  1-7-admin-2fa-totp-obligatoire: ready-for-dev
+  1-8-profile-management: ready-for-dev
+  1-9-account-deletion-soft-delete-rgpd: ready-for-dev
+  1-10-identity-svc-pretre-implementation: ready-for-dev
+  epic-1-retrospective: optional
+
+  # ─── Epic 2 — Pro Onboarding & Admin Verification (MVP) ───────────────
+  epic-2: in-progress
+  2-1-stripe-connect-express-account-creation-onboarding: ready-for-dev
+  2-2-pro-onboarding-wizard-frontend: ready-for-dev
+  2-3-admin-verification-queue: ready-for-dev
+  2-4-admin-kyc-review-detail-screen: ready-for-dev
+  2-5-pro-acceptation-rejet-workflow: ready-for-dev
+  2-6-premiere-fiche-service-integree-wizard-onboarding: backlog
+  2-7-audit-trail-actions-admin-immutabilite: backlog
+  2-8-pro-verification-reminder-auto-rejection: backlog
+  epic-2-retrospective: optional
+
+  # ─── Epic 3 — Catalog Publication & Discovery (MVP) ───────────────────
+  epic-3: backlog
+  3-1-catalog-data-model-categories-pilotes-seed: backlog
+  3-2-catalog-svc-pretre-implementation: backlog
+  3-3-pro-create-listing-wizard-frontend: backlog
+  3-4-photo-upload-cloudflare-images-integration: backlog
+  3-5-listing-publish-workflow-auto-publish-median-price: backlog
+  3-6-edit-unpublish-delete-listing-flow: backlog
+  3-7-meilisearch-index-per-locale-outbox-sync: backlog
+  3-8-search-frontend-barre-recherche: backlog
+  3-9-filters-facettes-search-results-page: backlog
+  3-10-listing-detail-public-page: backlog
+  3-11-pro-public-profile-page: backlog
+  3-12-category-general-page-median-price-display: backlog
+  epic-3-retrospective: optional
+
+  # ─── Epic 4 — Booking, Cart & Payment Saga (MVP) ──────────────────────
+  epic-4: backlog
+  4-1-booking-svc-pretre-saga-state-machine: backlog
+  4-2-order-svc-payment-svc-pretre-saga-consumers: backlog
+  4-3-cart-ui-mono-vendor-persistence-zustand: backlog
+  4-4-booking-submission-3-layer-race-condition-protection: backlog
+  4-5-stripe-paymentintent-elements-checkout: backlog
+  4-6-pro-pending-requests-page-delai-expiration: backlog
+  4-7-pro-accept-refuse-stripe-capture-anti-desintermediation: backlog
+  4-8-customer-cancellation-flow-templates-politique: backlog
+  4-9-invoice-generation-tva-mandat-289-cgi: backlog
+  4-10-auto-payout-cron-stripe-transfer: backlog
+  4-11-customer-pro-bookings-list-detail-page: backlog
+  4-12-admin-refund-reconciliation-page: backlog
+  4-13-saga-monitoring-r11-alerts: backlog
+  epic-4-retrospective: optional
+
+  # ─── Epic 5 — Messaging, Reviews & Transactional Notifications (MVP) ──
+  epic-5: backlog
+  5-1-messaging-svc-pretre-conversation-message-aggregates: backlog
+  5-2-conversation-thread-ui: backlog
+  5-3-send-message-rate-limiting-retention: backlog
+  5-4-notification-svc-pretre-resend-templates: backlog
+  5-5-review-svc-pretre-review-aggregate: backlog
+  5-6-auto-request-review-relance: backlog
+  5-7-customer-leave-review-report-abuse: backlog
+  5-8-reviews-aggregate-display-recency-weight: backlog
+  5-9-display-badge-fr-only-en-absent: backlog
+  5-10-notification-preferences-mvp-minimal: backlog
+  epic-5-retrospective: optional
+
+  # ─── Epic 6 — Admin Moderation Console (MVP) ──────────────────────────
+  epic-6: backlog
+  6-1-admin-dashboard-home-queues-activity-overview: backlog
+  6-2-listings-moderation-queue: backlog
+  6-3-reviews-moderation-queue: backlog
+  6-4-reports-signalements-queue: backlog
+  6-5-suspend-ban-account-sanction-graduee: backlog
+  6-6-audit-log-viewer-export: backlog
+  6-7-admin-user-management: backlog
+  6-8-taxonomy-editor: backlog
+  epic-6-retrospective: optional
+
+  # ─── Epic 7 — i18n FR/EN + Acquisition Foundation (MVP) ───────────────
+  epic-7: backlog
+  7-1-next-intl-setup-locale-routing-middleware: backlog
+  7-2-language-switcher-ui-hreflang-systematic: backlog
+  7-3-sitemap-dynamique-robots-txt-structured-data-audit: backlog
+  7-4-plausible-analytics-setup-custom-events: backlog
+  7-5-acquisition-tracking-enrichment-multi-touch-attribution: backlog
+  7-6-referral-codes-foundation: backlog
+  7-7-email-locale-dispatch-qa-i18n-coherence-audit: backlog
+  7-8-seo-foundation-open-graph-structured-data: backlog
+  7-9-legal-pages-fr-en-cgu-cgv-privacy-mentions-legales: backlog
+  epic-7-retrospective: optional
+
+  # ─── Epic 8 — B2B Customer Accounts & Multi-Vendor Cart (V1) ──────────
+  epic-8: backlog
+  8-1-customer-b2b-account-registration: backlog
+  8-2-multi-vendor-cart-parallel-saga-orchestration: backlog
+  8-3-customer-invoices-ui-download: backlog
+  8-4-b2b-billing-settings-multi-user-management: backlog
+  epic-8-retrospective: optional
+
+  # ─── Epic 9 — Pro Subscriptions, Tiers & Échéanciers (V1) ─────────────
+  epic-9: backlog
+  9-1-subscription-tiers-data-model-stripe-products: backlog
+  9-2-pro-subscription-upgrade-downgrade-proration: backlog
+  9-3-30-70-split-payment-echeancier: backlog
+  9-4-pro-export-transactions-csv-pdf: backlog
+  epic-9-retrospective: optional
+
+  # ─── Epic 10 — Dispute Workflow & Advanced Admin (V1) ─────────────────
+  epic-10: backlog
+  10-1-dispute-aggregate-workflow-state-machine: backlog
+  10-2-stripe-disputes-ui-admin: backlog
+  10-3-event-replay-sensitive: backlog
+  10-4-user-impersonation-sensitive: backlog
+  epic-10-retrospective: optional
+
+  # ─── Epic 11 — In-App Notifications, PWA & Referral Program (V1) ──────
+  epic-11: backlog
+  11-1-in-app-notification-feed-real-time-sse: backlog
+  11-2-pwa-installable-push-web-notifications: backlog
+  11-3-referral-program-rewards-calculation-ui: backlog
+  11-4-notification-preferences-granular: backlog
+  epic-11-retrospective: optional
+
+  # ─── Epic 12 — Anti-désintermédiation, Reviews Multi-Critères & Quotes (V1) ──
+  epic-12: backlog
+  12-1-pii-regex-detection-masking-chat-messages: backlog
+  12-2-reviews-multi-criteres-pro-reponse-publique: backlog
+  12-3-devis-personnalises-chat-libre-pre-booking: backlog
+  12-4-booking-modification-proposal-file-attachments: backlog
+  epic-12-retrospective: optional
+
+  # ─── Epic 13 — Configurateur & Smart Recommendations (V2) ─────────────
+  epic-13: backlog
+  13-1-event-configurator-wizard: backlog
+  13-2-recently-viewed-similar-listings: backlog
+  13-3-ai-powered-semantic-search: backlog
+  epic-13-retrospective: optional
+
+  # ─── Epic 14 — Mobile Native iOS + Android (V2) ───────────────────────
+  epic-14: backlog
+  14-1-react-native-scaffold-shared-business-logic: backlog
+  14-2-apple-pay-google-pay-native-push: backlog
+  14-3-camera-integration-pro-upload-photos-mobile: backlog
+  epic-14-retrospective: optional
+
+  # ─── Epic 15 — Pro Enterprise & SAML SSO B2B (V2) ─────────────────────
+  epic-15: backlog
+  15-1-saml-sso-b2b-enterprise: backlog
+  15-2-pennylane-quickbooks-accounting-api: backlog
+  15-3-bulk-discounts-multi-pro-accounts: backlog
+  epic-15-retrospective: optional
+
+  # ─── Epic 16 — Loyalty Customer & Newsletter Admin (V2) ───────────────
+  epic-16: backlog
+  16-1-customer-loyalty-points-tiers: backlog
+  16-2-newsletter-brevo-opt-in-management: backlog
+  16-3-ab-testing-campaign-infrastructure: backlog
+  epic-16-retrospective: optional
