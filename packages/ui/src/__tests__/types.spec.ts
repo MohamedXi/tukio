@@ -12,17 +12,8 @@ type AssertEqual<A, B> = Equals<A, B> extends true ? true : never;
 
 describe('Token type narrowing', () => {
   it('BrandShade narrows to "50" | "100" | ... | "900"', () => {
-    type ExpectedShades =
-      | '50'
-      | '100'
-      | '200'
-      | '300'
-      | '400'
-      | '500'
-      | '600'
-      | '700'
-      | '800'
-      | '900';
+    // colors.brand uses numeric keys → BrandShade is a union of number literals
+    type ExpectedShades = 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
     const _check: AssertEqual<BrandShade, ExpectedShades> = true;
     expect(_check).toBe(true);
   });

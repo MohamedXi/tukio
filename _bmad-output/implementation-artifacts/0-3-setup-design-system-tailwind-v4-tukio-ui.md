@@ -1,6 +1,6 @@
 # Story 0.3: Setup design system Tailwind v4 (theme.css + tokens TS + globals.css) in @tukio/ui
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -375,6 +375,35 @@ Status: review
   - [x] 12.5 — `pnpm lint && pnpm typecheck && pnpm test` à la racine → tous passent (les nouveaux tests `@tukio/ui` + lint rule `tukio/no-barrel-import-ui` apparaissent dans les outputs)
   - [x] 12.6 — Lighthouse `apps/public` mobile : `LCP < 2,5 s`, `INP < 200 ms`, `CLS < 0,1`, perf score ≥ 90 (cf. Task 9.3)
   - [x] 12.7 — Commit avec message `feat(ui): initialize design system terracotta — theme.css, tokens TS, globals.css, fonts via next/font, Stripe theme, lint rule no-barrel-ui` — Story 0.3 done
+
+### Review Findings
+
+> Code review — 2026-05-09 | Sources: Blind Hunter · Edge Case Hunter · Acceptance Auditor
+
+#### Decision Needed
+
+- [x] [Review][Decision] `shadows.ts` key naming — renommé `default` → `shadow` pour cohérence CSS↔TS (`shadows.shadow` ↔ `--shadow`). [packages/ui/src/tokens/shadows.ts]
+
+#### Patches
+
+- [x] [Review][Patch] `lang="fr"` hardcodé dans les 4 layouts — corrigé : async layout + `await params` + `lang={locale}` [apps/{public,customer,seller,admin}/src/app/[locale]/layout.tsx]
+- [x] [Review][Patch] `page.test.tsx` assert "Tukio Public" — corrigé : assertion mise à jour → "Tukio" [apps/public/src/app/[locale]/page.test.tsx:7]
+- [x] [Review][Patch] `ExportNamedDeclaration` handler lint rule manque `exportKind === 'type'` guard — corrigé [tools/eslint-plugin-tukio/src/rules/no-barrel-import-ui.js]
+- [x] [Review][Patch] Smoke files AC4 manquants — créés dans les 4 apps [apps/{public,customer,seller,admin}/src/lib/stripe-theme.ts]
+- [x] [Review][Patch] `tokens-css-sync.spec.ts` coverage partielle — étendu : shadows, breakpoints, typography ajoutés [packages/ui/src/tokens/__tests__/tokens-css-sync.spec.ts]
+- [x] [Review][Patch] `moz-osx-font-smoothing: grayscale` absent du reset `:root` — ajouté [packages/ui/src/styles/globals.css]
+
+#### Deferred
+
+- [x] [Review][Defer] Full-height flex shell `min-h-full flex flex-col` retiré de `<body>` [apps/*/layout.tsx] — deferred, décision intentionnelle pour les apps placeholder, les pages gèrent leur propre hauteur
+- [x] [Review][Defer] `h5`, `h6` absents du heading reset [packages/ui/src/styles/globals.css] — deferred, spec AC3 définit explicitement h1-h4 uniquement
+- [x] [Review][Defer] `a { text-decoration: none; color: inherit }` WCAG 1.4.1 [packages/ui/src/styles/globals.css] — deferred, requis par spec AC3, tradeoff connu, à adresser avec composants Story 0.4+
+- [x] [Review][Defer] `--animate-modal-enter` / `--animate-shimmer` absents de `@theme{}` (pas de utility class Tailwind) [packages/ui/src/styles/theme.css] — deferred, spec AC1 ne spécifie que `--animate-typing`; les autres keyframes sont pour usage manuel CSS futur
+- [x] [Review][Defer] `--breakpoint-xs: 0px` always-active [packages/ui/src/styles/theme.css] — deferred, spécifié AC1, tradeoff sémantique à documenter pour Stories 0.4+
+- [x] [Review][Defer] Fraunces `weight: 'variable'` au lieu du weight array [apps/*/layout.tsx] — deferred, déviation documentée (Dev Agent Record), forcée par Next.js validation
+- [x] [Review][Defer] `tsd` absent des devDependencies [packages/ui/package.json] — deferred, alternative inline `AssertEqual` choisie intentionnellement (valide per spec "tsd ou expect-type")
+- [x] [Review][Defer] Bouton placeholder sans `onClick` [apps/public/src/app/[locale]/page.tsx] — deferred, placeholder cosmétique Lighthouse, remplacé Story 0.4+
+- [x] [Review][Defer] `text-wrap: balance/pretty` support navigateur partiel [packages/ui/src/styles/globals.css] — deferred, spec l'exige, progressive enhancement acceptable
 
 ## Dev Notes
 

@@ -2,6 +2,11 @@
    Shared entry point — apps import via `@import "@tukio/ui/styles/globals.css";` */
 
 @import 'tailwindcss';
+/* Explicit source scan: Tailwind v4 ignores node_modules (symlinked workspace packages).
+   @source forces scanning of @tukio/ui component/util files for structural utility classes
+   (inline-flex, border, font-medium, rounded-full, etc.) that are not auto-generated from @theme. */
+@source "../components/**/*.{tsx,ts}";
+@source "../utils/**/*.{ts}";
 @import './theme.css';
 
 /* ─── Reset léger + base styles ───────────────────────────────── */
@@ -12,6 +17,7 @@
   background: var(--color-cream-50);
   font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 

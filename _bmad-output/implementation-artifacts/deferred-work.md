@@ -21,3 +21,15 @@
 - **D6** — Lint rule `tukio/event-naming` couvre uniquement les `Property` AST nodes. N'attrape pas template literals, `publish('event')`, `subscribe('event')`, `@Subject('event')`. À étendre en Story 0.7 quand le wrapper NATS est livré.
 - **D7** — `RegisterCustomerSchema.password` n'a que `min(12).max(128)`, pas de complexité (regex caractères spéciaux/chiffres) ni normalisation NFKC. À durcir en Epic 1 (Story 1.2 customer registration).
 - **D8** — `@tukio/contracts` expose ses sources `.ts` directement via `exports` field. Fonctionne sous bundler (Next.js, Vitest) mais Node ne peut pas exécuter `.ts` sans loader. Story 0.6 ajoutera un script `build` qui émet `dist/` + mettra à jour `exports` pour pointer vers `dist/` quand les services NestJS commenceront à consommer au runtime.
+
+## Deferred from: code review of 0-3-setup-design-system-tailwind-v4-tukio-ui (2026-05-09)
+
+- **W1** — Full-height flex shell `min-h-full flex flex-col` retiré de `<body>` (apps/*/layout.tsx). Décision intentionnelle pour les apps placeholder ; les pages gèrent leur propre hauteur (`min-h-screen`). À revisiter si un layout composite a besoin d'un shell fixe.
+- **W2** — `h5`, `h6` absents du heading reset globals.css. Spec AC3 définit h1-h4 uniquement. À inclure explicitement si des composants Story 0.4+ utilisent h5/h6.
+- **W3** — `a { text-decoration: none; color: inherit }` WCAG 1.4.1 (globals.css). Requis par spec AC3, tradeoff connu. Chaque composant doit restaurer le soulignement ou un contraste suffisant. À documenter dans la contribution guide Story 0.4.
+- **W4** — `--animate-modal-enter` / `--animate-shimmer` absents de `@theme{}` — pas de utility class Tailwind générée. Keyframes définis pour usage manuel CSS direct. Ajouter `--animate-*` en Story 0.5 quand les patterns consomment ces animations.
+- **W5** — `--breakpoint-xs: 0px` always-active (theme.css + breakpoints.ts). Spécifié AC1. Tradeoff sémantique : `xs:` utility = toujours vrai. Documenter dans le guide tokens Story 0.4 : "xs: base mobile — pas de guard min-width".
+- **W6** — Fraunces `weight: 'variable'` au lieu du weight array (apps/*/layout.tsx). Déviation documentée dans le Dev Agent Record, forcée par Next.js validation (axes + weight array incompatibles). Valide techniquement.
+- **W7** — `tsd` absent des devDependencies (packages/ui/package.json). Alternative inline `AssertEqual<A, B>` choisie. Équivalent fonctionnel per spec "tsd ou expect-type".
+- **W8** — Bouton placeholder sans `onClick` (apps/public/page.tsx). Placeholder cosmétique pour Lighthouse. Remplacé par vrai composant Button en Story 0.4.
+- **W9** — `text-wrap: balance/pretty` support partiel (~75% / Chrome-only). Requis par spec. Progressive enhancement acceptable pour Sprint 0 placeholder.

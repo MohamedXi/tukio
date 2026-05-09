@@ -47,8 +47,9 @@ module.exports = {
         }
       },
       // Covers: export { X } from '@tukio/ui'
+      // Type-only re-exports are allowed: export type { BrandShade } from '@tukio/ui'
       ExportNamedDeclaration(node) {
-        if (node.source && node.source.value === BARREL_SOURCE) {
+        if (node.source && node.source.value === BARREL_SOURCE && node.exportKind !== 'type') {
           context.report({ node, messageId: 'barrelImport' });
         }
       },
