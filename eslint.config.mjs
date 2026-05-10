@@ -66,6 +66,8 @@ export default [
       'tukio/event-naming': 'error',
       // Anti-barrel imports from @tukio/contracts (warn at Sprint 0, error in Story 0.11)
       'tukio/no-barrel-import-contracts': 'warn',
+      // No direct NATS publish in use cases — must go via OutboxPublisher (warn → error Story 0.11)
+      'tukio/no-direct-event-publish': 'warn',
       // Anti-barrel imports from @tukio/ui (warn at Sprint 0, error in Story 0.11)
       'tukio/no-barrel-import-ui': 'warn',
     },

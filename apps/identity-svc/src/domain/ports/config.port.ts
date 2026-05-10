@@ -14,6 +14,8 @@ export interface KeycloakConfig {
 
 export interface NatsConfig {
   url: string;
+  streamName: string;
+  replicas: number;
 }
 
 export interface IConfigService {

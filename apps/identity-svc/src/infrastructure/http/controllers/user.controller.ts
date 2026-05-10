@@ -7,7 +7,7 @@ import {
   type UserProfileResponseDto,
 } from '../dtos/user-profile-response.dto.js';
 
-@Controller('/v1/users')
+@Controller('users')
 export class UserController {
   constructor(
     @Inject(UseCasesProxyModule.GET_USER_PROFILE_USECASES_PROXY)

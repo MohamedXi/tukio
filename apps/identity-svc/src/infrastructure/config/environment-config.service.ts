@@ -57,6 +57,8 @@ export class EnvironmentConfigService implements IConfigService {
   getNatsConfig(): NatsConfig {
     return {
       url: this.get('NATS_URL'),
+      streamName: this.get('NATS_STREAM_NAME'),
+      replicas: this.get('NATS_REPLICAS'),
     };
   }
 }

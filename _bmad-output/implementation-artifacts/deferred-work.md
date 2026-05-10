@@ -48,3 +48,12 @@
 - **D10** — AC9: Scripts migration `tsx ./node_modules/typeorm/cli.js` vs `typeorm-ts-node-esm` — fonctionnellement équivalent, à standardiser lors de la Story 0.11 CI setup.
 - **D11** — AC12: `jest.config.ts` sans threshold `infrastructure/` (couvert par `pnpm test:e2e:cov`) — threshold séparé pragmatique, à consolider en mono-run Jest dans Story 0.11.
 - **D12** — AC13: `tokens.template.ts` sentinel/fichier virtuel dans `REPLICATE_FILES` — fonctionne mais design inhabituel ; remplacer par un vrai fichier template si le script est étendu.
+
+## Deferred from: code review of 0-7-setup-tukio-messaging-nats-jetstream (2026-05-10)
+
+- **D1** — `NatsJetStreamClient.subscribe()` retourne void sans handle de stop — aucun moyen d'arrêter la consumer loop ou de détecter son arrêt silencieux. Architectural decision Sprint 0 ; à adresser avec lifecycle management des consumers (Epic 5+, notification-svc).
+- **D2** — LISTEN failure silencieuse : aucun log/metric si `LISTEN tukio_outbox_new` échoue au boot — relay tombe en polling-only sans signal opérateur. Story 0.12 (structured logging + Alertmanager).
+- **D3** — DLQ = status `failed` en DB uniquement, pas un subject NATS actif — AC4 et commentaire TODO code explicitent que DLQ routing (stream `tukio.dlq`) est out-of-scope Story 0.7. Story 0.12.
+- **D4** — `notifyPool` optionnel : si wired, `pg_notify` fire avant commit tx externe → spurious wakeups (pas de corruption, relay SKIP LOCKED couvre). Code path mort car `OUTBOX_NOTIFY_POOL` jamais wired actuellement. À corriger si pool activé.
+- **D5** — Race onModuleDestroy : pollTimer peut firer entre start de destroy et clearInterval — fenêtre ~0ms en Node.js event loop, SKIP LOCKED + NATS drain couvrent la cohérence. Très faible impact.
+- **D6** — DB password visible dans options du module si `DEBUG=*` NestJS — convient Sprint 0 (pas de prod). Story 0.12 secrets management (Vault / K8s sealed secrets).

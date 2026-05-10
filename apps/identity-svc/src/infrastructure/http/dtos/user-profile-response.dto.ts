@@ -6,9 +6,9 @@ import type { UserProfile } from '../../../domain/model/user-profile.aggregate.j
 // in sync with the gateway-api OpenAPI surface.
 export const UserProfileResponseSchema = z
   .object({
-    id: z.string().uuid(),
-    keycloakUserId: z.string().uuid(),
-    email: z.string().email(),
+    id: z.uuid(),
+    keycloakUserId: z.uuid(),
+    email: z.email(),
     firstName: z.string().min(1).max(80),
     lastName: z.string().min(1).max(80),
     role: z.enum([
@@ -19,9 +19,9 @@ export const UserProfileResponseSchema = z
       'admin-super',
     ]),
     locale: z.enum(['fr', 'en']),
-    createdAt: z.string().datetime(),
-    updatedAt: z.string().datetime(),
-    deletedAt: z.string().datetime().nullable(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+    deletedAt: z.iso.datetime().nullable(),
   })
   .strict();
 
