@@ -48,7 +48,7 @@ development_status:
   0-2-initialize-tukio-contracts-envelope-nats-events-dtos: done
   0-3-setup-design-system-tailwind-v4-tukio-ui: done
   0-4-implement-atomic-components-tukio-ui: done
-  0-5-implement-composite-patterns-tukio-ui: ready-for-dev
+  0-5-implement-composite-patterns-tukio-ui: done
   0-6-pattern-pretre-scaffolding-template-identity-svc: ready-for-dev
   0-7-setup-tukio-messaging-nats-jetstream: ready-for-dev
   0-8-setup-tukio-auth-backend-frontend: ready-for-dev
