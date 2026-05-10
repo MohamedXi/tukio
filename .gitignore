@@ -8,6 +8,7 @@ dist/
 out/
 build/
 coverage/
+coverage-e2e/
 .turbo/
 
 # Logs

@@ -1,5 +1,5 @@
 # generated: 2026-05-09
-# last_updated: 2026-05-09 (Story 3.6 ready-for-dev — edit/unpublish/delete listing flow ; Story 0.4 review)
+# last_updated: 2026-05-10 (Story 3.8 ready-for-dev — search frontend SearchBar 3 fields ; Story 0.6 review)
 # project: tukio.one
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09
-last_updated: 2026-05-09
+last_updated: 2026-05-10
 project: tukio.one
 project_key: NOKEY
 tracking_system: file-system
@@ -49,7 +49,7 @@ development_status:
   0-3-setup-design-system-tailwind-v4-tukio-ui: done
   0-4-implement-atomic-components-tukio-ui: done
   0-5-implement-composite-patterns-tukio-ui: done
-  0-6-pattern-pretre-scaffolding-template-identity-svc: ready-for-dev
+  0-6-pattern-pretre-scaffolding-template-identity-svc: done
   0-7-setup-tukio-messaging-nats-jetstream: ready-for-dev
   0-8-setup-tukio-auth-backend-frontend: ready-for-dev
   0-9-setup-tukio-api-client-i18n-client-testing: ready-for-dev
@@ -93,8 +93,8 @@ development_status:
   3-4-photo-upload-cloudflare-images-integration: ready-for-dev
   3-5-listing-publish-workflow-auto-publish-median-price: ready-for-dev
   3-6-edit-unpublish-delete-listing-flow: ready-for-dev
-  3-7-meilisearch-index-per-locale-outbox-sync: backlog
-  3-8-search-frontend-barre-recherche: backlog
+  3-7-meilisearch-index-per-locale-outbox-sync: ready-for-dev
+  3-8-search-frontend-barre-recherche: ready-for-dev
   3-9-filters-facettes-search-results-page: backlog
   3-10-listing-detail-public-page: backlog
   3-11-pro-public-profile-page: backlog

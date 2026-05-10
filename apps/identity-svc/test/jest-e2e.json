@@ -1,9 +1,31 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "..",
   "testEnvironment": "node",
-  "testRegex": ".e2e-spec.ts$",
+  "testRegex": "test/.*\\.e2e-spec\\.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "<rootDir>/tsconfig.json" }]
+  },
+  "moduleNameMapper": {
+    "^(\\.{1,2}/.*)\\.js$": "$1",
+    "^@tukio/contracts$": "<rootDir>/../../packages/contracts/src/index.ts",
+    "^@tukio/contracts/(.*)\\.js$": "<rootDir>/../../packages/contracts/src/$1.ts",
+    "^@tukio/contracts/(.*)$": "<rootDir>/../../packages/contracts/src/$1.ts"
+  },
+  "collectCoverageFrom": [
+    "src/infrastructure/**/*.ts",
+    "!src/infrastructure/**/*.module.ts",
+    "!src/infrastructure/**/*.entity.ts",
+    "!src/infrastructure/**/migrations/**",
+    "!src/main.ts"
+  ],
+  "coverageDirectory": "coverage-e2e",
+  "coverageThreshold": {
+    "global": {
+      "lines": 50,
+      "functions": 50,
+      "branches": 45,
+      "statements": 50
+    }
   }
 }
