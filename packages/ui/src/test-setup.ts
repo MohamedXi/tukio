@@ -8,3 +8,8 @@ expect.extend(toHaveNoViolations);
 
 // Explicit cleanup since globals: false disables auto-cleanup
 afterEach(cleanup);
+
+// jsdom does not implement scrollIntoView — mock it for components that auto-scroll
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function () {};
+}

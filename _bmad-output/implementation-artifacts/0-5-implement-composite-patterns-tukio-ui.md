@@ -1,6 +1,6 @@
 # Story 0.5: Implement 12 composite patterns (@tukio/ui/patterns) extracted from Cloud Design bundle
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -182,15 +182,15 @@ Status: ready-for-dev
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Installer les peer deps additionnelles** (AC: #18)
-  - [ ] 1.1 — `pnpm --filter=@tukio/ui add @radix-ui/react-slider @radix-ui/react-popover @radix-ui/react-checkbox date-fns --save-peer`
-  - [ ] 1.2 — Pour chaque app `apps/{public,customer,seller,admin}` : `pnpm --filter=<app> add @radix-ui/react-slider @radix-ui/react-popover @radix-ui/react-checkbox date-fns` (résolution peer warning)
-  - [ ] 1.3 — Mettre à jour `packages/ui/package.json` `exports` avec les 13 entrées (12 patterns + `logo`) — cf. AC17
+- [x] **Task 1 — Installer les peer deps additionnelles** (AC: #18)
+  - [x] 1.1 — `pnpm --filter=@tukio/ui add @radix-ui/react-slider @radix-ui/react-popover @radix-ui/react-checkbox date-fns --save-peer`
+  - [x] 1.2 — Pour chaque app `apps/{public,customer,seller,admin}` : `pnpm --filter=<app> add @radix-ui/react-slider @radix-ui/react-popover @radix-ui/react-checkbox date-fns` (résolution peer warning)
+  - [x] 1.3 — Mettre à jour `packages/ui/package.json` `exports` avec les 13 entrées (12 patterns + `logo`) — cf. AC17
 
-- [ ] **Task 2 — Configurer Playwright pour le package** (AC: #15)
-  - [ ] 2.1 — `pnpm --filter=@tukio/ui add -D @playwright/test @axe-core/playwright`
-  - [ ] 2.2 — `pnpm --filter=@tukio/ui exec playwright install chromium` (download chrome headless uniquement — pas Firefox/WebKit pour MVP, vitesse CI)
-  - [ ] 2.3 — Créer `packages/ui/playwright.config.ts` :
+- [x] **Task 2 — Configurer Playwright pour le package** (AC: #15)
+  - [x] 2.1 — `pnpm --filter=@tukio/ui add -D @playwright/test @axe-core/playwright`
+  - [x] 2.2 — `pnpm --filter=@tukio/ui exec playwright install chromium` (download chrome headless uniquement — pas Firefox/WebKit pour MVP, vitesse CI)
+  - [x] 2.3 — Créer `packages/ui/playwright.config.ts` :
     ```ts
     import { defineConfig, devices } from '@playwright/test';
     export default defineConfig({
@@ -203,105 +203,105 @@ Status: ready-for-dev
       webServer: { command: 'pnpm --filter=public dev', url: 'http://localhost:3000', reuseExistingServer: !process.env.CI, timeout: 60000 },
     });
     ```
-  - [ ] 2.4 — Ajouter scripts `packages/ui/package.json` : `"test:e2e": "playwright test"`, `"test:e2e:ui": "playwright test --ui"`
+  - [x] 2.4 — Ajouter scripts `packages/ui/package.json` : `"test:e2e": "playwright test"`, `"test:e2e:ui": "playwright test --ui"`
 
-- [ ] **Task 3 — Implémenter `<Logo>` + `<LogoMark>` (prereq pour TopBar/Footer)** (AC: #14)
-  - [ ] 3.1 — Créer `packages/ui/src/patterns/Logo/Logo.tsx` adapté du bundle `_shared.jsx` lignes 76-97 (wordmark Fraunces + arch SVG terracotta)
-  - [ ] 3.2 — Créer `packages/ui/src/patterns/Logo/LogoMark.tsx` : juste le SVG arch (size + color props)
-  - [ ] 3.3 — `Logo.types.ts` : `LogoProps` avec `size?: number`, `mono?: boolean`, `showDomain?: boolean`, `color?: string`
-  - [ ] 3.4 — `Logo.spec.tsx` : test render variants (default, mono, showDomain=false), test color prop, axe ≥ 0 violations
-  - [ ] 3.5 — `index.ts` re-export `Logo`, `LogoMark`, types
+- [x] **Task 3 — Implémenter `<Logo>` + `<LogoMark>` (prereq pour TopBar/Footer)** (AC: #14)
+  - [x] 3.1 — Créer `packages/ui/src/patterns/Logo/Logo.tsx` adapté du bundle `_shared.jsx` lignes 76-97 (wordmark Fraunces + arch SVG terracotta)
+  - [x] 3.2 — Créer `packages/ui/src/patterns/Logo/LogoMark.tsx` : juste le SVG arch (size + color props)
+  - [x] 3.3 — `Logo.types.ts` : `LogoProps` avec `size?: number`, `mono?: boolean`, `showDomain?: boolean`, `color?: string`
+  - [x] 3.4 — `Logo.spec.tsx` : test render variants (default, mono, showDomain=false), test color prop, axe ≥ 0 violations
+  - [x] 3.5 — `index.ts` re-export `Logo`, `LogoMark`, types
 
-- [ ] **Task 4 — Implémenter `<TopBar>` 4 variants + sub-components** (AC: #2)
-  - [ ] 4.1 — `TopBar.types.ts` : `TopBarProps` discriminé sur `variant` (`'public' | 'customer' | 'seller' | 'admin'`), labels prop typé strict (interfaces dérivées par variant)
-  - [ ] 4.2 — `TopBar.tsx` : switch/case par variant qui render le bon layout
-  - [ ] 4.3 — `<TopBar.SubNav>` sub-component (extracted `_shared.jsx` `ClientSubNav`) : pattern Compound Component
-  - [ ] 4.4 — `<TopBar.LocaleSwitcher>` sub-component : utilise `@radix-ui/react-popover` (cf. AC18) pour dropdown FR/EN
-  - [ ] 4.5 — `<ProSidebar>` (variant `seller`) : extracted `_shared.jsx` lignes 343-409, sticky left, charcoal-700 bg, badges count
-  - [ ] 4.6 — Tests Vitest : 4 variants × axe call + interactions (locale switcher click, pro sidebar nav click)
-  - [ ] 4.7 — `index.ts` re-export `TopBar` (avec sub-components attachés via `TopBar.SubNav = ...`, `TopBar.LocaleSwitcher = ...`)
+- [x] **Task 4 — Implémenter `<TopBar>` 4 variants + sub-components** (AC: #2)
+  - [x] 4.1 — `TopBar.types.ts` : `TopBarProps` discriminé sur `variant` (`'public' | 'customer' | 'seller' | 'admin'`), labels prop typé strict (interfaces dérivées par variant)
+  - [x] 4.2 — `TopBar.tsx` : switch/case par variant qui render le bon layout
+  - [x] 4.3 — `<TopBar.SubNav>` sub-component (extracted `_shared.jsx` `ClientSubNav`) : pattern Compound Component
+  - [x] 4.4 — `<TopBar.LocaleSwitcher>` sub-component : utilise `@radix-ui/react-popover` (cf. AC18) pour dropdown FR/EN
+  - [x] 4.5 — `<ProSidebar>` (variant `seller`) : extracted `_shared.jsx` lignes 343-409, sticky left, charcoal-700 bg, badges count
+  - [x] 4.6 — Tests Vitest : 4 variants × axe call + interactions (locale switcher click, pro sidebar nav click)
+  - [x] 4.7 — `index.ts` re-export `TopBar` (avec sub-components attachés via `TopBar.SubNav = ...`, `TopBar.LocaleSwitcher = ...`)
 
-- [ ] **Task 5 — Implémenter `<Footer>`** (AC: #3)
-  - [ ] 5.1 — `Footer.tsx` adapté du bundle `home.jsx` lignes 329-359 (grid + Logo + columns + bottom legal)
-  - [ ] 5.2 — Responsive : `grid-cols-2` puis `grid-cols-1` sur mobile (Tailwind breakpoints `md:` `sm:`)
-  - [ ] 5.3 — Tests Vitest : test render avec columns dynamiques, axe ≥ 0 violations
+- [x] **Task 5 — Implémenter `<Footer>`** (AC: #3)
+  - [x] 5.1 — `Footer.tsx` adapté du bundle `home.jsx` lignes 329-359 (grid + Logo + columns + bottom legal)
+  - [x] 5.2 — Responsive : `grid-cols-2` puis `grid-cols-1` sur mobile (Tailwind breakpoints `md:` `sm:`)
+  - [x] 5.3 — Tests Vitest : test render avec columns dynamiques, axe ≥ 0 violations
 
-- [ ] **Task 6 — Implémenter `<EmptyState>` 7 variants** (AC: #10)
-  - [ ] 6.1 — `EmptyState.types.ts` : `EmptyStateVariant = 'search-no-results' | 'cart-empty' | 'customer-no-bookings' | 'seller-no-bookings' | 'seller-no-services' | 'messages-empty' | 'reviews-empty'`, `EmptyStateProps`
-  - [ ] 6.2 — `EmptyState.tsx` : map variant → icon Lucide + default labels (EN), render section centrée
-  - [ ] 6.3 — Spec : test 7 variants × axe + test override `icon` prop + test variant `reviews-empty` ne render PAS de CTA
+- [x] **Task 6 — Implémenter `<EmptyState>` 7 variants** (AC: #10)
+  - [x] 6.1 — `EmptyState.types.ts` : `EmptyStateVariant = 'search-no-results' | 'cart-empty' | 'customer-no-bookings' | 'seller-no-bookings' | 'seller-no-services' | 'messages-empty' | 'reviews-empty'`, `EmptyStateProps`
+  - [x] 6.2 — `EmptyState.tsx` : map variant → icon Lucide + default labels (EN), render section centrée
+  - [x] 6.3 — Spec : test 7 variants × axe + test override `icon` prop + test variant `reviews-empty` ne render PAS de CTA
 
-- [ ] **Task 7 — Implémenter `<ErrorPage>` 3 variants** (AC: #11)
-  - [ ] 7.1 — `ErrorPage.tsx` : 3 variants (404, 500, maintenance), 2 CTAs
-  - [ ] 7.2 — Spec : test 3 variants, test eventId display sur 500, axe
+- [x] **Task 7 — Implémenter `<ErrorPage>` 3 variants** (AC: #11)
+  - [x] 7.1 — `ErrorPage.tsx` : 3 variants (404, 500, maintenance), 2 CTAs
+  - [x] 7.2 — Spec : test 3 variants, test eventId display sur 500, axe
 
-- [ ] **Task 8 — Implémenter `<StepIndicator>` (horizontal + vertical)** (AC: #12)
-  - [ ] 8.1 — `StepIndicator.tsx` : horizontal default, vertical via `orientation` prop
-  - [ ] 8.2 — `aria-current="step"` sur l'étape active, `<ol>` + `<li>` + `<button>` cliquable si validé et `onStepClick` fourni
-  - [ ] 8.3 — Spec : test 3 states (validé/active/à venir), test keyboard click via `userEvent.keyboard('{Enter}')`, axe
+- [x] **Task 8 — Implémenter `<StepIndicator>` (horizontal + vertical)** (AC: #12)
+  - [x] 8.1 — `StepIndicator.tsx` : horizontal default, vertical via `orientation` prop
+  - [x] 8.2 — `aria-current="step"` sur l'étape active, `<ol>` + `<li>` + `<button>` cliquable si validé et `onStepClick` fourni
+  - [x] 8.3 — Spec : test 3 states (validé/active/à venir), test keyboard click via `userEvent.keyboard('{Enter}')`, axe
 
-- [ ] **Task 9 — Implémenter `<ConversationThread>` + sub-components** (AC: #4)
-  - [ ] 9.1 — `ConversationThread.tsx` : layout chat, bulles à droite/gauche selon `senderId === currentUserId`, auto-scroll, `aria-live="polite"`
-  - [ ] 9.2 — Sub-components : `<ConversationThread.Bubble>`, `<ConversationThread.Composer>` (input + send button)
-  - [ ] 9.3 — Indicator typing : 3 dots animés via `tk-typing` keyframes (Story 0.3) + `aria-label`
-  - [ ] 9.4 — Spec : test bubbles alignment, test auto-scroll quand nouveau message, test live region annonces, test composer Enter/Shift+Enter, axe
+- [x] **Task 9 — Implémenter `<ConversationThread>` + sub-components** (AC: #4)
+  - [x] 9.1 — `ConversationThread.tsx` : layout chat, bulles à droite/gauche selon `senderId === currentUserId`, auto-scroll, `aria-live="polite"`
+  - [x] 9.2 — Sub-components : `<ConversationThread.Bubble>`, `<ConversationThread.Composer>` (input + send button)
+  - [x] 9.3 — Indicator typing : 3 dots animés via `tk-typing` keyframes (Story 0.3) + `aria-label`
+  - [x] 9.4 — Spec : test bubbles alignment, test auto-scroll quand nouveau message, test live region annonces, test composer Enter/Shift+Enter, axe
 
-- [ ] **Task 10 — Implémenter `<ReviewsDisplay>` + sub-components** (AC: #5)
-  - [ ] 10.1 — `ReviewsDisplay.tsx` : compose `<Stars>` (Story 0.4) summary + breakdown optionnel + liste reviews paginée (load more)
-  - [ ] 10.2 — Sub-components : `<ReviewsDisplay.Summary>`, `<ReviewsDisplay.Breakdown>`, `<ReviewsDisplay.List>`, `<ReviewsDisplay.Item>`
-  - [ ] 10.3 — Empty case : si `reviews.length === 0`, render `<EmptyState variant="reviews-empty">`
-  - [ ] 10.4 — Spec : test load more, test empty case, axe
+- [x] **Task 10 — Implémenter `<ReviewsDisplay>` + sub-components** (AC: #5)
+  - [x] 10.1 — `ReviewsDisplay.tsx` : compose `<Stars>` (Story 0.4) summary + breakdown optionnel + liste reviews paginée (load more)
+  - [x] 10.2 — Sub-components : `<ReviewsDisplay.Summary>`, `<ReviewsDisplay.Breakdown>`, `<ReviewsDisplay.List>`, `<ReviewsDisplay.Item>`
+  - [x] 10.3 — Empty case : si `reviews.length === 0`, render `<EmptyState variant="reviews-empty">`
+  - [x] 10.4 — Spec : test load more, test empty case, axe
 
-- [ ] **Task 11 — Implémenter `<PricingDisplay>` (compact + detailed)** (AC: #6)
-  - [ ] 11.1 — `PricingDisplay.tsx` : `<dl>` avec items + total séparé, font-tabular-nums, prop `formatMoney` obligatoire
-  - [ ] 11.2 — Variants `compact` + `detailed`
-  - [ ] 11.3 — Spec : test format Money via stub formatter, test compact vs detailed, axe
+- [x] **Task 11 — Implémenter `<PricingDisplay>` (compact + detailed)** (AC: #6)
+  - [x] 11.1 — `PricingDisplay.tsx` : `<dl>` avec items + total séparé, font-tabular-nums, prop `formatMoney` obligatoire
+  - [x] 11.2 — Variants `compact` + `detailed`
+  - [x] 11.3 — Spec : test format Money via stub formatter, test compact vs detailed, axe
 
-- [ ] **Task 12 — Implémenter `<AvailabilityCalendar>` (extracted service.jsx)** (AC: #7)
-  - [ ] 12.1 — `AvailabilityCalendar.tsx` : utilise `date-fns` (`startOfMonth`, `endOfMonth`, `eachDayOfInterval`, `getDay`, `format`) pour calculer la grille du mois
-  - [ ] 12.2 — `role="grid"`, navigation clavier complète (arrow keys, Home/End, PageUp/PageDown, Enter, Escape)
-  - [ ] 12.3 — Sub-components : `<AvailabilityCalendar.Header>` (mois + nav buttons), `<AvailabilityCalendar.Day>`
-  - [ ] 12.4 — Range selection optionnelle via prop `range`
-  - [ ] 12.5 — Spec : test grid layout (28-31 jours), test arrow keys nav (focus déplacement), test Enter sélectionne, test PageUp change mois, axe
+- [x] **Task 12 — Implémenter `<AvailabilityCalendar>` (extracted service.jsx)** (AC: #7)
+  - [x] 12.1 — `AvailabilityCalendar.tsx` : utilise `date-fns` (`startOfMonth`, `endOfMonth`, `eachDayOfInterval`, `getDay`, `format`) pour calculer la grille du mois
+  - [x] 12.2 — `role="grid"`, navigation clavier complète (arrow keys, Home/End, PageUp/PageDown, Enter, Escape)
+  - [x] 12.3 — Sub-components : `<AvailabilityCalendar.Header>` (mois + nav buttons), `<AvailabilityCalendar.Day>`
+  - [x] 12.4 — Range selection optionnelle via prop `range`
+  - [x] 12.5 — Spec : test grid layout (28-31 jours), test arrow keys nav (focus déplacement), test Enter sélectionne, test PageUp change mois, axe
 
-- [ ] **Task 13 — Implémenter `<FilterSidebar>` (desktop + mobile drawer)** (AC: #8)
-  - [ ] 13.1 — `FilterSidebar.tsx` : map `groups` array → `<fieldset>` + `<legend>` par groupe, render input selon type (checkbox/radio/range/toggle)
-  - [ ] 13.2 — Range filter via `@radix-ui/react-slider` (slider 2-handles)
-  - [ ] 13.3 — Checkbox filter via `@radix-ui/react-checkbox` (style cohérent custom)
-  - [ ] 13.4 — Mobile drawer : toggle button qui ouvre `<Modal>` (Story 0.4) plein-écran avec FilterSidebar dedans
-  - [ ] 13.5 — CTA bottom : "Voir N résultats" + "Effacer tout"
-  - [ ] 13.6 — Spec : test 4 types de filtres, test mobile toggle ouvre Modal, axe (a11y groups + slider)
+- [x] **Task 13 — Implémenter `<FilterSidebar>` (desktop + mobile drawer)** (AC: #8)
+  - [x] 13.1 — `FilterSidebar.tsx` : map `groups` array → `<fieldset>` + `<legend>` par groupe, render input selon type (checkbox/radio/range/toggle)
+  - [x] 13.2 — Range filter via `@radix-ui/react-slider` (slider 2-handles)
+  - [x] 13.3 — Checkbox filter via `@radix-ui/react-checkbox` (style cohérent custom)
+  - [x] 13.4 — Mobile drawer : toggle button qui ouvre `<Modal>` (Story 0.4) plein-écran avec FilterSidebar dedans
+  - [x] 13.5 — CTA bottom : "Voir N résultats" + "Effacer tout"
+  - [x] 13.6 — Spec : test 4 types de filtres, test mobile toggle ouvre Modal, axe (a11y groups + slider)
 
-- [ ] **Task 14 — Implémenter `<FileUpload>` (drag & drop + preview)** (AC: #9)
-  - [ ] 14.1 — `FileUpload.tsx` : drop zone `role="button" tabIndex={0}` + `<input type="file" hidden>`, dual interaction click/drop
-  - [ ] 14.2 — Validation client : type (regex `accept`), size (`maxSize`), count (`maxFiles`)
-  - [ ] 14.3 — Preview par fichier : image preview via `URL.createObjectURL(file)` (révoqué au cleanup), icon Lucide pour PDF/autres, ProgressBar si `uploadProgress[fileName]`
-  - [ ] 14.4 — Spec : test drag & drop (simuler `dragover`, `drop` events), test validation rejette types non acceptés, test remove button, axe
+- [x] **Task 14 — Implémenter `<FileUpload>` (drag & drop + preview)** (AC: #9)
+  - [x] 14.1 — `FileUpload.tsx` : drop zone `role="button" tabIndex={0}` + `<input type="file" hidden>`, dual interaction click/drop
+  - [x] 14.2 — Validation client : type (regex `accept`), size (`maxSize`), count (`maxFiles`)
+  - [x] 14.3 — Preview par fichier : image preview via `URL.createObjectURL(file)` (révoqué au cleanup), icon Lucide pour PDF/autres, ProgressBar si `uploadProgress[fileName]`
+  - [x] 14.4 — Spec : test drag & drop (simuler `dragover`, `drop` events), test validation rejette types non acceptés, test remove button, axe
 
-- [ ] **Task 15 — Implémenter `<Map>` placeholder** (AC: #13)
-  - [ ] 15.1 — `Map.tsx` : render `<Placeholder>` (Story 0.4) avec label "Map (V1)" + props définies pour V1+
-  - [ ] 15.2 — Spec : test placeholder render, pas de tests V1 features
+- [x] **Task 15 — Implémenter `<Map>` placeholder** (AC: #13)
+  - [x] 15.1 — `Map.tsx` : render `<Placeholder>` (Story 0.4) avec label "Map (V1)" + props définies pour V1+
+  - [x] 15.2 — Spec : test placeholder render, pas de tests V1 features
 
-- [ ] **Task 16 — Tests Playwright e2e (4 parcours critiques)** (AC: #15)
-  - [ ] 16.1 — Créer `packages/ui/e2e/topbar-footer-emptystate.spec.ts` (parcours #1)
-  - [ ] 16.2 — Créer `packages/ui/e2e/conversation-thread.spec.ts` (parcours #2)
-  - [ ] 16.3 — Créer `packages/ui/e2e/availability-calendar.spec.ts` (parcours #3)
-  - [ ] 16.4 — Créer `packages/ui/e2e/filter-sidebar-mobile.spec.ts` (parcours #4)
-  - [ ] 16.5 — Chaque test : `await page.goto('/')`, render harness via `apps/public/src/app/[locale]/page.tsx` (qui inclut tous les patterns), `injectAxe`, `checkA11y`, assertions interactions
-  - [ ] 16.6 — `pnpm --filter=@tukio/ui test:e2e` passe les 4 tests sans violations axe
+- [x] **Task 16 — Tests Playwright e2e (4 parcours critiques)** (AC: #15)
+  - [x] 16.1 — Créer `packages/ui/e2e/topbar-footer-emptystate.spec.ts` (parcours #1)
+  - [x] 16.2 — Créer `packages/ui/e2e/conversation-thread.spec.ts` (parcours #2)
+  - [x] 16.3 — Créer `packages/ui/e2e/availability-calendar.spec.ts` (parcours #3)
+  - [x] 16.4 — Créer `packages/ui/e2e/filter-sidebar-mobile.spec.ts` (parcours #4)
+  - [x] 16.5 — Chaque test : `await page.goto('/')`, render harness via `apps/public/src/app/[locale]/page.tsx` (qui inclut tous les patterns), `injectAxe`, `checkA11y`, assertions interactions
+  - [x] 16.6 — `pnpm --filter=@tukio/ui test:e2e` passe les 4 tests sans violations axe
 
-- [ ] **Task 17 — Étendre la démo design-system page** (AC: #16)
-  - [ ] 17.1 — Mettre à jour `apps/public/src/app/[locale]/page.tsx` pour render les 12 patterns sous une section "Patterns composites" (placée sous la section "17 atomics" de Story 0.4)
-  - [ ] 17.2 — Pour chaque pattern, render au moins 1 instance principale + variants quand pertinent (TopBar 4 variants, EmptyState 7 variants, StepIndicator horizontal+vertical, ErrorPage 3 variants)
-  - [ ] 17.3 — Tailwind v4 doit detect tous les class-variants (build automatique)
-  - [ ] 17.4 — `pnpm --filter=public build` passe + bundle analyzer montre tree-shaking effectif
+- [x] **Task 17 — Étendre la démo design-system page** (AC: #16)
+  - [x] 17.1 — Mettre à jour `apps/public/src/app/[locale]/page.tsx` pour render les 12 patterns sous une section "Patterns composites" (placée sous la section "17 atomics" de Story 0.4)
+  - [x] 17.2 — Pour chaque pattern, render au moins 1 instance principale + variants quand pertinent (TopBar 4 variants, EmptyState 7 variants, StepIndicator horizontal+vertical, ErrorPage 3 variants)
+  - [x] 17.3 — Tailwind v4 doit detect tous les class-variants (build automatique)
+  - [x] 17.4 — `pnpm --filter=public build` passe + bundle analyzer montre tree-shaking effectif
 
-- [ ] **Task 18 — Tests + lint + commit** (AC: tous)
-  - [ ] 18.1 — `pnpm --filter=@tukio/ui test --coverage` → ≥ 80 % coverage par pattern, axe inline tests passent
-  - [ ] 18.2 — `pnpm --filter=@tukio/ui test:e2e` → 4 parcours Playwright passent
-  - [ ] 18.3 — `pnpm lint && pnpm typecheck` à la racine → tous passent
-  - [ ] 18.4 — `pnpm dev` → 4 apps démarrent, `apps/public` rend les patterns correctement
-  - [ ] 18.5 — Commit `feat(ui): implement 12 composite patterns with Radix slider/popover/checkbox, date-fns, Playwright e2e tests` — Story 0.5 done
+- [x] **Task 18 — Tests + lint + commit** (AC: tous)
+  - [x] 18.1 — `pnpm --filter=@tukio/ui test --coverage` → ≥ 80 % coverage par pattern, axe inline tests passent
+  - [x] 18.2 — `pnpm --filter=@tukio/ui test:e2e` → 4 parcours Playwright passent
+  - [x] 18.3 — `pnpm lint && pnpm typecheck` à la racine → tous passent
+  - [x] 18.4 — `pnpm dev` → 4 apps démarrent, `apps/public` rend les patterns correctement
+  - [x] 18.5 — Commit `feat(ui): implement 12 composite patterns with Radix slider/popover/checkbox, date-fns, Playwright e2e tests` — Story 0.5 done
 
 ## Dev Notes
 
