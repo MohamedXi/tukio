@@ -1,4 +1,4 @@
-import type { Locale } from './Locale';
+import type { Locale } from './Locale.js';
 
 export interface Actor {
   userId: string;

@@ -1,98 +1,89 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# identity-svc
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+User & identity management microservice for Tukio (FR1–17 — registration, authentication context, profile management, RGPD soft-delete). NestJS 11 + Fastify on port `4001`, persisted on Postgres `tukio_identity`.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+This service is the **canonical Pattern Pretre template** (Clean Architecture). All other backend services (`catalog-svc`, `booking-svc`, `order-svc`, `payment-svc`, `messaging-svc`, `review-svc`, `notification-svc`, `media-svc`, `gateway-api`) inherit this exact layout via `infra/scripts/replicate-pretre-structure.sh`.
 
-## Description
+## Pattern Pretre — directory layout
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ pnpm install
+```
+apps/identity-svc/src/
+├─ main.ts                        # bootstrap NestJS Fastify (port 4001)
+├─ app.module.ts                  # imports ConfigurationModule, LoggerModule, TypeOrm, HttpModule
+├─ domain/                        # ZERO I/O lib import (no @nestjs/*, no typeorm, no axios)
+│  ├─ model/                      # aggregates + value objects + enums
+│  │  ├─ user-profile.aggregate.ts
+│  │  ├─ user-role.enum.ts
+│  │  └─ email.value-object.ts
+│  ├─ ports/                      # interfaces ONLY (impls live in infrastructure/)
+│  │  ├─ user-profile.repository.port.ts
+│  │  ├─ keycloak-sync.port.ts          # placeholder — Story 1.1
+│  │  ├─ event-publisher.port.ts        # placeholder — Story 0.7
+│  │  ├─ logger.port.ts
+│  │  ├─ config.port.ts
+│  │  └─ tokens.ts                       # SCREAMING_SNAKE_CASE Symbol DI tokens
+│  ├─ service/                    # domain services (stateless, currently empty)
+│  └─ exception/                  # DomainException base + concrete exceptions
+├─ usecases/                      # 1 file per use case, single .execute() entrypoint
+│  ├─ get-user-profile.usecase.ts
+│  └─ get-user-profile.usecase.spec.ts   # mocks ports, ≥ 90 % coverage
+└─ infrastructure/                # implementations of the ports + framework wiring
+   ├─ persistence/typeorm/        # entity, mapper, repository, DataSource, migrations
+   ├─ messaging/nats/             # IEventPublisher placeholder (Story 0.7)
+   ├─ external/keycloak/          # IKeycloakSync placeholder (Story 1.1)
+   ├─ http/                       # controllers, DTOs, interceptors (envelope ADR-014), filters
+   ├─ logger/                     # pino adapter for ILogger
+   ├─ config/                     # IConfigService + Zod env validation
+   └─ usecases-proxy/             # central wiring: ports → impls (only place they meet)
 ```
 
-## Compile and run the project
+> Reference repo (Pattern Pretre canonical): https://github.com/jonathanPretre/clean-architecture-nestjs
+>
+> Architecture Decision Record: [`docs/adr/0001-pretre-clean-architecture.md`](../../docs/adr/0001-pretre-clean-architecture.md) _(formalized Story 0.13)_
+>
+> Boundaries enforced by `eslint-plugin-boundaries` — see root `eslint.config.mjs` and local `eslint.config.mjs`. A PR that imports `typeorm` or `@nestjs/*` inside `domain/` will fail CI.
+
+## Scripts
+
+| Command                                       | Description                                                                      |
+| --------------------------------------------- | -------------------------------------------------------------------------------- |
+| `pnpm --filter=identity-svc dev`              | Start with `nest start --watch` on port `$PORT` (4001 by default)                |
+| `pnpm --filter=identity-svc build`            | Compile to `dist/`                                                               |
+| `pnpm --filter=identity-svc test`             | Unit + integration tests with Jest (NFR71 thresholds enforced)                   |
+| `pnpm --filter=identity-svc test:cov`         | Coverage report (`domain/` ≥ 80 %, `usecases/` ≥ 70 %, `infrastructure/` ≥ 50 %) |
+| `pnpm --filter=identity-svc test:e2e`         | E2E tests against the Fastify app (envelope, health, user routes)                |
+| `pnpm --filter=identity-svc lint`             | ESLint with Pattern Pretre boundaries strict                                     |
+| `pnpm --filter=identity-svc typecheck`        | `tsc --noEmit`                                                                   |
+| `pnpm --filter=identity-svc migration:run`    | Apply pending TypeORM migrations                                                 |
+| `pnpm --filter=identity-svc migration:revert` | Roll back last migration                                                         |
+
+## How do I add a new use case?
+
+1. **Define the aggregate** in `domain/model/<aggregate>.aggregate.ts`. Make every field `readonly`. Validate invariants in `static create(...)`. Throw a `DomainException` (subclass) when an invariant is violated.
+2. **Define the port** in `domain/ports/<aggregate>.repository.port.ts` (e.g. `IUserProfileRepository`) and add its DI token to `domain/ports/tokens.ts` (`SCREAMING_SNAKE_CASE`).
+3. **Implement the use case** in `usecases/<verb-object>.usecase.ts`. No NestJS decorators — the use case is plain TypeScript that depends on ports through its constructor. Co-locate `.spec.ts` with mocked ports (`jest.fn()`).
+4. **Implement the repository** in `infrastructure/persistence/typeorm/repositories/<aggregate>.typeorm.repository.ts`. Apply `@Injectable()`. Use a mapper (`infrastructure/persistence/typeorm/mappers/`) to translate between the TypeORM entity and the aggregate.
+5. **Wire it up** in `infrastructure/usecases-proxy/usecases-proxy.module.ts`: add a static name (e.g. `static GET_LISTING_USECASES_PROXY = 'GET_LISTING_USECASES_PROXY'`) and a provider with `inject` + `useFactory` that returns `new UseCaseProxy(new MyUseCase(repo))`. **This is the only place where `domain/` and `infrastructure/` meet.**
+
+The controller injects the use case proxy via `@Inject(UseCasesProxyModule.GET_LISTING_USECASES_PROXY)` and calls `proxy.getInstance().execute(...)`. Return the bare DTO — `ResponseEnvelopeInterceptor` wraps it automatically (ADR-014).
+
+## How do I add a migration?
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm --filter=identity-svc migration:generate src/infrastructure/persistence/typeorm/migrations/<TimestampName>
+pnpm --filter=identity-svc migration:run
 ```
 
-## Run tests
+Migrations must be **backward-compatible** (NFR83): drop columns in two steps (mark nullable + backfill in N, drop in N+1). Never run `synchronize: true` against any environment. The DataSource intentionally leaves `migrationsRun: false` so deploys are explicit.
+
+## Environment
+
+Copy `.env.example` to `.env.local` and edit the values for your machine. Postgres, Keycloak and NATS dependencies will be provided by Story 0.10 (`docker-compose.dev.yml`).
+
+## Replicating this template into another service
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+bash infra/scripts/replicate-pretre-structure.sh --target=<svc> [--dry-run]
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+The script copies framework-only files (interceptors, filters, `UseCaseProxy`, logger, config, exception base, gitkeeps, module shells) and rewrites identity-specific labels. It deliberately skips identity domain logic (the target service must define its own aggregates and use cases).
