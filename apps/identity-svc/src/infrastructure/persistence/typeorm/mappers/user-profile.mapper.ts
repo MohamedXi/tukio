@@ -1,6 +1,7 @@
 import { Email } from '../../../../domain/model/email.value-object.js';
 import { UserProfile } from '../../../../domain/model/user-profile.aggregate.js';
 import { isUserRole } from '../../../../domain/model/user-role.enum.js';
+import { CorruptedDataException } from '../../../../domain/exception/corrupted-data.exception.js';
 import type { Locale } from '@tukio/contracts/types/Locale';
 import { UserProfileEntity } from '../entities/user-profile.entity.js';
 
@@ -10,13 +11,13 @@ const isLocale = (value: string): value is Locale =>
 export class UserProfileMapper {
   static toDomain(entity: UserProfileEntity): UserProfile {
     if (!isUserRole(entity.role)) {
-      throw new Error(
-        `UserProfileMapper: invalid role in DB for user ${entity.id}: ${entity.role}`,
+      throw new CorruptedDataException(
+        `invalid role value in user_profiles row`,
       );
     }
     if (!isLocale(entity.locale)) {
-      throw new Error(
-        `UserProfileMapper: invalid locale in DB for user ${entity.id}: ${entity.locale}`,
+      throw new CorruptedDataException(
+        `invalid locale value in user_profiles row`,
       );
     }
     return UserProfile.create({
@@ -42,8 +43,7 @@ export class UserProfileMapper {
     entity.lastName = aggregate.lastName;
     entity.role = aggregate.role;
     entity.locale = aggregate.locale;
-    entity.createdAt = aggregate.createdAt;
-    entity.updatedAt = aggregate.updatedAt;
+    // createdAt and updatedAt are managed by @CreateDateColumn / @UpdateDateColumn — do not override.
     entity.deletedAt = aggregate.deletedAt;
     return entity;
   }

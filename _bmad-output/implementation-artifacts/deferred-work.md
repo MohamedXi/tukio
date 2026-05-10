@@ -33,3 +33,18 @@
 - **W7** — `tsd` absent des devDependencies (packages/ui/package.json). Alternative inline `AssertEqual<A, B>` choisie. Équivalent fonctionnel per spec "tsd ou expect-type".
 - **W8** — Bouton placeholder sans `onClick` (apps/public/page.tsx). Placeholder cosmétique pour Lighthouse. Remplacé par vrai composant Button en Story 0.4.
 - **W9** — `text-wrap: balance/pretty` support partiel (~75% / Chrome-only). Requis par spec. Progressive enhancement acceptable pour Sprint 0 placeholder.
+
+## Deferred from: code review of 0-6-pattern-pretre-scaffolding-template-identity-svc (2026-05-10)
+
+- **D1** — `ResponseEnvelopeInterceptor` statusCode hardcodé 200 si un futur controller uses `@HttpCode(201)` avec Express adapter — pas de controller non-200 actuellement, aucun impact.
+- **D2** — `EMAIL_REGEX` permissif (accepte double dots, leading hyphens dans domain part) — acceptable MVP, à durcir si conformité RFC 5321 stricte requise en Epic 1+.
+- **D3** — `Email.create` avec TypeORM partial hydration (`select()` sans `email`) retourne 422 au lieu de 500 — colonne `email NOT NULL`, cas pratiquement impossible sans requête explicitement partielle.
+- **D4** — `sed_inplace` détection BSD/GNU fragile sur Linux exotique (Nix, etc.) — fonctionne macOS + Linux standard (Ubuntu, Alpine CI).
+- **D5** — Script `--force` ne nettoie pas les fichiers orphelins d'un run `replicate-pretre-structure.sh` partiel interrompu — à améliorer si le script est utilisé fréquemment (Story 0.7+).
+- **D6** — `buildMeta` locale non-supportée silencieusement mappée à `'fr'` sans log ni warning — acceptable tant que seuls FR/EN sont supportés (Story 7.1 next-intl ajoutera routing locale).
+- **D7** — `asEnvelopeMethod` mappe `OPTIONS/HEAD` → `'GET'` dans l'enveloppe — pas d'endpoints CORS/HEAD actuels, à corriger quand CORS sera configuré (Story 0.11 CI ou Epic 7).
+- **D8** — AC6: `toUserProfileResponseDto()` standalone function vs `UserProfileMapper.toResponseDto()` static method (spec) — fonctionnellement identique, renommage cosmétique.
+- **D9** — AC9: Index UNIQUE séparé vs contrainte `UNIQUE` inline dans la migration — fonctionnellement identique au niveau DB PostgreSQL.
+- **D10** — AC9: Scripts migration `tsx ./node_modules/typeorm/cli.js` vs `typeorm-ts-node-esm` — fonctionnellement équivalent, à standardiser lors de la Story 0.11 CI setup.
+- **D11** — AC12: `jest.config.ts` sans threshold `infrastructure/` (couvert par `pnpm test:e2e:cov`) — threshold séparé pragmatique, à consolider en mono-run Jest dans Story 0.11.
+- **D12** — AC13: `tokens.template.ts` sentinel/fichier virtuel dans `REPLICATE_FILES` — fonctionne mais design inhabituel ; remplacer par un vrai fichier template si le script est étendu.

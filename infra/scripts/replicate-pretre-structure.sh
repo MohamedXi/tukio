@@ -55,7 +55,6 @@ REPLICATE_FILES=(
   "domain/ports/tokens.template.ts"
   "domain/service/.gitkeep"
   "infrastructure/usecases-proxy/usecases-proxy.ts"
-  "infrastructure/usecases-proxy/usecases-proxy.module.ts"
   "infrastructure/http/envelope/envelope.helpers.ts"
   "infrastructure/http/interceptors/response-envelope.interceptor.ts"
   "infrastructure/http/filters/envelope-exception.filter.ts"
@@ -106,9 +105,11 @@ to_pascal() {
   }'
 }
 
-# Convert service name to db-friendly token (catalog-svc -> catalog).
+# Convert service name to db-friendly token.
+# Strips both -svc and -api suffixes before replacing hyphens with underscores.
+# catalog-svc → catalog  |  gateway-api → gateway  |  booking-svc → booking
 to_db_name() {
-  echo "$1" | sed 's/-svc$//; s/-/_/g'
+  echo "$1" | sed 's/-svc$//; s/-api$//; s/-/_/g'
 }
 
 # Cross-platform sed inplace (BSD vs GNU).
@@ -246,7 +247,10 @@ Next steps:
      and add tokens to domain/ports/tokens.ts (SCREAMING_SNAKE_CASE)
   3. Implement your use cases in usecases/<verb-object>.usecase.ts
   4. Implement repositories in infrastructure/persistence/typeorm/repositories/
-  5. Wire ports → impls in infrastructure/usecases-proxy/usecases-proxy.module.ts
+  5. Create infrastructure/usecases-proxy/usecases-proxy.module.ts from scratch
+     (see apps/identity-svc/src/infrastructure/usecases-proxy/usecases-proxy.module.ts
+     as the canonical example — do NOT copy it; it references identity-specific types)
+  6. Wire ports → impls in the new usecases-proxy.module.ts
 
 Then run:
   pnpm --filter=$TARGET lint

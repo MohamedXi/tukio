@@ -22,8 +22,9 @@ import {
 const PII_REDACT_PATTERNS: ReadonlyArray<RegExp> = [
   // emails
   /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi,
-  // french phone numbers (loose) like +33 6 12 34 56 78 / 0612345678
-  /(\+?\d{1,3}[\s.-]?)?\(?\d{2,4}\)?([\s.-]?\d{2,4}){2,4}/g,
+  // French phone numbers — requires leading +33 / 0033 / 0[1-9] to avoid matching
+  // port numbers, error codes, and other numeric sequences in error messages.
+  /(?:\+33|0033|0)[1-9](?:[\s.-]?\d{2}){4}/g,
 ];
 
 const ERROR_TYPE_BASE = 'https://tukio.one/errors';

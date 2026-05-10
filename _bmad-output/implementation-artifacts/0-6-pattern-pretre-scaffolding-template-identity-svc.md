@@ -1,6 +1,6 @@
 # Story 0.6: Pattern Pretre scaffolding template in identity-svc + replication script
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -517,6 +517,41 @@ Status: review
   - [x] 14.6 — `pnpm dev` (racine) démarre les 14 codebases sans erreur
   - [x] 14.7 — `bash infra/scripts/replicate-pretre-structure.sh --target=catalog-svc --dry-run` valide
   - [x] 14.8 — Commit `feat(identity-svc): scaffold Pattern Pretre canonical template + replication script + ESLint boundaries strict + envelope ADR-014` — Story 0.6 done
+
+### Review Findings (AI — 2026-05-10)
+
+**Patch (à corriger avant merge)**
+- [x] [Review][Patch] P1 — `DB_PASSWORD` has `.default('changeme')` — doit être `.min(1)` sans default [`apps/identity-svc/src/infrastructure/config/env.schema.ts:19`]
+- [x] [Review][Patch] P2 — `PinoLoggerService` lit `process.env` directement, bypasse `IConfigService` validé Zod [`apps/identity-svc/src/infrastructure/logger/pino-logger.service.ts:22-26`]
+- [x] [Review][Patch] P3 — `UserProfileMapper.toEntity` écrase `@CreateDateColumn/@UpdateDateColumn` gérés par TypeORM [`apps/identity-svc/src/infrastructure/persistence/typeorm/mappers/user-profile.mapper.ts:42-43`]
+- [x] [Review][Patch] P4 — Pas de validation UUID sur `GET /v1/users/:id` avant DB query → `QueryFailedError` retourne 500 au lieu de 422 [`apps/identity-svc/src/infrastructure/http/controllers/user.controller.ts:16`]
+- [x] [Review][Patch] P5 — `UserProfileMapper.toDomain` throw `new Error(...)` au lieu d'une `DomainException` sur donnée DB corrompue [`apps/identity-svc/src/infrastructure/persistence/typeorm/mappers/user-profile.mapper.ts:13-18`]
+- [x] [Review][Patch] P6 — `abortOnError: false` dans `buildTestApp` swallow silencieusement les erreurs DI dans les tests [`apps/identity-svc/test/helpers/build-test-app.ts:76`]
+- [x] [Review][Patch] P7 — Test E2E ZodError path est artificiel — aucun `ZodValidationPipe` câblé, la vraie path production ne peut être atteinte [`apps/identity-svc/test/envelope.e2e-spec.ts:14-19`]
+- [x] [Review][Patch] P8 — Env vars chaîne vide (`""`) bypassent la validation Zod — ajouter `.min(1)` sur `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `SERVICE_NAME` [`apps/identity-svc/src/infrastructure/config/env.schema.ts`]
+- [x] [Review][Patch] P9 — `UserProfile.assertName` trim pour valider mais stocke la valeur non-trimmée → whitespace en DB et dans les réponses API [`apps/identity-svc/src/domain/model/user-profile.aggregate.ts:77-86`]
+- [x] [Review][Patch] P10 — `to_db_name "gateway-api"` produit `gateway_api` (pas de `-svc` suffix → sed ne strip rien) → DB name incorrect [`infra/scripts/replicate-pretre-structure.sh:111-113`]
+- [x] [Review][Patch] P11 — `AppModule` n'importe pas `UseCasesProxyModule.register()` — wiring use-case dans `HttpModule`, violation Pattern Pretre "single wiring point" [`apps/identity-svc/src/app.module.ts`]
+- [x] [Review][Patch] P12 — `TypeOrmModule.forRootAsync` injecte la classe concrète `EnvironmentConfigService` au lieu du token `CONFIG_SERVICE` [`apps/identity-svc/src/app.module.ts:14-15`]
+- [x] [Review][Patch] P13 — Regex PII phone trop large : matche les port numbers, codes erreur, timestamps dans les messages d'erreur [`apps/identity-svc/src/infrastructure/http/filters/envelope-exception.filter.ts:26`]
+- [x] [Review][Patch] P14 — `usecases-proxy.module.ts` dans `REPLICATE_FILES` contient imports identity-spécifiques — le service cible ne compilera pas sans édition manuelle [`infra/scripts/replicate-pretre-structure.sh:58`]
+- [x] [Review][Patch] P15 — `Number(process.env.DB_PORT)` peut retourner `NaN` pour `DB_PORT=abc` → port 0 dans Node.js [`apps/identity-svc/src/infrastructure/persistence/typeorm/data-source.ts:11`]
+- [x] [Review][Patch] P16 — Column `email VARCHAR(255)` mais domaine enforce 254 chars max → 255-char email inséré en SQL direct rend le user inaccessible (422 sur GET) [`apps/identity-svc/src/infrastructure/persistence/typeorm/entities/user-profile.entity.ts:9`]
+- [x] [Review][Patch] P17 — `main.ts` absent de `app.useLogger(app.get(LOGGER))` → logs NestJS bootstrap ne passent pas par Pino [`apps/identity-svc/src/main.ts`]
+
+**Defer (signalés, pas bloquants)**
+- [x] [Review][Defer] D1 — `ResponseEnvelopeInterceptor` statusCode hardcodé 200 si futur controller uses `@HttpCode(201)` avec Express adapter — pas de controller non-200 actuellement [deferred, pre-existing]
+- [x] [Review][Defer] D2 — `EMAIL_REGEX` permissif (accepte double dots, leading hyphens) — acceptable MVP [deferred, pre-existing]
+- [x] [Review][Defer] D3 — `Email.create` avec TypeORM partial hydration retourne 422 au lieu de 500 — colonne non-nullable, cas pratiquement impossible [deferred, pre-existing]
+- [x] [Review][Defer] D4 — `sed_inplace` détection fragile sur Linux exotique — fonctionne macOS + Linux standard [deferred, pre-existing]
+- [x] [Review][Defer] D5 — `--force` ne nettoie pas les fichiers orphelins d'un run partiel interrompu [deferred, pre-existing]
+- [x] [Review][Defer] D6 — `buildMeta` locale non-supportée silencieusement mappée à `'fr'` sans log [deferred, pre-existing]
+- [x] [Review][Defer] D7 — `asEnvelopeMethod` mappe `OPTIONS/HEAD` → `'GET'` dans l'enveloppe — pas d'endpoints CORS/HEAD actuels [deferred, pre-existing]
+- [x] [Review][Defer] D8 — AC6: `toUserProfileResponseDto()` standalone vs `UserProfileMapper.toResponseDto()` static (spec) — fonctionnellement équivalent [deferred, pre-existing]
+- [x] [Review][Defer] D9 — AC9: Index UNIQUE séparé vs contrainte `UNIQUE` inline — fonctionnellement identique au niveau DB [deferred, pre-existing]
+- [x] [Review][Defer] D10 — AC9: Scripts migration `tsx` vs `typeorm-ts-node-esm` — fonctionnellement équivalent [deferred, pre-existing]
+- [x] [Review][Defer] D11 — AC12: `jest.config.ts` sans threshold infrastructure (couvert par `test:e2e:cov`) [deferred, pre-existing]
+- [x] [Review][Defer] D12 — AC13: `tokens.template.ts` sentinel/fichier virtuel dans `REPLICATE_FILES` — fonctionne mais design inhabituel [deferred, pre-existing]
 
 ## Dev Notes
 

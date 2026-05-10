@@ -17,7 +17,7 @@ export class UserProfileEntity {
   @Column({ name: 'keycloak_user_id', type: 'uuid' })
   keycloakUserId!: string;
 
-  @Column({ name: 'email', type: 'varchar', length: 255, unique: true })
+  @Column({ name: 'email', type: 'varchar', length: 254, unique: true })
   email!: string;
 
   @Column({ name: 'first_name', type: 'varchar', length: 80 })

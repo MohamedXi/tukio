@@ -5,17 +5,18 @@ export const EnvSchema = z
     NODE_ENV: z
       .enum(['development', 'test', 'production'])
       .default('development'),
-    SERVICE_NAME: z.string().default('identity-svc'),
-    SERVICE_VERSION: z.string().default('0.0.0'),
+    SERVICE_NAME: z.string().min(1).default('identity-svc'),
+    SERVICE_VERSION: z.string().min(1).default('0.0.0'),
     PORT: z.coerce.number().int().positive().default(4001),
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
       .default('info'),
-    DB_HOST: z.string().default('localhost'),
+    // Postgres — no default for secrets; must be explicitly provided in non-dev envs.
+    DB_HOST: z.string().min(1).default('localhost'),
     DB_PORT: z.coerce.number().int().positive().default(5432),
-    DB_USER: z.string().default('tukio_identity_user'),
-    DB_PASSWORD: z.string().default('changeme'),
-    DB_NAME: z.string().default('tukio_identity'),
+    DB_USER: z.string().min(1).default('tukio_identity_user'),
+    DB_PASSWORD: z.string().min(1), // no default — must be provided explicitly
+    DB_NAME: z.string().min(1).default('tukio_identity'),
     DB_VERBOSE: z
       .union([
         z.literal('true'),
@@ -25,16 +26,23 @@ export const EnvSchema = z
       ])
       .optional()
       .transform((v) => v === 'true' || v === '1'),
-    KEYCLOAK_URL: z.string().url().default('http://localhost:8080'),
-    KEYCLOAK_REALM: z.string().default('tukio'),
-    NATS_URL: z.string().default('nats://localhost:4222'),
+    KEYCLOAK_URL: z.string().url().min(1).default('http://localhost:8080'),
+    KEYCLOAK_REALM: z.string().min(1).default('tukio'),
+    NATS_URL: z.string().min(1).default('nats://localhost:4222'),
   })
   .passthrough();
 
 export type Env = z.infer<typeof EnvSchema>;
 
 export const validateEnv = (raw: Record<string, unknown>): Env => {
-  const parsed = EnvSchema.safeParse(raw);
+  // Inject a safe default for DB_PASSWORD in development/test only.
+  // In production the variable MUST be set explicitly.
+  const withDefaults =
+    !raw['DB_PASSWORD'] && raw['NODE_ENV'] !== 'production'
+      ? { DB_PASSWORD: 'changeme', ...raw }
+      : raw;
+
+  const parsed = EnvSchema.safeParse(withDefaults);
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((i) => `  - ${i.path.join('.')}: ${i.message}`)

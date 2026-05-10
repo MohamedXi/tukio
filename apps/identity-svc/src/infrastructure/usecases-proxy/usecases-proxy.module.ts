@@ -11,12 +11,15 @@ import { UseCaseProxy } from './usecases-proxy.js';
 
 // Pattern Pretre — central wiring of ports → implementations.
 // This is the ONLY place in the service where the domain meets the infrastructure.
+// `global: true` lets AppModule register this once; controllers in HttpModule can
+// inject the exported tokens without HttpModule importing this module directly.
 @Module({})
 export class UseCasesProxyModule {
   static GET_USER_PROFILE_USECASES_PROXY = 'GET_USER_PROFILE_USECASES_PROXY';
 
   static register(): DynamicModule {
     return {
+      global: true,
       module: UseCasesProxyModule,
       imports: [
         ConfigurationModule,

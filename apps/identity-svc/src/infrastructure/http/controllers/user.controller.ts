@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Param } from '@nestjs/common';
+import { Controller, Get, Inject, Param, ParseUUIDPipe } from '@nestjs/common';
 import type { GetUserProfileByIdUseCase } from '../../../usecases/get-user-profile.usecase.js';
 import { UseCaseProxy } from '../../usecases-proxy/usecases-proxy.js';
 import { UseCasesProxyModule } from '../../usecases-proxy/usecases-proxy.module.js';
@@ -15,7 +15,9 @@ export class UserController {
   ) {}
 
   @Get(':id')
-  async getUser(@Param('id') id: string): Promise<UserProfileResponseDto> {
+  async getUser(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<UserProfileResponseDto> {
     const profile = await this.getUserProfileProxy
       .getInstance()
       .execute({ userId: id });

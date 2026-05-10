@@ -79,7 +79,6 @@ export async function buildTestApp(
   const app = await NestFactory.create<NestFastifyApplication>(
     TestAppModule.register(opts),
     new FastifyAdapter({ logger: false }),
-    { abortOnError: false },
   );
   app.useGlobalInterceptors(new ResponseEnvelopeInterceptor());
   app.useGlobalFilters(new EnvelopeExceptionFilter());

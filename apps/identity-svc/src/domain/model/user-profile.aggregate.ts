@@ -45,21 +45,32 @@ export class UserProfile {
   }
 
   static create(props: UserProfileProps): UserProfile {
-    UserProfile.assertNonEmptyId(props.id, 'id');
-    UserProfile.assertNonEmptyId(props.keycloakUserId, 'keycloakUserId');
-    UserProfile.assertName(props.firstName, 'firstName');
-    UserProfile.assertName(props.lastName, 'lastName');
-    if (!Object.values(UserRole).includes(props.role)) {
+    // Normalize names: trim whitespace so validation and storage are consistent.
+    const firstName =
+      typeof props.firstName === 'string'
+        ? props.firstName.trim()
+        : props.firstName;
+    const lastName =
+      typeof props.lastName === 'string'
+        ? props.lastName.trim()
+        : props.lastName;
+    const normalized: UserProfileProps = { ...props, firstName, lastName };
+
+    UserProfile.assertNonEmptyId(normalized.id, 'id');
+    UserProfile.assertNonEmptyId(normalized.keycloakUserId, 'keycloakUserId');
+    UserProfile.assertName(normalized.firstName, 'firstName');
+    UserProfile.assertName(normalized.lastName, 'lastName');
+    if (!Object.values(UserRole).includes(normalized.role)) {
       throw new InvalidUserProfileException(
-        `Invalid role: ${String(props.role)}`,
+        `Invalid role: ${String(normalized.role)}`,
       );
     }
-    if (props.locale !== 'fr' && props.locale !== 'en') {
+    if (normalized.locale !== 'fr' && normalized.locale !== 'en') {
       throw new InvalidUserProfileException(
-        `Invalid locale: ${String(props.locale)}`,
+        `Invalid locale: ${String(normalized.locale)}`,
       );
     }
-    return new UserProfile(props);
+    return new UserProfile(normalized);
   }
 
   isDeleted(): boolean {
