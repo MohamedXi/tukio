@@ -29,22 +29,6 @@ const PII_REDACT_PATTERNS: ReadonlyArray<RegExp> = [
 
 const ERROR_TYPE_BASE = 'https://tukio.one/errors';
 
-function isDomainLike(err: unknown): err is {
-  tukioCode: string;
-  httpStatus: number;
-  title: string;
-  message: string;
-} {
-  return (
-    err instanceof Error &&
-    typeof (err as unknown as Record<string, unknown>)['tukioCode'] ===
-      'string' &&
-    typeof (err as unknown as Record<string, unknown>)['httpStatus'] ===
-      'number' &&
-    typeof (err as unknown as Record<string, unknown>)['title'] === 'string'
-  );
-}
-
 const slugify = (raw: string): string =>
   raw
     .toLowerCase()
@@ -112,23 +96,17 @@ export class EnvelopeExceptionFilter implements ExceptionFilter {
     exception: unknown,
     instance: string,
   ): { httpStatus: number; body: ErrorBody } {
-    // Handle DomainException (identity-svc) and duck-typed @tukio/auth exceptions
-    // (AuthNotAuthenticatedException, AuthForbiddenException, etc.).
-    if (exception instanceof DomainException || isDomainLike(exception)) {
-      const ex = exception as {
-        tukioCode: string;
-        httpStatus: number;
-        title: string;
-        message: string;
-      };
+    // Handles every DomainException (identity-svc + @tukio/auth share the
+    // same base from @tukio/contracts).
+    if (exception instanceof DomainException) {
       return {
-        httpStatus: ex.httpStatus,
+        httpStatus: exception.httpStatus,
         body: {
-          type: `${ERROR_TYPE_BASE}/${slugify(ex.tukioCode)}`,
-          title: ex.title,
-          detail: redactPii(ex.message),
+          type: `${ERROR_TYPE_BASE}/${slugify(exception.tukioCode)}`,
+          title: exception.title,
+          detail: redactPii(exception.message),
           instance,
-          tukioCode: ex.tukioCode,
+          tukioCode: exception.tukioCode,
         },
       };
     }

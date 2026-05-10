@@ -1,60 +1,96 @@
 import { Injectable, Inject, type OnModuleInit, type OnModuleDestroy } from '@nestjs/common';
-import jwksRsa from 'jwks-rsa';
+import { createRemoteJWKSet, type JWTVerifyGetKey } from 'jose';
 import { Counter, Registry } from 'prom-client';
 import type { TukioAuthConfig } from '../tukio-auth.module.js';
 
 export const JWKS_CACHE = Symbol('JWKS_CACHE');
 export const authRegistry = new Registry();
 
-const jwksRefreshFailures = new Counter({
-  name: 'tukio_jwks_cache_refresh_failures_total',
-  help: 'Total JWKS refresh failures',
-  registers: [authRegistry],
-});
+const JWKS_REFRESH_FAILURES = 'tukio_jwks_cache_refresh_failures_total';
+const jwksRefreshFailures =
+  (authRegistry.getSingleMetric(JWKS_REFRESH_FAILURES) as Counter | undefined) ??
+  new Counter({
+    name: JWKS_REFRESH_FAILURES,
+    help: 'Total JWKS refresh failures (network/HTTP).',
+    registers: [authRegistry],
+  });
 
-// JwksCacheService wraps jwks-rsa (CJS-compatible) for RSA key fetching.
-// Exposes getSigningKey() for guard usage + isHealthy() for /ready endpoint.
+const HEALTH_WINDOW_MS = 30 * 60 * 1_000;
+const FETCH_TIMEOUT_MS = 5_000;
+
+// JwksCacheService wraps `jose.createRemoteJWKSet` for RS256 key resolution.
+// jose itself handles in-memory caching + refetch on unknown kid; this service
+// adds a healthcheck (lastSuccessfulRefresh) and a Prometheus failure counter.
 @Injectable()
 export class JwksCacheService implements OnModuleInit, OnModuleDestroy {
-  private client!: jwksRsa.JwksClient;
+  private jwksUri = '';
+  private getKey!: JWTVerifyGetKey;
   private lastSuccessfulRefresh = 0;
   private refreshTimer?: ReturnType<typeof setInterval>;
+  private refreshAbort?: AbortController;
 
   constructor(@Inject('TUKIO_AUTH_CONFIG') private readonly config: TukioAuthConfig) {}
 
-  onModuleInit(): void {
-    const jwksUri = `${this.config.keycloakUrl}/realms/${this.config.realm}/protocol/openid-connect/certs`;
-    this.client = jwksRsa({
-      jwksUri,
-      cache: true,
-      cacheMaxAge: this.config.jwksRefreshIntervalMs ?? 600_000,
-      cacheMaxEntries: 10,
-      rateLimit: true,
+  async onModuleInit(): Promise<void> {
+    this.jwksUri = `${this.config.keycloakUrl}/realms/${this.config.realm}/protocol/openid-connect/certs`;
+    const cooldownMs = this.config.jwksRefreshIntervalMs ?? 600_000;
+    this.getKey = createRemoteJWKSet(new URL(this.jwksUri), {
+      cooldownDuration: cooldownMs,
     });
-    this.lastSuccessfulRefresh = Date.now();
 
-    // Background probe to keep lastSuccessfulRefresh updated.
-    this.refreshTimer = setInterval(async () => {
-      try {
-        await fetch(jwksUri);
-        this.lastSuccessfulRefresh = Date.now();
-      } catch {
-        jwksRefreshFailures.inc();
-      }
-    }, this.config.jwksRefreshIntervalMs ?? 600_000);
+    // Verify Keycloak reachability at boot — only mark healthy on real success.
+    try {
+      await this.probeJwks();
+      this.lastSuccessfulRefresh = Date.now();
+    } catch {
+      jwksRefreshFailures.inc();
+      // leave lastSuccessfulRefresh = 0 → /ready reports unhealthy
+    }
+
+    this.refreshTimer = setInterval(() => void this.backgroundProbe(), cooldownMs);
   }
 
   onModuleDestroy(): void {
     if (this.refreshTimer) clearInterval(this.refreshTimer);
+    this.refreshAbort?.abort();
   }
 
-  async getSigningKey(kid: string): Promise<string> {
-    const key = await this.client.getSigningKey(kid);
-    return key.getPublicKey();
+  // Returns the jose JWTVerifyGetKey resolver — used by KeycloakJwtGuard.
+  getKeyResolver(): JWTVerifyGetKey {
+    return this.getKey;
   }
 
   isHealthy(): boolean {
-    const thirtyMinMs = 30 * 60 * 1_000;
-    return Date.now() - this.lastSuccessfulRefresh < thirtyMinMs;
+    return (
+      this.lastSuccessfulRefresh > 0 && Date.now() - this.lastSuccessfulRefresh < HEALTH_WINDOW_MS
+    );
+  }
+
+  private async backgroundProbe(): Promise<void> {
+    try {
+      await this.probeJwks();
+      this.lastSuccessfulRefresh = Date.now();
+    } catch {
+      jwksRefreshFailures.inc();
+      // Stale cache stays usable; isHealthy() falls below threshold after 30 min.
+    }
+  }
+
+  private async probeJwks(): Promise<void> {
+    this.refreshAbort?.abort();
+    this.refreshAbort = new AbortController();
+    const timeoutId = setTimeout(() => this.refreshAbort?.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(this.jwksUri, { signal: this.refreshAbort.signal });
+      if (!res.ok) {
+        throw new Error(`JWKS endpoint returned ${res.status}`);
+      }
+      const body = (await res.json()) as { keys?: unknown[] };
+      if (!Array.isArray(body.keys) || body.keys.length === 0) {
+        throw new Error('JWKS response has empty/missing keys array');
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 }

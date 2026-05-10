@@ -1,5 +1,5 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { z, ZodError } from 'zod';
+import { z } from 'zod';
 import nock from 'nock';
 import {
   buildTestApp,
@@ -9,6 +9,7 @@ import {
 import type { IUserProfileRepository } from '../src/domain/ports/user-profile.repository.port.js';
 
 const FOUND_ID = '00000000-0000-0000-0000-000000000000';
+const ADMIN_KEYCLOAK_ID = '33333333-3333-3333-3333-333333333333';
 
 describe('Envelope ADR-014 E2E', () => {
   let app: NestFastifyApplication;
@@ -28,7 +29,7 @@ describe('Envelope ADR-014 E2E', () => {
     };
     app = await buildTestApp({ userProfileRepo: repo });
     adminJwt = generateTestJwt({
-      sub: 'admin-uuid',
+      sub: ADMIN_KEYCLOAK_ID,
       roles: ['admin-super'],
       amr: ['totp'],
     });
@@ -39,7 +40,7 @@ describe('Envelope ADR-014 E2E', () => {
     nock.cleanAll();
   });
 
-  it('ZodError → 422 VALIDATION-FAILED-001 with issues[]', async () => {
+  it('ZodError → 422 VALIDATION-FAILED-001 with issues[] shape', async () => {
     const res = await app.inject({
       method: 'GET',
       url: `/v1/users/${FOUND_ID}`,
@@ -58,7 +59,12 @@ describe('Envelope ADR-014 E2E', () => {
       meta: { locale: 'fr', correlationId: expect.any(String) },
     });
     expect(Array.isArray(body.error.issues)).toBe(true);
-    expect(ZodError).toBeDefined();
+    expect(body.error.issues.length).toBeGreaterThanOrEqual(1);
+    expect(body.error.issues[0]).toMatchObject({
+      path: expect.any(String),
+      code: expect.any(String),
+      message: expect.any(String),
+    });
   });
 
   it('invalid UUID on :id → 400 (ParseUUIDPipe via EnvelopeExceptionFilter)', async () => {

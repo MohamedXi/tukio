@@ -57,3 +57,15 @@
 - **D4** — `notifyPool` optionnel : si wired, `pg_notify` fire avant commit tx externe → spurious wakeups (pas de corruption, relay SKIP LOCKED couvre). Code path mort car `OUTBOX_NOTIFY_POOL` jamais wired actuellement. À corriger si pool activé.
 - **D5** — Race onModuleDestroy : pollTimer peut firer entre start de destroy et clearInterval — fenêtre ~0ms en Node.js event loop, SKIP LOCKED + NATS drain couvrent la cohérence. Très faible impact.
 - **D6** — DB password visible dans options du module si `DEBUG=*` NestJS — convient Sprint 0 (pas de prod). Story 0.12 secrets management (Vault / K8s sealed secrets).
+
+## Deferred from: code review of 0-8-setup-tukio-auth-backend-frontend (2026-05-10)
+
+- **D-F1** — Marker cookie `tukio-session-active` non-validé côté frontend (anyone can set marker) — déférée : mitigée par enforcement JWT côté backend (cookie HttpOnly access-token est source-of-truth, marker = hint UX). Re-revue si gateway-api change le contract Story Epic 1+.
+- **D-F2** — `prom-client` Counter au module-load level (collision risk hot-reload) — déférée : pattern figé Story 0.7 (mêmes specs ont passé code review). Fix global si problème survient en CI.
+- **D-F3** — WebAuthn / FIDO2 / `mfa` amr non accepté (TOTP-only) — déférée : MVP TOTP-only par décision Story 1.7. Ré-évaluer V2 quand WebAuthn est mis en production.
+- **D-F4** — `<AuthProvider>` config change ignoré post-mount (multi-tenant scenario) — déférée : multi-tenant pas au scope MVP.
+- **D-F5** — `hasSessionCookie()` exact match `=1` — déférée : cohérent avec set côté gateway-api Story Epic 1+.
+- **D-F6** — SSR hydration mismatch (flash unauth content au mount) — déférée : UX-only, à traiter avec Suspense + skeleton dans Story Epic 1+ (gateway-api SSR-safe cookies).
+- **D-F7** — `jwks-rsa` mock test pas de cache — déférée : tests E2E uniquement, ré-évaluer Story 0.9 (testcontainers Keycloak réel).
+- **D-F8** — Public-key rotation race window — déférée : Keycloak grace period standard, doc Story 1.1.
+- **D-F9** — Infinite redirect loop quand `loginRedirectUri` matches `protectedPaths: ['/']` — déférée : edge case opérationnel, à wirer Story Epic 1+ avec Keycloak réel.

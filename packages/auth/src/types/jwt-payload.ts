@@ -12,6 +12,7 @@ export interface KeycloakJwtPayload {
   preferred_username?: string;
   locale?: string;
   amr?: string[];
+  acr?: string;
   realm_access?: {
     roles: string[];
   };

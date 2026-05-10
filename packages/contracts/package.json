@@ -8,6 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./envelope": "./src/envelope/index.ts",
+    "./exceptions": "./src/exceptions/index.ts",
+    "./exceptions/domain": "./src/exceptions/domain.exception.ts",
     "./types": "./src/types/index.ts",
     "./types/Actor": "./src/types/Actor.ts",
     "./types/Locale": "./src/types/Locale.ts",

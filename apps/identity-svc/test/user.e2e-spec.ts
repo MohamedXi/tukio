@@ -11,11 +11,14 @@ import { UserRole } from '../src/domain/model/user-role.enum.js';
 import type { IUserProfileRepository } from '../src/domain/ports/user-profile.repository.port.js';
 
 const FOUND_ID = '11111111-1111-1111-1111-111111111111';
+const KEYCLOAK_USER_ID = '22222222-2222-2222-2222-222222222222';
 const MISSING_ID = '00000000-0000-0000-0000-000000000000';
+const ADMIN_KEYCLOAK_ID = '33333333-3333-3333-3333-333333333333';
+const OTHER_CLIENT_KEYCLOAK_ID = '44444444-4444-4444-4444-444444444444';
 
 const sampleProfile = UserProfile.create({
   id: FOUND_ID,
-  keycloakUserId: '22222222-2222-2222-2222-222222222222',
+  keycloakUserId: KEYCLOAK_USER_ID,
   email: Email.create('jane@tukio.one'),
   firstName: 'Jane',
   lastName: 'Doe',
@@ -48,8 +51,8 @@ describe('User E2E', () => {
     nock.cleanAll();
   });
 
-  it('GET /v1/users/:id → 200 when client accesses own profile', async () => {
-    const token = generateTestJwt({ sub: FOUND_ID, roles: ['client'] });
+  it('GET /v1/users/:id → 200 when client accesses own profile (sub matches keycloakUserId)', async () => {
+    const token = generateTestJwt({ sub: KEYCLOAK_USER_ID, roles: ['client'] });
     const res = await app.inject({
       method: 'GET',
       url: `/v1/users/${FOUND_ID}`,
@@ -62,6 +65,7 @@ describe('User E2E', () => {
       code: 200,
       data: {
         id: FOUND_ID,
+        keycloakUserId: KEYCLOAK_USER_ID,
         email: 'jane@tukio.one',
         firstName: 'Jane',
         lastName: 'Doe',
@@ -75,7 +79,7 @@ describe('User E2E', () => {
 
   it('GET /v1/users/:id → 200 when admin accesses any profile', async () => {
     const adminJwt = generateTestJwt({
-      sub: 'admin-uuid',
+      sub: ADMIN_KEYCLOAK_ID,
       roles: ['admin-super'],
       amr: ['totp'],
     });
@@ -99,7 +103,7 @@ describe('User E2E', () => {
 
   it('GET /v1/users/:id → 403 when client accesses another user profile', async () => {
     const otherJwt = generateTestJwt({
-      sub: 'other-client-uuid',
+      sub: OTHER_CLIENT_KEYCLOAK_ID,
       roles: ['client'],
     });
     const res = await app.inject({
@@ -112,9 +116,24 @@ describe('User E2E', () => {
     expect(body.error?.tukioCode).toBe('AUTH-FORBIDDEN-001');
   });
 
-  it('GET /v1/users/:id → 404 wrapped in ErrorEnvelope when not found', async () => {
+  it('GET /v1/users/:id → 403 when pro accesses another user profile (not own)', async () => {
+    const proJwt = generateTestJwt({
+      sub: OTHER_CLIENT_KEYCLOAK_ID,
+      roles: ['pro'],
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/users/${FOUND_ID}`,
+      headers: { Authorization: `Bearer ${proJwt}` },
+    });
+    expect(res.statusCode).toBe(403);
+    const body = res.json();
+    expect(body.error?.tukioCode).toBe('AUTH-FORBIDDEN-001');
+  });
+
+  it('GET /v1/users/:id → 404 wrapped in ErrorEnvelope when not found (admin)', async () => {
     const adminJwt = generateTestJwt({
-      sub: 'admin-uuid',
+      sub: ADMIN_KEYCLOAK_ID,
       roles: ['admin-super'],
       amr: ['totp'],
     });
@@ -144,7 +163,7 @@ describe('User E2E', () => {
 
   it('honours X-Tukio-Locale=en in meta', async () => {
     const adminJwt = generateTestJwt({
-      sub: 'admin-uuid',
+      sub: ADMIN_KEYCLOAK_ID,
       roles: ['admin-super'],
       amr: ['totp'],
     });

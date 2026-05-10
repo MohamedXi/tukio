@@ -34,13 +34,26 @@ export class UserController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentActor() actor: BackendActor,
   ): Promise<UserProfileResponseDto> {
-    // RBAC fine-grained: a client can only access their own profile.
-    if (actor.role === 'client' && actor.userId !== id) {
-      throw new AuthForbiddenException('Cannot access other user profile');
-    }
+    // Load the profile FIRST so we can compare ownership using the local
+    // `keycloakUserId` column. The path `:id` is the local UserProfile.id
+    // (Postgres UUID); `actor.userId` is the Keycloak `sub` (different UUID).
+    // The previous version compared `actor.userId !== id` which was always
+    // true for clients in production, breaking the self-read path entirely.
     const profile = await this.getUserProfileProxy
       .getInstance()
       .execute({ userId: id });
+
+    // RBAC fine-grained: client and pro can only read their OWN profile.
+    // Admins (admin-modo / admin-super) reach this endpoint via @Roles and
+    // can read any profile (moderation / support).
+    const isOwnProfile = actor.userId === profile.keycloakUserId;
+    const isAdmin = actor.roles.some(
+      (r) => r === 'admin-modo' || r === 'admin-super',
+    );
+    if (!isAdmin && !isOwnProfile) {
+      throw new AuthForbiddenException('Cannot access other user profile');
+    }
+
     return toUserProfileResponseDto(profile);
   }
 }

@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest';
 import { Reflector } from '@nestjs/core';
-import * as crypto from 'node:crypto';
-import * as jwt from 'jsonwebtoken';
+import { generateKeyPair, exportJWK, SignJWT, type KeyObject } from 'jose';
 import nock from 'nock';
 import { KeycloakJwtGuard } from './keycloak-jwt.guard.js';
 import { JwksCacheService } from '../services/jwks-cache.service.js';
 import { AuthNotAuthenticatedException } from '../exceptions/auth-not-authenticated.exception.js';
 import type { TukioAuthConfig } from '../tukio-auth.module.js';
+import { randomUUID } from 'node:crypto';
 
 const CONFIG: TukioAuthConfig = {
   keycloakUrl: 'http://keycloak.test',
@@ -14,43 +14,43 @@ const CONFIG: TukioAuthConfig = {
   clientId: 'tukio-api',
 };
 
-let privateKey: string;
-let publicKey: string;
 const TEST_KID = 'test-kid-1';
+let privateKey: KeyObject;
+let publicJwk: Record<string, unknown>;
 
-beforeAll(() => {
-  const pair = crypto.generateKeyPairSync('rsa', {
-    modulusLength: 2048,
-    publicKeyEncoding: { type: 'spki', format: 'pem' },
-    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-  });
-  privateKey = pair.privateKey;
-  publicKey = pair.publicKey;
+beforeAll(async () => {
+  const pair = await generateKeyPair('RS256', { extractable: true });
+  privateKey = pair.privateKey as KeyObject;
+  const jwk = await exportJWK(pair.publicKey);
+  publicJwk = { ...jwk, kid: TEST_KID, use: 'sig', alg: 'RS256' };
 });
 
-function mockJwksEndpoint() {
-  const keyObj = crypto.createPublicKey(publicKey);
-  const jwk = { ...keyObj.export({ format: 'jwk' }), kid: TEST_KID, use: 'sig', alg: 'RS256' };
+afterEach(() => {
+  nock.cleanAll();
+});
+
+function mockJwksEndpoint(): void {
   nock('http://keycloak.test')
+    .persist()
     .get('/realms/tukio/protocol/openid-connect/certs')
-    .reply(200, { keys: [jwk] });
+    .reply(200, { keys: [publicJwk] });
 }
 
-function signToken(payload: Record<string, unknown>) {
-  return jwt.sign(payload, privateKey, {
-    algorithm: 'RS256',
-    keyid: TEST_KID,
-    issuer: `${CONFIG.keycloakUrl}/realms/${CONFIG.realm}`,
-    audience: CONFIG.clientId,
-    expiresIn: 3600,
-  });
+async function signToken(claims: Record<string, unknown>): Promise<string> {
+  return new SignJWT({ ...claims })
+    .setProtectedHeader({ alg: 'RS256', kid: TEST_KID })
+    .setIssuer(`${CONFIG.keycloakUrl}/realms/${CONFIG.realm}`)
+    .setAudience(CONFIG.clientId)
+    .setIssuedAt()
+    .setExpirationTime('1h')
+    .sign(privateKey);
 }
 
-function buildGuard() {
+async function buildGuard(): Promise<KeycloakJwtGuard> {
   const reflector = new Reflector();
   const jwksService = new JwksCacheService(CONFIG);
   vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
-  jwksService.onModuleInit();
+  await jwksService.onModuleInit();
   return new KeycloakJwtGuard(reflector, jwksService, CONFIG);
 }
 
@@ -84,29 +84,41 @@ describe('KeycloakJwtGuard', () => {
 
   it('throws when Authorization header missing', async () => {
     mockJwksEndpoint();
-    const guard = buildGuard();
+    const guard = await buildGuard();
     const { ctx } = mockCtx(undefined);
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(AuthNotAuthenticatedException);
   });
 
   it('throws when JWT is malformed', async () => {
     mockJwksEndpoint();
-    const guard = buildGuard();
+    const guard = await buildGuard();
     const { ctx } = mockCtx('not.a.valid.jwt');
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(AuthNotAuthenticatedException);
   });
 
   it('sets request.actor on valid JWT', async () => {
     mockJwksEndpoint();
-    const token = signToken({
-      sub: 'user-1',
+    const userId = randomUUID();
+    const token = await signToken({
+      sub: userId,
       email: 'u@test.com',
       email_verified: true,
       realm_access: { roles: ['client'] },
     });
-    const guard = buildGuard();
+    const guard = await buildGuard();
     const { ctx, request } = mockCtx(token);
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
-    expect((request.actor as { userId: string }).userId).toBe('user-1');
+    expect((request.actor as { userId: string }).userId).toBe(userId);
+  });
+
+  it('rejects JWT with empty `sub`', async () => {
+    mockJwksEndpoint();
+    const token = await signToken({
+      sub: '',
+      realm_access: { roles: ['client'] },
+    });
+    const guard = await buildGuard();
+    const { ctx } = mockCtx(token);
+    await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(AuthNotAuthenticatedException);
   });
 });

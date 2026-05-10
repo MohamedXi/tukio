@@ -7,12 +7,18 @@ export interface KeycloakUser {
   lastName?: string;
 }
 
+export interface AuthError {
+  code: 'INIT_FAILED' | 'NETWORK' | 'CONFIG_INVALID';
+  message: string;
+}
+
 export interface AuthState {
   user: KeycloakUser | null;
   role: Role | null;
   locale: 'fr' | 'en';
   isAuthenticated: boolean;
   isLoading: boolean;
+  error: AuthError | null;
 }
 
 export interface KeycloakConfig {

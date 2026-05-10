@@ -13,6 +13,7 @@ const makeState = (overrides: Partial<AuthState> = {}): AuthState => ({
   locale: 'fr',
   isAuthenticated: true,
   isLoading: false,
+  error: null,
   ...overrides,
 });
 

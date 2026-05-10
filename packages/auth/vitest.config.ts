@@ -28,7 +28,6 @@ export default defineConfig({
         '**/exceptions/index.ts',
         '**/types/index.ts',
         '**/decorators/**', // simple SetMetadata wrappers, tested via guards
-        '**/interceptors/**', // tested indirectly via E2E
       ],
     },
   },

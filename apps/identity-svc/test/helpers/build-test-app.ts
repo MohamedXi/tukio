@@ -5,7 +5,6 @@ import {
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import * as crypto from 'crypto';
-import * as jwt from 'jsonwebtoken';
 import nock from 'nock';
 import { ConfigurationModule } from '../../src/infrastructure/config/config.module.js';
 import { LoggerModule } from '../../src/infrastructure/logger/logger.module.js';
@@ -28,54 +27,77 @@ export const TEST_CLIENT_ID = 'tukio-api';
 const JWKS_PATH = `/realms/${TEST_REALM}/protocol/openid-connect/certs`;
 const TEST_KID = 'e2e-test-kid';
 
-// RSA key pair generated synchronously (CJS compatible — no jose dependency in E2E tests).
-const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
-  modulusLength: 2048,
-  publicKeyEncoding: { type: 'spki', format: 'pem' },
-  privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-});
+// RSA key pair generated synchronously via Node crypto. JWTs are signed with
+// the native crypto API (not jose) because jose v6 ships ESM-only and Jest +
+// ts-jest under CommonJS cannot consume ESM-only packages without test-time
+// build complexity. The runtime path uses jose; this helper proves real JWTs
+// validate against jose's verifier in production tests.
+const { privateKey: privatePem, publicKey: publicPem } =
+  crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+  });
+const privateKeyObj = crypto.createPrivateKey(privatePem);
+const publicKeyObj = crypto.createPublicKey(publicPem);
 
-function pemToJwk(pemPublicKey: string): Record<string, unknown> {
-  const keyObj = crypto.createPublicKey(pemPublicKey);
-  const jwk = keyObj.export({ format: 'jwk' }) as Record<string, unknown>;
+function publicJwk(): Record<string, unknown> {
+  const jwk = publicKeyObj.export({ format: 'jwk' });
   return { ...jwk, kid: TEST_KID, use: 'sig', alg: 'RS256' };
 }
 
-export function generateTestJwt(
-  overrides: {
-    sub?: string;
-    roles?: string[];
-    exp?: number;
-    amr?: string[];
-  } = {},
-): string {
-  return jwt.sign(
-    {
-      sub: overrides.sub ?? 'test-user-uuid',
-      email: 'test@tukio.one',
-      email_verified: true,
-      realm_access: { roles: overrides.roles ?? ['client'] },
-      amr: overrides.amr ?? [],
-      locale: 'fr',
-    },
-    privateKey,
-    {
-      algorithm: 'RS256',
-      keyid: TEST_KID,
-      issuer: `${TEST_KEYCLOAK_URL}/realms/${TEST_REALM}`,
-      audience: TEST_CLIENT_ID,
-      expiresIn: overrides.exp
-        ? overrides.exp - Math.floor(Date.now() / 1000)
-        : 3600,
-    },
+function base64url(input: Buffer | string): string {
+  const buf = typeof input === 'string' ? Buffer.from(input) : input;
+  return buf
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+export interface TestJwtOverrides {
+  sub?: string;
+  roles?: string[];
+  exp?: number;
+  amr?: string[];
+  acr?: string;
+  email?: string;
+  email_verified?: boolean;
+  locale?: string;
+}
+
+// Sign a Keycloak-shaped JWT with the test RSA key. Returns synchronously —
+// jose's async API is not used in tests for the reason explained above.
+export function generateTestJwt(overrides: TestJwtOverrides = {}): string {
+  const now = Math.floor(Date.now() / 1000);
+  const exp = overrides.exp ?? now + 3600;
+  const header = { alg: 'RS256', typ: 'JWT', kid: TEST_KID };
+  const payload: Record<string, unknown> = {
+    sub: overrides.sub ?? '11111111-1111-1111-1111-111111111111',
+    iss: `${TEST_KEYCLOAK_URL}/realms/${TEST_REALM}`,
+    aud: TEST_CLIENT_ID,
+    iat: now,
+    exp,
+    email: overrides.email ?? 'test@tukio.one',
+    email_verified: overrides.email_verified ?? true,
+    realm_access: { roles: overrides.roles ?? ['client'] },
+    amr: overrides.amr ?? [],
+    locale: overrides.locale ?? 'fr',
+  };
+  if (overrides.acr) payload.acr = overrides.acr;
+  const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
+  const signature = crypto.sign(
+    'RSA-SHA256',
+    Buffer.from(signingInput),
+    privateKeyObj,
   );
+  return `${signingInput}.${base64url(signature)}`;
 }
 
 export function setupJwksMock(): void {
-  const jwk = pemToJwk(publicKey);
   nock(TEST_KEYCLOAK_URL)
     .get(JWKS_PATH)
-    .reply(200, { keys: [jwk] })
+    .reply(200, { keys: [publicJwk()] })
     .persist();
 }
 
