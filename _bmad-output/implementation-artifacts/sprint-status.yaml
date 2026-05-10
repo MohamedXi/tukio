@@ -1,5 +1,5 @@
 # generated: 2026-05-09
-# last_updated: 2026-05-10 (Story 0.8 done — code review applied 24 patches + 5 architecture decisions, jose refactor + roles[] + DomainException)
+# last_updated: 2026-05-10 (Story 0.9 review — @tukio/api-client + @tukio/i18n-client + @tukio/testing — 112 tests, 70+ files)
 # project: tukio.one
 # project_key: NOKEY
 # tracking_system: file-system
@@ -52,7 +52,7 @@ development_status:
   0-6-pattern-pretre-scaffolding-template-identity-svc: done
   0-7-setup-tukio-messaging-nats-jetstream: done
   0-8-setup-tukio-auth-backend-frontend: done
-  0-9-setup-tukio-api-client-i18n-client-testing: ready-for-dev
+  0-9-setup-tukio-api-client-i18n-client-testing: review
   0-10-docker-compose-dev-local-bootstrap-scripts: ready-for-dev
   0-11-ci-github-actions-pipeline: ready-for-dev
   0-12-helm-charts-k8s-argocd-staging-observability: ready-for-dev
@@ -95,7 +95,7 @@ development_status:
   3-6-edit-unpublish-delete-listing-flow: ready-for-dev
   3-7-meilisearch-index-per-locale-outbox-sync: ready-for-dev
   3-8-search-frontend-barre-recherche: ready-for-dev
-  3-9-filters-facettes-search-results-page: backlog
+  3-9-filters-facettes-search-results-page: ready-for-dev
   3-10-listing-detail-public-page: backlog
   3-11-pro-public-profile-page: backlog
   3-12-category-general-page-median-price-display: backlog

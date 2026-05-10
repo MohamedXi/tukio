@@ -2,11 +2,57 @@
   "name": "@tukio/i18n-client",
   "version": "0.0.0",
   "private": true,
-  "description": "next-intl wrapper, locale negotiation, and shared translation helpers.",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "description": "Shared next-intl 4.x config (locales fr/en + Europe/Paris), middleware, formatters, and SEO components for Tukio frontend apps.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./src/config/locales.ts",
+    "./config/next-intl": "./src/config/next-intl.config.ts",
+    "./config/time-zones": "./src/config/time-zones.ts",
+    "./middleware": "./src/middleware/create-i18n-middleware.ts",
+    "./formatters": "./src/formatters/index.ts",
+    "./formatters/date": "./src/formatters/date.ts",
+    "./formatters/number": "./src/formatters/number.ts",
+    "./formatters/currency": "./src/formatters/currency.ts",
+    "./formatters/relative-time": "./src/formatters/relative-time.ts",
+    "./components/hreflang": "./src/components/hreflang.tsx",
+    "./components/locale-link": "./src/components/locale-link.tsx",
+    "./hooks/use-current-locale": "./src/hooks/use-current-locale.ts"
+  },
   "scripts": {
-    "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next-intl": "^4.4.0"
+  },
+  "peerDependencies": {
+    "@tukio/contracts": "workspace:*",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.0.0",
+    "@tukio/contracts": "workspace:*",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.0.0",
+    "@vitest/coverage-v8": "^4.1.5",
+    "eslint": "^9.0.0",
+    "jsdom": "^26.0.0",
+    "next": "^15.3.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.1.5"
   }
 }
