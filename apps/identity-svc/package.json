@@ -30,6 +30,7 @@
     "@nestjs/platform-fastify": "^11.1.19",
     "@nestjs/typeorm": "^11.0.1",
     "@tukio/contracts": "workspace:*",
+    "@tukio/messaging": "workspace:*",
     "nestjs-pino": "^4.6.1",
     "nestjs-zod": "^5.3.0",
     "pg": "^8.20.0",

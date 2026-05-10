@@ -3,10 +3,65 @@
   "version": "0.0.0",
   "private": true,
   "description": "NATS JetStream client + outbox/inbox patterns for transactional events.",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./nats": "./src/nats/nats-jetstream.module.ts",
+    "./nats/client": "./src/nats/nats-jetstream-client.ts",
+    "./nats/subjects": "./src/nats/subjects.ts",
+    "./nats/types": "./src/nats/types.ts",
+    "./outbox": "./src/outbox/outbox-publisher.module.ts",
+    "./outbox/publisher": "./src/outbox/outbox-publisher.ts",
+    "./outbox/relay": "./src/outbox/outbox-relay.module.ts",
+    "./outbox/entity": "./src/outbox/outbox.entity.ts",
+    "./outbox/migrations/template": "./src/outbox/migrations/template-create-outbox-table.ts",
+    "./outbox/transaction-context": "./src/outbox/transaction-context.ts",
+    "./inbox": "./src/inbox/inbox-consumer.module.ts",
+    "./inbox/consumer": "./src/inbox/inbox-consumer.ts",
+    "./inbox/entity": "./src/inbox/inbox.entity.ts",
+    "./inbox/migrations/template": "./src/inbox/migrations/template-create-inbox-table.ts",
+    "./correlation": "./src/correlation/correlation-context.module.ts",
+    "./correlation/context": "./src/correlation/correlation-context.ts",
+    "./correlation/middleware": "./src/correlation/correlation.middleware.ts",
+    "./versioning": "./src/versioning/event-versioning.ts",
+    "./contracts": "./src/contracts.ts"
+  },
   "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "nats": "^2.29.3",
+    "pg": "^8.20.0",
+    "prom-client": "^15.1.3"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/typeorm": "^11.0.0",
+    "@tukio/contracts": "workspace:*",
+    "typeorm": "^0.3.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@nestjs/common": "^11.1.19",
+    "@nestjs/core": "^11.1.19",
+    "@nestjs/testing": "^11.1.19",
+    "@nestjs/typeorm": "^11.0.1",
+    "@swc/core": "^1.15.33",
+    "@tukio/contracts": "workspace:*",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.20.0",
+    "eslint": "^9.0.0",
+    "pg-mem": "^3.0.14",
+    "typeorm": "^0.3.29",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.0.0",
+    "unplugin-swc": "^1.5.9",
+    "vitest": "^4.1.5"
   }
 }

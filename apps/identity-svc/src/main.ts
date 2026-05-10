@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { type LoggerService } from '@nestjs/common';
+import { type LoggerService, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -24,6 +24,10 @@ async function bootstrap(): Promise<void> {
 
   app.useGlobalInterceptors(new ResponseEnvelopeInterceptor());
   app.useGlobalFilters(new EnvelopeExceptionFilter());
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
   // ZodValidationPipe enables automatic DTO validation on incoming request bodies
   // for any endpoint that uses Zod-decorated DTOs (e.g. future POST/PATCH routes).
   // EnvelopeExceptionFilter maps any resulting ZodError to 422 VALIDATION-FAILED-001.
