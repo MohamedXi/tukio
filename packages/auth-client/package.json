@@ -2,11 +2,56 @@
   "name": "@tukio/auth-client",
   "version": "0.0.0",
   "private": true,
-  "description": "Frontend auth state, session hooks, and Keycloak PKCE flow integration.",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "description": "Frontend auth state, session hooks, and Keycloak PKCE flow for Tukio Next.js apps.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./provider": "./src/providers/auth-provider.tsx",
+    "./hooks/use-auth": "./src/hooks/use-auth.ts",
+    "./hooks/use-role": "./src/hooks/use-role.ts",
+    "./hooks/use-require-role": "./src/hooks/use-require-role.ts",
+    "./hooks/use-logout": "./src/hooks/use-logout.ts",
+    "./keycloak": "./src/keycloak/keycloak-client.ts",
+    "./refresh": "./src/refresh/refresh-token-rotation.ts",
+    "./cookies": "./src/cookies/cookie-manager.ts",
+    "./middleware": "./src/middleware/keycloak-auth.middleware.ts",
+    "./types": "./src/types/index.ts",
+    "./tokens": "./src/tokens.ts"
+  },
   "scripts": {
-    "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "keycloak-js": "^26.2.4"
+  },
+  "peerDependencies": {
+    "@tukio/contracts": "workspace:*",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.0.0",
+    "@tukio/contracts": "workspace:*",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "@vitest/coverage-v8": "^4.1.5",
+    "eslint": "^9.0.0",
+    "jsdom": "^26.0.0",
+    "next": "^15.3.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.1.5"
   }
 }

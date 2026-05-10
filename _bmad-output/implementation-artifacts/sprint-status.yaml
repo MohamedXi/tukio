@@ -1,5 +1,5 @@
 # generated: 2026-05-09
-# last_updated: 2026-05-10 (Story 0.7 review — @tukio/messaging NATS JetStream + outbox/inbox + correlation + identity-svc wiring)
+# last_updated: 2026-05-10 (Story 0.8 review — @tukio/auth backend + @tukio/auth-client frontend + identity-svc protected)
 # project: tukio.one
 # project_key: NOKEY
 # tracking_system: file-system
@@ -51,7 +51,7 @@ development_status:
   0-5-implement-composite-patterns-tukio-ui: done
   0-6-pattern-pretre-scaffolding-template-identity-svc: done
   0-7-setup-tukio-messaging-nats-jetstream: done
-  0-8-setup-tukio-auth-backend-frontend: ready-for-dev
+  0-8-setup-tukio-auth-backend-frontend: review
   0-9-setup-tukio-api-client-i18n-client-testing: ready-for-dev
   0-10-docker-compose-dev-local-bootstrap-scripts: ready-for-dev
   0-11-ci-github-actions-pipeline: ready-for-dev

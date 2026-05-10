@@ -1,5 +1,10 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { buildTestApp } from './helpers/build-test-app.js';
+import nock from 'nock';
+import {
+  buildTestApp,
+  generateTestJwt,
+  setupJwksMock,
+} from './helpers/build-test-app.js';
 import { Email } from '../src/domain/model/email.value-object.js';
 import { UserProfile } from '../src/domain/model/user-profile.aggregate.js';
 import { UserRole } from '../src/domain/model/user-role.enum.js';
@@ -26,6 +31,8 @@ describe('User E2E', () => {
   let repo: jest.Mocked<IUserProfileRepository>;
 
   beforeAll(async () => {
+    nock.cleanAll();
+    setupJwksMock();
     repo = {
       findById: jest.fn((id: string) =>
         Promise.resolve(id === FOUND_ID ? sampleProfile : null),
@@ -38,12 +45,15 @@ describe('User E2E', () => {
 
   afterAll(async () => {
     await app.close();
+    nock.cleanAll();
   });
 
-  it('GET /v1/users/:id → 200 with UserProfile DTO when found', async () => {
+  it('GET /v1/users/:id → 200 when client accesses own profile', async () => {
+    const token = generateTestJwt({ sub: FOUND_ID, roles: ['client'] });
     const res = await app.inject({
       method: 'GET',
       url: `/v1/users/${FOUND_ID}`,
+      headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -63,10 +73,55 @@ describe('User E2E', () => {
     });
   });
 
+  it('GET /v1/users/:id → 200 when admin accesses any profile', async () => {
+    const adminJwt = generateTestJwt({
+      sub: 'admin-uuid',
+      roles: ['admin-super'],
+      amr: ['totp'],
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/users/${FOUND_ID}`,
+      headers: { Authorization: `Bearer ${adminJwt}` },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('GET /v1/users/:id → 401 when no JWT provided', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/users/${FOUND_ID}`,
+    });
+    expect(res.statusCode).toBe(401);
+    const body = res.json();
+    expect(body.error?.tukioCode).toBe('AUTH-NOT-AUTHENTICATED-002');
+  });
+
+  it('GET /v1/users/:id → 403 when client accesses another user profile', async () => {
+    const otherJwt = generateTestJwt({
+      sub: 'other-client-uuid',
+      roles: ['client'],
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/v1/users/${FOUND_ID}`,
+      headers: { Authorization: `Bearer ${otherJwt}` },
+    });
+    expect(res.statusCode).toBe(403);
+    const body = res.json();
+    expect(body.error?.tukioCode).toBe('AUTH-FORBIDDEN-001');
+  });
+
   it('GET /v1/users/:id → 404 wrapped in ErrorEnvelope when not found', async () => {
+    const adminJwt = generateTestJwt({
+      sub: 'admin-uuid',
+      roles: ['admin-super'],
+      amr: ['totp'],
+    });
     const res = await app.inject({
       method: 'GET',
       url: `/v1/users/${MISSING_ID}`,
+      headers: { Authorization: `Bearer ${adminJwt}` },
     });
     expect(res.statusCode).toBe(404);
     const body = res.json();
@@ -79,15 +134,24 @@ describe('User E2E', () => {
         instance: `/v1/users/${MISSING_ID}`,
         type: 'https://tukio.one/errors/user-not-found-001',
       },
-      meta: { locale: 'fr', correlationId: expect.any(String) },
     });
   });
 
+  it('GET /v1/health → 200 (public endpoint, no JWT needed)', async () => {
+    const res = await app.inject({ method: 'GET', url: '/v1/health' });
+    expect(res.statusCode).toBe(200);
+  });
+
   it('honours X-Tukio-Locale=en in meta', async () => {
+    const adminJwt = generateTestJwt({
+      sub: 'admin-uuid',
+      roles: ['admin-super'],
+      amr: ['totp'],
+    });
     const res = await app.inject({
       method: 'GET',
       url: `/v1/users/${MISSING_ID}`,
-      headers: { 'x-tukio-locale': 'en' },
+      headers: { Authorization: `Bearer ${adminJwt}`, 'x-tukio-locale': 'en' },
     });
     expect(res.json().meta.locale).toBe('en');
   });

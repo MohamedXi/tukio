@@ -4,13 +4,41 @@
   "testEnvironment": "node",
   "testRegex": "test/.*\\.e2e-spec\\.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "<rootDir>/tsconfig.json" }]
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": {
+          "module": "commonjs",
+          "moduleResolution": "node",
+          "esModuleInterop": true,
+          "experimentalDecorators": true,
+          "emitDecoratorMetadata": true,
+          "resolvePackageJsonExports": false
+        }
+      }
+    ]
   },
   "moduleNameMapper": {
     "^(\\.{1,2}/.*)\\.js$": "$1",
     "^@tukio/contracts$": "<rootDir>/../../packages/contracts/src/index.ts",
     "^@tukio/contracts/(.*)\\.js$": "<rootDir>/../../packages/contracts/src/$1.ts",
-    "^@tukio/contracts/(.*)$": "<rootDir>/../../packages/contracts/src/$1.ts"
+    "^@tukio/contracts/(.*)$": "<rootDir>/../../packages/contracts/src/$1.ts",
+    "^@tukio/auth$": "<rootDir>/../../packages/auth/src/index.ts",
+    "^@tukio/auth/module$": "<rootDir>/../../packages/auth/src/tukio-auth.module.ts",
+    "^@tukio/auth/guards$": "<rootDir>/../../packages/auth/src/guards/keycloak-jwt.guard.ts",
+    "^@tukio/auth/guards/roles$": "<rootDir>/../../packages/auth/src/guards/roles.guard.ts",
+    "^@tukio/auth/decorators$": "<rootDir>/../../packages/auth/src/decorators/roles.decorator.ts",
+    "^@tukio/auth/decorators/public$": "<rootDir>/../../packages/auth/src/decorators/public.decorator.ts",
+    "^@tukio/auth/decorators/current-actor$": "<rootDir>/../../packages/auth/src/decorators/current-actor.decorator.ts",
+    "^@tukio/auth/decorators/require-email-verified$": "<rootDir>/../../packages/auth/src/decorators/require-email-verified.decorator.ts",
+    "^@tukio/auth/decorators/require-mfa$": "<rootDir>/../../packages/auth/src/decorators/require-mfa.decorator.ts",
+    "^@tukio/auth/services/jwks-cache$": "<rootDir>/../../packages/auth/src/services/jwks-cache.service.ts",
+    "^@tukio/auth/services/actor-resolver$": "<rootDir>/../../packages/auth/src/services/actor-resolver.service.ts",
+    "^@tukio/auth/interceptors/actor-propagation$": "<rootDir>/../../packages/auth/src/interceptors/actor-propagation.interceptor.ts",
+    "^@tukio/auth/exceptions$": "<rootDir>/../../packages/auth/src/exceptions/index.ts",
+    "^@tukio/auth/types$": "<rootDir>/../../packages/auth/src/types/index.ts",
+    "^@tukio/auth/tokens$": "<rootDir>/../../packages/auth/src/tokens.ts",
+    "^jwks-rsa$": "<rootDir>/test/__mocks__/jwks-rsa.js"
   },
   "collectCoverageFrom": [
     "src/infrastructure/**/*.ts",

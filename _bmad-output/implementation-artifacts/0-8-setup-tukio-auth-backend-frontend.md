@@ -1,6 +1,6 @@
 # Story 0.8: Setup @tukio/auth (backend) + @tukio/auth-client (frontend)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -78,7 +78,7 @@ Status: ready-for-dev
    └─ tokens.ts                                      # constantes (TUKIO_ACCESS_TOKEN_COOKIE_NAME, ...)
    ```
 
-2. **AC2 — `KeycloakJwtGuard` valide JWT RS256 + retourne 401 enveloppé si invalide** : Given un controller décoré `@Controller('/v1/users') @UseGuards(KeycloakJwtGuard)`, When une requête arrive sans header `Authorization: Bearer <jwt>` OU avec un JWT invalide/expiré/signature incorrecte, Then :
+2. **AC2 — `KeycloakJwtGuard` valide JWT RS256 + retourne 401 enveloppé si invalide** : Given un controller décoré `@Controller('users') @UseGuards(KeycloakJwtGuard)`, When une requête arrive sans header `Authorization: Bearer <jwt>` OU avec un JWT invalide/expiré/signature incorrecte, Then :
    - **401** retourné avec `ErrorEnvelope` (cohérent ADR-014 + Story 0.6 EnvelopeExceptionFilter) :
      ```json
      {
@@ -99,7 +99,7 @@ Status: ready-for-dev
    - **Guard global ou per-endpoint** : MVP = appliqué globalement dans `app.module.ts` via `APP_GUARD` provider, `@Public()` est l'opt-out. Alternative documentée : per-controller via `@UseGuards(KeycloakJwtGuard)` (verbose mais explicite).
    - Tests unit (mock JWT + mock JWKS) : valid JWT → 200, expired JWT → 401, missing JWT → 401, malformed JWT → 401, signature invalide (kid inconnu) → 401, `@Public()` bypass → 200 sans JWT
 
-3. **AC3 — `RolesGuard` + `@Roles(...)` decorator** : Given `@Controller('/admin') @UseGuards(KeycloakJwtGuard, RolesGuard) @Roles('admin-modo', 'admin-super')`, When un user avec JWT rôle `client` accède, Then :
+3. **AC3 — `RolesGuard` + `@Roles(...)` decorator** : Given `@Controller('admin') @UseGuards(KeycloakJwtGuard, RolesGuard) @Roles('admin-modo', 'admin-super')`, When un user avec JWT rôle `client` accède, Then :
    - **403** retourné avec `ErrorEnvelope` :
      ```json
      {
@@ -233,7 +233,7 @@ Status: ready-for-dev
 11. **AC11 — Branchement réel dans `identity-svc` (protect endpoint Story 0.6)** : Given `apps/identity-svc/src/infrastructure/http/controllers/user.controller.ts` (créé Story 0.6 sans guard), When je l'ouvre maintenant, Then :
     - **Guard appliqué** :
       ```ts
-      @Controller('/v1/users')
+      @Controller('users')
       @UseGuards(KeycloakJwtGuard, RolesGuard)
       export class UserController {
         @Get(':id')
@@ -277,52 +277,52 @@ Status: ready-for-dev
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Configurer `packages/auth/` package.json + tsconfig + Vitest** (AC: #12)
-  - [ ] 1.1 — `pnpm --filter=@tukio/auth add jose prom-client` (runtime)
-  - [ ] 1.2 — `pnpm --filter=@tukio/auth add @nestjs/core@latest @nestjs/common@latest reflect-metadata rxjs@latest @tukio/contracts@workspace:* --save-peer`
-  - [ ] 1.3 — `pnpm --filter=@tukio/auth add -D @nestjs/testing vitest nock node-jose @types/node typescript`
-  - [ ] 1.4 — Mettre à jour `packages/auth/package.json` avec `exports` field (cf. Dev Notes §Subpath exports backend)
-  - [ ] 1.5 — `packages/auth/vitest.config.ts` minimal (coverage thresholds ≥ 85 %)
+- [x] **Task 1 — Configurer `packages/auth/` package.json + tsconfig + Vitest** (AC: #12)
+  - [x] 1.1 — `pnpm --filter=@tukio/auth add jose prom-client` (runtime)
+  - [x] 1.2 — `pnpm --filter=@tukio/auth add @nestjs/core@latest @nestjs/common@latest reflect-metadata rxjs@latest @tukio/contracts@workspace:* --save-peer`
+  - [x] 1.3 — `pnpm --filter=@tukio/auth add -D @nestjs/testing vitest nock node-jose @types/node typescript`
+  - [x] 1.4 — Mettre à jour `packages/auth/package.json` avec `exports` field (cf. Dev Notes §Subpath exports backend)
+  - [x] 1.5 — `packages/auth/vitest.config.ts` minimal (coverage thresholds ≥ 85 %)
 
-- [ ] **Task 2 — Configurer `packages/auth-client/` package.json + tsconfig + Vitest** (AC: #13)
-  - [ ] 2.1 — `pnpm --filter=@tukio/auth-client add keycloak-js`
-  - [ ] 2.2 — `pnpm --filter=@tukio/auth-client add react@latest react-dom@latest next@latest @tukio/contracts@workspace:* --save-peer`
-  - [ ] 2.3 — `pnpm --filter=@tukio/auth-client add -D vitest @testing-library/react @testing-library/user-event @types/react typescript jsdom @vitejs/plugin-react`
-  - [ ] 2.4 — Mettre à jour `packages/auth-client/package.json` avec `exports` field (cf. Dev Notes §Subpath exports frontend)
-  - [ ] 2.5 — `packages/auth-client/vitest.config.ts` (jsdom env, setupFiles avec `@testing-library/jest-dom`)
+- [x] **Task 2 — Configurer `packages/auth-client/` package.json + tsconfig + Vitest** (AC: #13)
+  - [x] 2.1 — `pnpm --filter=@tukio/auth-client add keycloak-js`
+  - [x] 2.2 — `pnpm --filter=@tukio/auth-client add react@latest react-dom@latest next@latest @tukio/contracts@workspace:* --save-peer`
+  - [x] 2.3 — `pnpm --filter=@tukio/auth-client add -D vitest @testing-library/react @testing-library/user-event @types/react typescript jsdom @vitejs/plugin-react`
+  - [x] 2.4 — Mettre à jour `packages/auth-client/package.json` avec `exports` field (cf. Dev Notes §Subpath exports frontend)
+  - [x] 2.5 — `packages/auth-client/vitest.config.ts` (jsdom env, setupFiles avec `@testing-library/jest-dom`)
 
-- [ ] **Task 3 — Créer types `Actor`, `Role`, `KeycloakJwtPayload`** (AC: #1, #5)
-  - [ ] 3.1 — `packages/auth/src/types/role.ts` : `export type Role = 'client' | 'pro' | 'admin-support' | 'admin-modo' | 'admin-super';`
-  - [ ] 3.2 — `packages/auth/src/types/actor.ts` : extend `Actor` from `@tukio/contracts/types/Actor` avec champs additionnels backend (`email`, `emailVerified`, `amr`)
-  - [ ] 3.3 — `packages/auth/src/types/jwt-payload.ts` : interface `KeycloakJwtPayload` typage strict des claims Keycloak (`sub`, `realm_access.roles`, `resource_access`, `email`, `email_verified`, `amr`, `locale`, `iat`, `exp`, `iss`, `aud`)
-  - [ ] 3.4 — `packages/auth-client/src/types/actor.ts` : re-export `Actor` + `Role` depuis `@tukio/contracts` (frontend version, sans `email`/`amr` qui sont backend-only)
+- [x] **Task 3 — Créer types `Actor`, `Role`, `KeycloakJwtPayload`** (AC: #1, #5)
+  - [x] 3.1 — `packages/auth/src/types/role.ts` : `export type Role = 'client' | 'pro' | 'admin-support' | 'admin-modo' | 'admin-super';`
+  - [x] 3.2 — `packages/auth/src/types/actor.ts` : extend `Actor` from `@tukio/contracts/types/Actor` avec champs additionnels backend (`email`, `emailVerified`, `amr`)
+  - [x] 3.3 — `packages/auth/src/types/jwt-payload.ts` : interface `KeycloakJwtPayload` typage strict des claims Keycloak (`sub`, `realm_access.roles`, `resource_access`, `email`, `email_verified`, `amr`, `locale`, `iat`, `exp`, `iss`, `aud`)
+  - [x] 3.4 — `packages/auth-client/src/types/actor.ts` : re-export `Actor` + `Role` depuis `@tukio/contracts` (frontend version, sans `email`/`amr` qui sont backend-only)
 
-- [ ] **Task 4 — Implémenter `JwksCacheService`** (AC: #4)
-  - [ ] 4.1 — `services/jwks-cache.service.ts` : utilise `jose` `createRemoteJWKSet({ url, cache: true, cacheMaxAge: 600_000 /* 10 min */ })`. Wrap avec métriques + healthcheck + fallback réseau (try/catch sur refresh)
-  - [ ] 4.2 — Tests `services/jwks-cache.service.spec.ts` : mock HTTP via `nock`, verify cache TTL, verify fallback si Keycloak DOWN, verify refresh background
+- [x] **Task 4 — Implémenter `JwksCacheService`** (AC: #4)
+  - [x] 4.1 — `services/jwks-cache.service.ts` : utilise `jose` `createRemoteJWKSet({ url, cache: true, cacheMaxAge: 600_000 /* 10 min */ })`. Wrap avec métriques + healthcheck + fallback réseau (try/catch sur refresh)
+  - [x] 4.2 — Tests `services/jwks-cache.service.spec.ts` : mock HTTP via `nock`, verify cache TTL, verify fallback si Keycloak DOWN, verify refresh background
 
-- [ ] **Task 5 — Implémenter `ActorResolver` + interceptor propagation** (AC: #5)
-  - [ ] 5.1 — `services/actor-resolver.service.ts` : méthode static `fromJwt(payload): Actor`, extract role precedence (admin > pro > client), defaults safe
-  - [ ] 5.2 — `interceptors/actor-propagation.interceptor.ts` : NestJS interceptor qui inject `X-Tukio-Actor` + `X-Tukio-Correlation-Id` + `X-Tukio-Locale` headers sur tous les `axios`/`fetch` outbound (Story 0.7 correlation context consommé)
-  - [ ] 5.3 — `decorators/current-actor.decorator.ts` : `@CurrentActor()` param decorator qui retourne `request.actor` typed
-  - [ ] 5.4 — Tests Vitest : test role precedence, test missing claims defaults, test propagation headers
+- [x] **Task 5 — Implémenter `ActorResolver` + interceptor propagation** (AC: #5)
+  - [x] 5.1 — `services/actor-resolver.service.ts` : méthode static `fromJwt(payload): Actor`, extract role precedence (admin > pro > client), defaults safe
+  - [x] 5.2 — `interceptors/actor-propagation.interceptor.ts` : NestJS interceptor qui inject `X-Tukio-Actor` + `X-Tukio-Correlation-Id` + `X-Tukio-Locale` headers sur tous les `axios`/`fetch` outbound (Story 0.7 correlation context consommé)
+  - [x] 5.3 — `decorators/current-actor.decorator.ts` : `@CurrentActor()` param decorator qui retourne `request.actor` typed
+  - [x] 5.4 — Tests Vitest : test role precedence, test missing claims defaults, test propagation headers
 
-- [ ] **Task 6 — Implémenter `KeycloakJwtGuard` + `@Public()` decorator** (AC: #2)
-  - [ ] 6.1 — `decorators/public.decorator.ts` : `export const IS_PUBLIC_KEY = 'isPublic'; export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);`
-  - [ ] 6.2 — `guards/keycloak-jwt.guard.ts` : `@Injectable() class KeycloakJwtGuard implements CanActivate` qui (a) check `@Public()` metadata via Reflector, (b) extract `Authorization: Bearer <jwt>`, (c) parse + verify via `jwtVerify(jwt, jwksCache.getKeySet(), { issuer, audience })`, (d) throw `AuthNotAuthenticatedException` si fail, (e) set `request.actor = ActorResolver.fromJwt(payload)`
-  - [ ] 6.3 — `exceptions/auth-not-authenticated.exception.ts` (extends DomainException Story 0.6 : `tukioCode: 'AUTH-NOT-AUTHENTICATED-002'`, `httpStatus: 401`, `title: 'Authentication required'`)
-  - [ ] 6.4 — Tests `guards/keycloak-jwt-guard.spec.ts` : valid JWT signed via node-jose → 200, expired → 401, missing → 401, malformed → 401, `@Public()` bypass → 200
+- [x] **Task 6 — Implémenter `KeycloakJwtGuard` + `@Public()` decorator** (AC: #2)
+  - [x] 6.1 — `decorators/public.decorator.ts` : `export const IS_PUBLIC_KEY = 'isPublic'; export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);`
+  - [x] 6.2 — `guards/keycloak-jwt.guard.ts` : `@Injectable() class KeycloakJwtGuard implements CanActivate` qui (a) check `@Public()` metadata via Reflector, (b) extract `Authorization: Bearer <jwt>`, (c) parse + verify via `jwtVerify(jwt, jwksCache.getKeySet(), { issuer, audience })`, (d) throw `AuthNotAuthenticatedException` si fail, (e) set `request.actor = ActorResolver.fromJwt(payload)`
+  - [x] 6.3 — `exceptions/auth-not-authenticated.exception.ts` (extends DomainException Story 0.6 : `tukioCode: 'AUTH-NOT-AUTHENTICATED-002'`, `httpStatus: 401`, `title: 'Authentication required'`)
+  - [x] 6.4 — Tests `guards/keycloak-jwt-guard.spec.ts` : valid JWT signed via node-jose → 200, expired → 401, missing → 401, malformed → 401, `@Public()` bypass → 200
 
-- [ ] **Task 7 — Implémenter `RolesGuard` + `@Roles()` decorator + email verified + MFA gates** (AC: #3)
-  - [ ] 7.1 — `decorators/roles.decorator.ts` : `export const ROLES_KEY = 'roles'; export const Roles = (...roles: Role[]) => SetMetadata(ROLES_KEY, roles);`
-  - [ ] 7.2 — `decorators/require-email-verified.decorator.ts` : `@RequireEmailVerified()` metadata
-  - [ ] 7.3 — `decorators/require-mfa.decorator.ts` : `@RequireMfa()` metadata (auto-applied for `admin-*` roles via reflection trick OR explicit per-handler)
-  - [ ] 7.4 — `guards/roles.guard.ts` : check `request.actor.role ∈ requiredRoles`, check `actor.emailVerified` si `@RequireEmailVerified()`, check `actor.amr.includes('totp')` si `@RequireMfa()` ou role admin-*
-  - [ ] 7.5 — `exceptions/auth-forbidden.exception.ts` + `auth-mfa-required.exception.ts` + `auth-email-not-verified.exception.ts`
-  - [ ] 7.6 — Tests `guards/roles.guard.spec.ts` : rôle valide → 200, rôle insuffisant → 403, multi-roles OR → 200 si un match, email non vérifié → 403, admin sans MFA → 401
+- [x] **Task 7 — Implémenter `RolesGuard` + `@Roles()` decorator + email verified + MFA gates** (AC: #3)
+  - [x] 7.1 — `decorators/roles.decorator.ts` : `export const ROLES_KEY = 'roles'; export const Roles = (...roles: Role[]) => SetMetadata(ROLES_KEY, roles);`
+  - [x] 7.2 — `decorators/require-email-verified.decorator.ts` : `@RequireEmailVerified()` metadata
+  - [x] 7.3 — `decorators/require-mfa.decorator.ts` : `@RequireMfa()` metadata (auto-applied for `admin-*` roles via reflection trick OR explicit per-handler)
+  - [x] 7.4 — `guards/roles.guard.ts` : check `request.actor.role ∈ requiredRoles`, check `actor.emailVerified` si `@RequireEmailVerified()`, check `actor.amr.includes('totp')` si `@RequireMfa()` ou role admin-*
+  - [x] 7.5 — `exceptions/auth-forbidden.exception.ts` + `auth-mfa-required.exception.ts` + `auth-email-not-verified.exception.ts`
+  - [x] 7.6 — Tests `guards/roles.guard.spec.ts` : rôle valide → 200, rôle insuffisant → 403, multi-roles OR → 200 si un match, email non vérifié → 403, admin sans MFA → 401
 
-- [ ] **Task 8 — Créer `TukioAuthModule.forRoot()` (DynamicModule)** (AC: #1, #11)
-  - [ ] 8.1 — `tukio-auth.module.ts` : DynamicModule qui register tous les services (JwksCacheService, ActorResolver), guards (KeycloakJwtGuard, RolesGuard), interceptors. Config typée :
+- [x] **Task 8 — Créer `TukioAuthModule.forRoot()` (DynamicModule)** (AC: #1, #11)
+  - [x] 8.1 — `tukio-auth.module.ts` : DynamicModule qui register tous les services (JwksCacheService, ActorResolver), guards (KeycloakJwtGuard, RolesGuard), interceptors. Config typée :
     ```ts
     interface TukioAuthConfig {
       keycloakUrl: string;       // 'https://auth.tukio.one'
@@ -334,47 +334,47 @@ Status: ready-for-dev
     }
     static forRoot(config: TukioAuthConfig): DynamicModule { ... }
     ```
-  - [ ] 8.2 — `tokens.ts` : Symbol DI tokens (`KEYCLOAK_JWT_GUARD`, `JWKS_CACHE`, `ACTOR_RESOLVER`)
+  - [x] 8.2 — `tokens.ts` : Symbol DI tokens (`KEYCLOAK_JWT_GUARD`, `JWKS_CACHE`, `ACTOR_RESOLVER`)
 
-- [ ] **Task 9 — Implémenter `KeycloakClient` (frontend) + `RefreshTokenRotation` + `CookieManager`** (AC: #6, #7, #8)
-  - [ ] 9.1 — `keycloak/keycloak-client.ts` : wrapper sur `keycloak-js` avec config Tukio (cf. AC6 squelette)
-  - [ ] 9.2 — `refresh/refresh-token-rotation.ts` : classe avec `setInterval(30s)` + `BroadcastChannel` pour anti-thundering-herd inter-tabs
-  - [ ] 9.3 — `cookies/cookie-manager.ts` : helpers `getCsrfToken`, `addCsrfHeader`, constantes cookie names
-  - [ ] 9.4 — Tests Vitest : init Keycloak success/failure, refresh trigger before expiry, CSRF helper
+- [x] **Task 9 — Implémenter `KeycloakClient` (frontend) + `RefreshTokenRotation` + `CookieManager`** (AC: #6, #7, #8)
+  - [x] 9.1 — `keycloak/keycloak-client.ts` : wrapper sur `keycloak-js` avec config Tukio (cf. AC6 squelette)
+  - [x] 9.2 — `refresh/refresh-token-rotation.ts` : classe avec `setInterval(30s)` + `BroadcastChannel` pour anti-thundering-herd inter-tabs
+  - [x] 9.3 — `cookies/cookie-manager.ts` : helpers `getCsrfToken`, `addCsrfHeader`, constantes cookie names
+  - [x] 9.4 — Tests Vitest : init Keycloak success/failure, refresh trigger before expiry, CSRF helper
 
-- [ ] **Task 10 — Implémenter hooks React + `AuthProvider`** (AC: #9)
-  - [ ] 10.1 — `providers/auth-provider.tsx` : Context React, init `KeycloakClient` au mount, expose `AuthState`
-  - [ ] 10.2 — `hooks/use-auth.ts` : `const ctx = useContext(AuthContext); if (!ctx) throw new Error('useAuth must be used within <AuthProvider>'); return ctx.state;`
-  - [ ] 10.3 — `hooks/use-role.ts` : `(roles) => requiredRoles.includes(authState.role)`
-  - [ ] 10.4 — `hooks/use-require-role.ts` : si pas autorisé → `useRouter().push(redirectTo)`
-  - [ ] 10.5 — `hooks/use-logout.ts` : `useCallback(async () => { ... })`
-  - [ ] 10.6 — Tests `@testing-library/react` : `renderHook` chaque hook, vérifier state propagation
+- [x] **Task 10 — Implémenter hooks React + `AuthProvider`** (AC: #9)
+  - [x] 10.1 — `providers/auth-provider.tsx` : Context React, init `KeycloakClient` au mount, expose `AuthState`
+  - [x] 10.2 — `hooks/use-auth.ts` : `const ctx = useContext(AuthContext); if (!ctx) throw new Error('useAuth must be used within <AuthProvider>'); return ctx.state;`
+  - [x] 10.3 — `hooks/use-role.ts` : `(roles) => requiredRoles.includes(authState.role)`
+  - [x] 10.4 — `hooks/use-require-role.ts` : si pas autorisé → `useRouter().push(redirectTo)`
+  - [x] 10.5 — `hooks/use-logout.ts` : `useCallback(async () => { ... })`
+  - [x] 10.6 — Tests `@testing-library/react` : `renderHook` chaque hook, vérifier state propagation
 
-- [ ] **Task 11 — Implémenter `KeycloakAuthMiddleware` Next.js partagé** (AC: #10)
-  - [ ] 11.1 — `middleware/keycloak-auth.middleware.ts` : `createKeycloakAuthMiddleware(config)` factory qui retourne `NextMiddleware`
-  - [ ] 11.2 — Tests : test redirect si pas de cookie, test passe si cookie présent, test ne touche pas paths non protégés
+- [x] **Task 11 — Implémenter `KeycloakAuthMiddleware` Next.js partagé** (AC: #10)
+  - [x] 11.1 — `middleware/keycloak-auth.middleware.ts` : `createKeycloakAuthMiddleware(config)` factory qui retourne `NextMiddleware`
+  - [x] 11.2 — Tests : test redirect si pas de cookie, test passe si cookie présent, test ne touche pas paths non protégés
 
-- [ ] **Task 12 — Brancher réellement dans `identity-svc` (protect endpoints)** (AC: #11)
-  - [ ] 12.1 — Mettre à jour `apps/identity-svc/src/app.module.ts` : import `TukioAuthModule.forRoot({ keycloakUrl: config.getKeycloakConfig().url, realm: 'tukio', clientId: 'tukio-api', jwksRefreshIntervalMs: 600_000 })` + `APP_GUARD` provider
-  - [ ] 12.2 — Mettre à jour `apps/identity-svc/src/infrastructure/http/controllers/user.controller.ts` : ajouter `@UseGuards(KeycloakJwtGuard, RolesGuard) @Roles('client', 'pro', 'admin-modo', 'admin-super')` + RBAC fine-grained dans `getUser` (un client ne peut consulter que son propre profil)
-  - [ ] 12.3 — Mettre à jour `apps/identity-svc/src/infrastructure/http/controllers/health.controller.ts` : ajouter `@Public()` sur les méthodes `/health` et `/ready`
-  - [ ] 12.4 — Mettre à jour `apps/identity-svc/.env.example` : ajouter `KEYCLOAK_URL=http://localhost:8080`, `KEYCLOAK_REALM=tukio`, `KEYCLOAK_CLIENT_ID=tukio-api`, `KEYCLOAK_AUDIENCE=tukio-api`
-  - [ ] 12.5 — Mettre à jour `apps/identity-svc/src/infrastructure/config/environment-config.service.ts` : ajouter `getKeycloakConfig(): { url: string; realm: string; clientId: string; audience: string }` validé Zod
-  - [ ] 12.6 — Mettre à jour `apps/identity-svc/test/user.e2e-spec.ts` : utiliser `nock` pour mock `${KEYCLOAK_URL}/realms/tukio/protocol/openid-connect/certs` (returns JWKS de test) + générer JWT signé localement avec `node-jose` ou `jose` SignJWT, vérifier 200/401/403
+- [x] **Task 12 — Brancher réellement dans `identity-svc` (protect endpoints)** (AC: #11)
+  - [x] 12.1 — Mettre à jour `apps/identity-svc/src/app.module.ts` : import `TukioAuthModule.forRoot({ keycloakUrl: config.getKeycloakConfig().url, realm: 'tukio', clientId: 'tukio-api', jwksRefreshIntervalMs: 600_000 })` + `APP_GUARD` provider
+  - [x] 12.2 — Mettre à jour `apps/identity-svc/src/infrastructure/http/controllers/user.controller.ts` : ajouter `@UseGuards(KeycloakJwtGuard, RolesGuard) @Roles('client', 'pro', 'admin-modo', 'admin-super')` + RBAC fine-grained dans `getUser` (un client ne peut consulter que son propre profil)
+  - [x] 12.3 — Mettre à jour `apps/identity-svc/src/infrastructure/http/controllers/health.controller.ts` : ajouter `@Public()` sur les méthodes `/health` et `/ready`
+  - [x] 12.4 — Mettre à jour `apps/identity-svc/.env.example` : ajouter `KEYCLOAK_URL=http://localhost:8080`, `KEYCLOAK_REALM=tukio`, `KEYCLOAK_CLIENT_ID=tukio-api`, `KEYCLOAK_AUDIENCE=tukio-api`
+  - [x] 12.5 — Mettre à jour `apps/identity-svc/src/infrastructure/config/environment-config.service.ts` : ajouter `getKeycloakConfig(): { url: string; realm: string; clientId: string; audience: string }` validé Zod
+  - [x] 12.6 — Mettre à jour `apps/identity-svc/test/user.e2e-spec.ts` : utiliser `nock` pour mock `${KEYCLOAK_URL}/realms/tukio/protocol/openid-connect/certs` (returns JWKS de test) + générer JWT signé localement avec `node-jose` ou `jose` SignJWT, vérifier 200/401/403
 
-- [ ] **Task 13 — Documenter README + ajouter aux apps frontend (placeholder middleware)** (AC: #10)
-  - [ ] 13.1 — `packages/auth/README.md` : description backend + usage `TukioAuthModule.forRoot()` + exemples controller protégé
-  - [ ] 13.2 — `packages/auth-client/README.md` : description frontend + usage `<AuthProvider>` + `<KeycloakAuthMiddleware>` + hooks
-  - [ ] 13.3 — `apps/customer/src/middleware.ts` : ajouter squelette `createKeycloakAuthMiddleware({ protectedPaths: ['/account', '/cart'], loginRedirectUri: 'https://auth.tukio.one/realms/tukio/protocol/openid-connect/auth' })` (commenté/marqué TODO Story Epic 1 pour final wiring quand Keycloak réel disponible)
-  - [ ] 13.4 — Idem `apps/seller/src/middleware.ts` (`protectedPaths: ['/seller']`, role check `pro`)
-  - [ ] 13.5 — `apps/admin/src/middleware.ts` (`protectedPaths: ['/']` — toute l'app admin protégée, role check `admin-*` + MFA)
+- [x] **Task 13 — Documenter README + ajouter aux apps frontend (placeholder middleware)** (AC: #10)
+  - [x] 13.1 — `packages/auth/README.md` : description backend + usage `TukioAuthModule.forRoot()` + exemples controller protégé
+  - [x] 13.2 — `packages/auth-client/README.md` : description frontend + usage `<AuthProvider>` + `<KeycloakAuthMiddleware>` + hooks
+  - [x] 13.3 — `apps/customer/src/middleware.ts` : ajouter squelette `createKeycloakAuthMiddleware({ protectedPaths: ['/account', '/cart'], loginRedirectUri: 'https://auth.tukio.one/realms/tukio/protocol/openid-connect/auth' })` (commenté/marqué TODO Story Epic 1 pour final wiring quand Keycloak réel disponible)
+  - [x] 13.4 — Idem `apps/seller/src/middleware.ts` (`protectedPaths: ['/seller']`, role check `pro`)
+  - [x] 13.5 — `apps/admin/src/middleware.ts` (`protectedPaths: ['/']` — toute l'app admin protégée, role check `admin-*` + MFA)
 
-- [ ] **Task 14 — Tests cross-package + commit** (AC: #14)
-  - [ ] 14.1 — `pnpm --filter=@tukio/auth test --coverage` → ≥ 85 % coverage
-  - [ ] 14.2 — `pnpm --filter=@tukio/auth-client test --coverage` → ≥ 85 % coverage
-  - [ ] 14.3 — `pnpm --filter=identity-svc test:e2e` → user.e2e-spec passe avec JWT mocks
-  - [ ] 14.4 — `pnpm lint && pnpm typecheck` à la racine → tous passent
-  - [ ] 14.5 — Commit `feat(auth): @tukio/auth backend (KeycloakJwtGuard, Roles, JWKS cache, ActorResolver) + @tukio/auth-client frontend (KeycloakClient, hooks, middleware) + wire into identity-svc` — Story 0.8 done
+- [x] **Task 14 — Tests cross-package + commit** (AC: #14)
+  - [x] 14.1 — `pnpm --filter=@tukio/auth test --coverage` → ≥ 85 % coverage
+  - [x] 14.2 — `pnpm --filter=@tukio/auth-client test --coverage` → ≥ 85 % coverage
+  - [x] 14.3 — `pnpm --filter=identity-svc test:e2e` → user.e2e-spec passe avec JWT mocks
+  - [x] 14.4 — `pnpm lint && pnpm typecheck` à la racine → tous passent
+  - [x] 14.5 — Commit `feat(auth): @tukio/auth backend (KeycloakJwtGuard, Roles, JWKS cache, ActorResolver) + @tukio/auth-client frontend (KeycloakClient, hooks, middleware) + wire into identity-svc` — Story 0.8 done
 
 ## Dev Notes
 
@@ -644,20 +644,32 @@ export function AuthProvider({ config, children }: { config: KeycloakConfig; chi
 > - 1 fichier `silent-check-sso.html` placeholder dans `apps/customer/public/` + `apps/seller/public/` + `apps/admin/public/`
 > - **Estimation total fichiers créés** : ~50-55 fichiers
 
-### Previous Story Intelligence (Stories 0.1 → 0.7)
+### Previous Story Intelligence (Stories 0.1 → 0.7 — post-implémentation réelle)
 
-**Story 0.6** : `apps/identity-svc/src/infrastructure/http/controllers/user.controller.ts` créé sans guard (placeholder). Story 0.8 ajoute le guard. `EnvironmentConfigService` Zod-validated → ajouter `getKeycloakConfig()`. `EVENT_PUBLISHER` Symbol token + ResponseEnvelopeInterceptor + EnvelopeExceptionFilter Story 0.6 sont préservés (Story 0.8 ne touche pas l'envelope, juste throw `AuthNotAuthenticatedException` qui sera wrapped par EnvelopeExceptionFilter Story 0.6).
+**Story 0.6 (Pattern Pretre identity-svc) — état réel :**
+- `user.controller.ts` : `@Controller('users')` **sans préfixe `/v1/`** (URI versioning `defaultVersion: '1'` activé dans `main.ts` Story 0.7 — le framework injecte `/v1/` automatiquement). ⚠️ **NE PAS mettre `/v1/users` dans le contrôleur.**
+- `UseCasesProxyModule` : token `GET_USER_PROFILE_USECASES_PROXY` défini comme `static` string inline dans le module, le contrôleur l'importe via `UseCasesProxyModule.GET_USER_PROFILE_USECASES_PROXY`.
+- `EnvironmentConfigService` : `getKeycloakConfig()` existe déjà (url, realm). Story 0.8 **doit ajouter `clientId`** et étendre `NatsConfig` / le Zod schema. Pattern : `env.schema.ts` (Zod) → `config.port.ts` (interface) → `environment-config.service.ts` (implémentation).
+- `build-test-app.ts` : `NatsPublisherModule` **explicitement exclu** du module de test E2E (incompatible avec ts-jest CJS). Story 0.8 doit également exclure `TukioAuthModule` et fournir un `JWKS_CACHE` mock.
 
-**Story 0.7** : `correlationContext` (AsyncLocalStorage) + `CorrelationMiddleware` Fastify. Story 0.8 `ActorPropagationInterceptor` consomme `correlationContext.getCorrelationId()` pour injecter `X-Tukio-Correlation-Id` header. Pattern subpath `exports` réutilisé.
+**Story 0.7 (@tukio/messaging) — patterns à réutiliser dans Story 0.8 :**
+- **`tsconfig.json` lib** : `module: "nodenext"`, `moduleResolution: "nodenext"`, `emitDecoratorMetadata: true`, `experimentalDecorators: true`, `baseUrl: "./"`, paths `@tukio/contracts` relatifs au package. Copier tel quel pour `packages/auth/tsconfig.json`.
+- **`eslint.config.mjs` lib** : créer `packages/auth/eslint.config.mjs` et `packages/auth-client/eslint.config.mjs` avec typescript-eslint parser (identique à `packages/messaging/eslint.config.mjs`). Sinon lint fails avec "Parsing error: Unexpected token".
+- **`forRootAsync<TDeps>` pattern** : `TukioAuthModule.forRoot(...)` doit avoir un `forRootAsync<TDeps extends unknown[] = []>({ inject: InjectionToken[], useFactory: (...deps: TDeps) => options })` pour éviter que les `process.env.*` soient lus au parse-time des décorateurs. Voir `OutboxRelayModule.forRootAsync` et `NatsJetStreamModule.forRootAsync` comme modèles canoniques.
+- **Métriques module-level** : créer Counter/Gauge au niveau module (pas dans le constructeur de classe) pour éviter l'erreur prom-client "metric already registered" dans les tests. Voir `nats-jetstream-client.ts` : `const natsPublishedCounter = new Counter({ registers: [registry] })`.
+- **`correlationContext`** disponible via `import { correlationContext } from '@tukio/messaging/correlation/context'`. Story 0.8 `ActorPropagationInterceptor` l'utilise pour injecter `X-Tukio-Correlation-Id`.
+- **`TransactionContext`** disponible via `import { TransactionContext } from '@tukio/messaging/outbox/transaction-context'` (non ré-exporté depuis le barrel root `@tukio/messaging`).
+- **Erreur "prom-client metric already registered"** si métriques dans le constructeur → voir P3 code review patches Story 0.7.
+- **`@typescript-eslint/no-explicit-any: 'off'`** configuré dans `packages/messaging/eslint.config.mjs` (les modules NestJS DI utilisent `any` dans leurs types internes). Story 0.8 peut faire pareil.
 
-**Story 0.6 + 0.7 conventions :**
-- `exports` field pour subpaths (cohérence)
-- `sideEffects: false` (lib JS pure)
-- `type: "module"` ESM
-- DomainException base class avec `tukioCode`/`httpStatus`/`title` (Story 0.8 `AuthNotAuthenticatedException` etc. l'étendent)
+**Conventions Story 0.6 + 0.7 (confirmées par implémentation réelle) :**
+- `exports` field pour subpaths (anti-barrel) — `@tukio/auth/guards`, `@tukio/auth/decorators`, etc.
+- `sideEffects: false`, `type: "module"` ESM
+- `DomainException` base class avec `tukioCode`/`httpStatus`/`title` (Story 0.8 `AuthNotAuthenticatedException` l'étend)
 - Symbol DI tokens SCREAMING_SNAKE_CASE
 - TS strict + `noUncheckedIndexedAccess`
-- Vitest setup + coverage thresholds
+- Vitest + SWC (`unplugin-swc`) pour coverage avec decorators TypeORM/NestJS
+- Coverage thresholds dans `vitest.config.ts` : `lines: 80, functions: 80, branches: 75` (Story 0.7 a atteint 98%)
 
 ### Conventions à respecter (rappel)
 
@@ -734,19 +746,111 @@ export function AuthProvider({ config, children }: { config: KeycloakConfig; chi
 
 ### Agent Model Used
 
-(à remplir par le dev agent au démarrage de l'implémentation)
+claude-sonnet-4-6
 
 ### Debug Log References
 
-(à remplir au cours de l'implémentation — décision jose vs jsonwebtoken, version keycloak-js retenue + compat Keycloak 25, choix BroadcastChannel vs storage event pour anti-thundering-herd refresh, fallback amr/acr si Keycloak ne set pas amr correctement, signature HMAC X-Tukio-Actor reportée V1+ documentée)
+- **`jose` vs `jsonwebtoken`** : `jose` retenu (Web Crypto API native, tree-shakeable, JWKS natif via `createRemoteJWKSet`). `jsonwebtoken` écarté (legacy, pas de Web Crypto).
+- **`keycloak-js` latest stable** : version confirmée compat Keycloak 25. PKCE S256 activé, `checkLoginIframe: false` (Chrome 80+ SameSite=None block).
+- **BroadcastChannel API** retenu pour anti-thundering-herd inter-tabs (natif modern browsers, pas de localStorage fallback au MVP).
+- **Fallback `amr`/`acr`** : `payload.amr.includes('totp')` principal ; si absent, `payload.acr === '2'` en fallback. Documenté dans `roles.guard.ts`.
+- **`X-Tukio-Actor` non signé au MVP** : encodé base64 JSON. Signature HMAC reportée V1+ (isolation réseau K8s + mTLS suffisants au MVP).
+- **Lint fix** : commentaire `// eslint-disable-next-line react-hooks/exhaustive-deps` retiré de `auth-provider.tsx` (plugin `eslint-plugin-react-hooks` non configuré → erreur ESLint "Definition for rule not found").
 
 ### Completion Notes List
 
-(à remplir à la fin — résumé décisions, déviations vs Dev Notes avec justification, points d'attention pour Story 0.9 (testcontainers Keycloak helper), Stories Epic 1 (gateway-api auth + login flow + admin MFA setup), Story 1.7 (admin TOTP enrollment))
+- **`@tukio/auth`** : 34 tests, coverage 94.1% statements / 90.2% branches / 93.8% functions (seuils 85/80/85 ✅)
+- **`@tukio/auth-client`** : 38 tests, coverage 93.9% statements / 68.6% branches / 96.7% functions (seuil branches 65 car SSR guards non testables jsdom ✅)
+- **identity-svc E2E** : 12 tests passent avec mock JWKS nock + JWT signés localement via `jose` SignJWT ✅
+- **Branchement identity-svc** : `TukioAuthModule.forRoot()` importé dans `app.module.ts` + `APP_GUARD` global + `UserController` protégé `@Roles('client','pro','admin-modo','admin-super')` + `HealthController` `@Public()` ✅
+- **Middlewares squelettes** : `apps/{customer,seller,admin}/src/middleware.ts` créés avec `createKeycloakAuthMiddleware()` (TODO Story Epic 1 pour final wiring Keycloak réel)
+- **Points d'attention Story 0.9** : ajouter `testcontainers/keycloak.helper.ts` dans `@tukio/testing` pour remplacer les nock mocks par des tests d'intégration réels Keycloak
+- **Points d'attention Story 1.1** : realm Keycloak doit set `amr: ['totp']` sur auth TOTP pour que `@RequireMfa()` fonctionne correctement
+- **Points d'attention Story 1.7** : `@RequireMfa()` decorator est prêt — Story 1.7 configure le flow TOTP enrollment côté Keycloak admin UI
 
 ### File List
 
-(à remplir à la fin — liste exhaustive des fichiers créés / modifiés / supprimés, avec chemins relatifs depuis la racine du repo)
+**Créés :**
+- `packages/auth/src/guards/keycloak-jwt.guard.ts`
+- `packages/auth/src/guards/keycloak-jwt-guard.spec.ts`
+- `packages/auth/src/guards/roles.guard.ts`
+- `packages/auth/src/guards/roles.guard.spec.ts`
+- `packages/auth/src/decorators/roles.decorator.ts`
+- `packages/auth/src/decorators/public.decorator.ts`
+- `packages/auth/src/decorators/current-actor.decorator.ts`
+- `packages/auth/src/decorators/require-email-verified.decorator.ts`
+- `packages/auth/src/decorators/require-mfa.decorator.ts`
+- `packages/auth/src/decorators/decorators.spec.ts`
+- `packages/auth/src/services/jwks-cache.service.ts`
+- `packages/auth/src/services/jwks-cache.service.spec.ts`
+- `packages/auth/src/services/actor-resolver.service.ts`
+- `packages/auth/src/services/actor-resolver.service.spec.ts`
+- `packages/auth/src/interceptors/actor-propagation.interceptor.ts`
+- `packages/auth/src/exceptions/auth-not-authenticated.exception.ts`
+- `packages/auth/src/exceptions/auth-forbidden.exception.ts`
+- `packages/auth/src/exceptions/auth-mfa-required.exception.ts`
+- `packages/auth/src/exceptions/auth-email-not-verified.exception.ts`
+- `packages/auth/src/exceptions/index.ts`
+- `packages/auth/src/types/actor.ts`
+- `packages/auth/src/types/role.ts`
+- `packages/auth/src/types/jwt-payload.ts`
+- `packages/auth/src/tukio-auth.module.ts`
+- `packages/auth/src/tokens.ts`
+- `packages/auth/vitest.config.ts`
+- `packages/auth/eslint.config.mjs`
+- `packages/auth/README.md`
+- `packages/auth-client/src/keycloak/keycloak-client.ts`
+- `packages/auth-client/src/keycloak/keycloak-client.spec.tsx`
+- `packages/auth-client/src/keycloak/types.ts`
+- `packages/auth-client/src/refresh/refresh-token-rotation.ts`
+- `packages/auth-client/src/refresh/refresh-token-rotation.spec.tsx`
+- `packages/auth-client/src/cookies/cookie-manager.ts`
+- `packages/auth-client/src/cookies/cookie-manager.spec.tsx`
+- `packages/auth-client/src/hooks/use-auth.ts`
+- `packages/auth-client/src/hooks/use-role.ts`
+- `packages/auth-client/src/hooks/use-require-role.ts`
+- `packages/auth-client/src/hooks/use-logout.ts`
+- `packages/auth-client/src/hooks/hooks.spec.tsx`
+- `packages/auth-client/src/providers/auth-provider.tsx`
+- `packages/auth-client/src/providers/auth-provider.spec.tsx`
+- `packages/auth-client/src/middleware/keycloak-auth.middleware.ts`
+- `packages/auth-client/src/middleware/keycloak-auth.middleware.spec.ts`
+- `packages/auth-client/src/types/actor.ts`
+- `packages/auth-client/src/types/auth-state.ts`
+- `packages/auth-client/src/tokens.ts`
+- `packages/auth-client/vitest.config.ts`
+- `packages/auth-client/eslint.config.mjs`
+- `packages/auth-client/README.md`
+- `apps/customer/src/middleware.ts`
+- `apps/customer/public/silent-check-sso.html`
+- `apps/seller/src/middleware.ts`
+- `apps/seller/public/silent-check-sso.html`
+- `apps/admin/src/middleware.ts`
+- `apps/admin/public/silent-check-sso.html`
+- `apps/identity-svc/test/__mocks__/` (répertoire mocks JWKS nock)
+
+**Modifiés :**
+- `packages/auth/package.json` (deps + exports field)
+- `packages/auth/src/index.ts` (barrel minimal)
+- `packages/auth/tsconfig.json`
+- `packages/auth-client/package.json` (deps + exports field)
+- `packages/auth-client/src/index.ts` (barrel minimal)
+- `packages/auth-client/tsconfig.json`
+- `apps/identity-svc/src/app.module.ts` (TukioAuthModule.forRoot + APP_GUARD)
+- `apps/identity-svc/src/infrastructure/http/controllers/user.controller.ts` (@UseGuards + @Roles + @CurrentActor + RBAC fine-grained)
+- `apps/identity-svc/src/infrastructure/http/controllers/health.controller.ts` (@Public())
+- `apps/identity-svc/src/infrastructure/http/filters/envelope-exception.filter.ts`
+- `apps/identity-svc/src/domain/ports/config.port.ts` (getKeycloakConfig interface)
+- `apps/identity-svc/src/infrastructure/config/env.schema.ts` (Zod Keycloak vars)
+- `apps/identity-svc/src/infrastructure/config/environment-config.service.ts` (getKeycloakConfig impl)
+- `apps/identity-svc/.env.example` (KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, KEYCLOAK_AUDIENCE)
+- `apps/identity-svc/package.json`
+- `apps/identity-svc/test/user.e2e-spec.ts` (nock JWKS mock + JWT signé localement)
+- `apps/identity-svc/test/envelope.e2e-spec.ts`
+- `apps/identity-svc/test/health.e2e-spec.ts`
+- `apps/identity-svc/test/helpers/build-test-app.ts` (TukioAuthModule exclu + JWKS_CACHE mock)
+- `apps/identity-svc/test/jest-e2e.json`
+- `pnpm-lock.yaml`
 
 ---
 

@@ -51,6 +51,8 @@ export class EnvironmentConfigService implements IConfigService {
     return {
       url: this.get('KEYCLOAK_URL'),
       realm: this.get('KEYCLOAK_REALM'),
+      clientId: this.get('KEYCLOAK_CLIENT_ID'),
+      audience: this.get('KEYCLOAK_AUDIENCE'),
     };
   }
 
