@@ -96,6 +96,8 @@ export class EnvelopeExceptionFilter implements ExceptionFilter {
     exception: unknown,
     instance: string,
   ): { httpStatus: number; body: ErrorBody } {
+    // Handles every DomainException (identity-svc + @tukio/auth share the
+    // same base from @tukio/contracts).
     if (exception instanceof DomainException) {
       return {
         httpStatus: exception.httpStatus,

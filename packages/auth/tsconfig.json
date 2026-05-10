@@ -1,8 +1,21 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist"
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "target": "ES2023",
+    "lib": ["ES2022"],
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "@tukio/contracts": ["../../packages/contracts/src/index.ts"],
+      "@tukio/contracts/*": ["../../packages/contracts/src/*"],
+      "@tukio/*": ["../../packages/*/src"]
+    },
+    "declaration": true
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"]

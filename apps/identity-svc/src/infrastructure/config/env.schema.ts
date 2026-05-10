@@ -28,6 +28,8 @@ export const EnvSchema = z
       .transform((v) => v === 'true' || v === '1'),
     KEYCLOAK_URL: z.string().url().min(1).default('http://localhost:8080'),
     KEYCLOAK_REALM: z.string().min(1).default('tukio'),
+    KEYCLOAK_CLIENT_ID: z.string().min(1).default('tukio-api'),
+    KEYCLOAK_AUDIENCE: z.string().min(1).default('tukio-api'),
     NATS_URL: z.string().min(1).default('nats://localhost:4222'),
     NATS_STREAM_NAME: z.string().min(1).default('TUKIO_IDENTITY'),
     NATS_REPLICAS: z.coerce.number().int().positive().default(1),

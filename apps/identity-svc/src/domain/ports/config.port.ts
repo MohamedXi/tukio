@@ -10,6 +10,8 @@ export interface DatabaseConfig {
 export interface KeycloakConfig {
   url: string;
   realm: string;
+  clientId: string;
+  audience: string;
 }
 
 export interface NatsConfig {

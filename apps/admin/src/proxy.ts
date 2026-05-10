@@ -1,5 +1,13 @@
 import { NextResponse } from 'next/server';
 
+// Story 0.8 placeholder — wired for real in Stories Epic 1+ when Keycloak is provisioned (Story 1.1)
+// Whole admin app is protected (admin-* roles + MFA TOTP).
+// Replace with:
+//   import { createKeycloakAuthMiddleware } from '@tukio/auth-client/middleware';
+//   export default createKeycloakAuthMiddleware({
+//     protectedPaths: ['/'],
+//     loginRedirectUri: 'https://auth.tukio.one/realms/tukio/protocol/openid-connect/auth',
+//   });
 export function proxy() {
   return NextResponse.next();
 }

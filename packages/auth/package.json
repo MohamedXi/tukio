@@ -2,11 +2,62 @@
   "name": "@tukio/auth",
   "version": "0.0.0",
   "private": true,
-  "description": "Backend JWT validation + Keycloak adapter (server-side auth).",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "description": "Backend JWT validation + Keycloak JWKS guard for Tukio NestJS services.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./module": "./src/tukio-auth.module.ts",
+    "./guards": "./src/guards/keycloak-jwt.guard.ts",
+    "./guards/roles": "./src/guards/roles.guard.ts",
+    "./decorators": "./src/decorators/roles.decorator.ts",
+    "./decorators/public": "./src/decorators/public.decorator.ts",
+    "./decorators/current-actor": "./src/decorators/current-actor.decorator.ts",
+    "./decorators/require-email-verified": "./src/decorators/require-email-verified.decorator.ts",
+    "./decorators/require-mfa": "./src/decorators/require-mfa.decorator.ts",
+    "./services/jwks-cache": "./src/services/jwks-cache.service.ts",
+    "./services/actor-resolver": "./src/services/actor-resolver.service.ts",
+    "./interceptors/actor-propagation": "./src/interceptors/actor-propagation.interceptor.ts",
+    "./exceptions": "./src/exceptions/index.ts",
+    "./types": "./src/types/index.ts",
+    "./tokens": "./src/tokens.ts"
+  },
   "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "jose": "^6.2.3",
+    "prom-client": "^15.1.3",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@tukio/contracts": "workspace:*",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@nestjs/common": "^11.1.19",
+    "@nestjs/core": "^11.1.19",
+    "@nestjs/testing": "^11.1.19",
+    "@swc/core": "^1.15.33",
+    "@tukio/contracts": "workspace:*",
+    "@types/nock": "^11.1.0",
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.1.5",
+    "eslint": "^9.0.0",
+    "nock": "^14.0.15",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.0.0",
+    "unplugin-swc": "^1.5.9",
+    "vitest": "^4.1.5"
   }
 }

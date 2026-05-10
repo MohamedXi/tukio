@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Optional,
 } from '@nestjs/common';
+import { Public } from '@tukio/auth/decorators/public';
 import { InjectDataSource } from '@nestjs/typeorm';
 import type { DataSource } from 'typeorm';
 
@@ -23,11 +24,13 @@ export class HealthController {
     @Optional() @InjectDataSource() private readonly dataSource?: DataSource,
   ) {}
 
+  @Public()
   @Get('/health')
   health(): HealthBody {
     return { status: 'ok' };
   }
 
+  @Public()
   @Get('/ready')
   ready(): ReadyBody {
     const dbUp = this.dataSource?.isInitialized ?? false;
