@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect, type DragEvent, type ChangeEvent } from 'react';
+import { useState, useRef, useEffect, useId, type DragEvent, type ChangeEvent } from 'react';
 import { Upload, File as FileIcon, X } from 'lucide-react';
 import { Button } from '../../components/Button/Button';
 import { ProgressBar } from '../../components/ProgressBar/ProgressBar';
@@ -48,21 +48,21 @@ export function FileUpload({
   className,
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  // P5 fix: useId() for unique input id (no DOM collision when 2 instances rendered)
+  const reactId = useId();
+  const inputId = `tukio-file-upload-${reactId}`;
+  const helperId = `tukio-file-upload-helper-${reactId}`;
   const [files, setFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [previews, setPreviews] = useState<Record<string, string>>({});
+  // P6 fix: keyed by index, not name, to avoid duplicate-name URL collision
+  const [previews, setPreviews] = useState<string[]>([]);
 
   // Generate object URLs for image previews; revoke on unmount/cleanup
   useEffect(() => {
-    const urls: Record<string, string> = {};
-    files.forEach((f) => {
-      if (f.type.startsWith('image/')) {
-        urls[f.name] = URL.createObjectURL(f);
-      }
-    });
+    const urls = files.map((f) => (f.type.startsWith('image/') ? URL.createObjectURL(f) : ''));
     setPreviews(urls);
     return () => {
-      Object.values(urls).forEach(URL.revokeObjectURL);
+      urls.forEach((url) => url && URL.revokeObjectURL(url));
     };
   }, [files]);
 
@@ -136,11 +136,12 @@ export function FileUpload({
         multiple={multiple}
         onChange={handleInputChange}
         className="sr-only"
-        id="tukio-file-upload-input"
+        id={inputId}
         aria-label={dropZoneLabel}
+        aria-describedby={accept ? helperId : undefined}
       />
       <label
-        htmlFor="tukio-file-upload-input"
+        htmlFor={inputId}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -156,6 +157,12 @@ export function FileUpload({
         <p className="text-sm text-charcoal-700">{dropZoneLabel}</p>
         <p className="text-xs text-charcoal-400">{clickToUploadLabel}</p>
       </label>
+      {/* P18 fix: helper text describing accepted types, linked via aria-describedby */}
+      {accept && (
+        <p id={helperId} className="text-xs text-charcoal-400 sr-only">
+          Accepted file types: {accept}
+        </p>
+      )}
       {files.length > 0 && (
         <ul className="flex flex-col gap-2">
           {files.map((file, index) => (
@@ -163,8 +170,8 @@ export function FileUpload({
               key={`${file.name}-${index}`}
               className="flex items-center gap-3 p-2 bg-cream-50 border border-cream-200 rounded-md"
             >
-              {previews[file.name] ? (
-                <img src={previews[file.name]} alt="" className="w-10 h-10 rounded object-cover" />
+              {previews[index] ? (
+                <img src={previews[index]} alt="" className="w-10 h-10 rounded object-cover" />
               ) : (
                 <FileIcon
                   size={20}

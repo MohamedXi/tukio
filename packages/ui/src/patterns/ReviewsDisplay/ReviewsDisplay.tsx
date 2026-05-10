@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Avatar } from '../../components/Avatar/Avatar';
 import { Button } from '../../components/Button/Button';
 import { ProgressBar } from '../../components/ProgressBar/ProgressBar';
@@ -31,6 +31,11 @@ export function ReviewsDisplay({
   className,
 }: ReviewsDisplayProps) {
   const [visible, setVisible] = useState(pageSize);
+
+  // P21 fix: reset pagination when reviews list reference or pageSize changes
+  useEffect(() => {
+    setVisible(pageSize);
+  }, [reviews, pageSize]);
 
   if (reviews.length === 0) {
     return <EmptyState variant="reviews-empty" />;

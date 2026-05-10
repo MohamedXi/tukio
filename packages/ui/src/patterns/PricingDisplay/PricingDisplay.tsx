@@ -1,3 +1,4 @@
+'use client';
 import { cn } from '../../utils/cn';
 import type { PricingDisplayProps } from './PricingDisplay.types';
 
@@ -21,8 +22,9 @@ export function PricingDisplay({
 
   return (
     <dl className={cn('flex flex-col gap-2', className)}>
-      {items.map((item, index) => (
-        <div key={index} className="flex items-center justify-between">
+      {/* P20 fix: composite key from label + amount avoids state corruption on reorder */}
+      {items.map((item) => (
+        <div key={`${item.label}-${item.amount}`} className="flex items-center justify-between">
           <dt className="text-charcoal-600 text-sm">{item.label}</dt>
           <dd className="text-charcoal-700 text-sm tabular-nums">
             {formatMoney(item.amount, item.currency)}

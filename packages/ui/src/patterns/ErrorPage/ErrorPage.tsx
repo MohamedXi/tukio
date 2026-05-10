@@ -1,3 +1,4 @@
+'use client';
 import { MapPinOff, AlertOctagon, Wrench } from 'lucide-react';
 import { Button } from '../../components/Button/Button';
 import { cn } from '../../utils/cn';
@@ -41,6 +42,9 @@ export function ErrorPage({
   const resolvedTitle = title ?? config.title;
   const resolvedDescription = description ?? config.description;
 
+  // P19 fix: role="alert" only for 500 (server error). 404/maintenance are not interruptions.
+  const isAlert = variant === '500';
+
   return (
     <main
       className={cn(
@@ -48,7 +52,7 @@ export function ErrorPage({
         className,
       )}
     >
-      <div role="alert" className="contents">
+      <div role={isAlert ? 'alert' : undefined} className="contents">
         <Icon size={64} />
         <h1 className="text-5xl font-display text-charcoal-800">{resolvedTitle}</h1>
         <p className="text-base text-charcoal-500 max-w-md">{resolvedDescription}</p>

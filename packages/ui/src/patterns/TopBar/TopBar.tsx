@@ -50,7 +50,7 @@ function PublicTopBar({
           className="cursor-pointer"
         />
       </div>
-      <nav className="flex items-center gap-4 max-md:hidden">
+      <nav aria-label="Primary" className="flex items-center gap-4 max-md:hidden">
         <a href="/categories" className="text-sm text-charcoal-700 hover:text-charcoal-900">
           {labels?.categories ?? 'Categories'}
         </a>
@@ -99,7 +99,7 @@ function CustomerTopBar({
     >
       <div className="flex items-center gap-6 px-6 py-3">
         <Logo size={28} />
-        <nav className="flex items-center gap-4 flex-1 max-md:hidden">
+        <nav aria-label="Customer" className="flex items-center gap-4 flex-1 max-md:hidden">
           <a href="/" className="text-sm text-charcoal-700 hover:text-charcoal-900">
             {labels?.discover ?? 'Discover'}
           </a>
@@ -149,7 +149,7 @@ function AdminTopBar({
       )}
     >
       <Logo size={28} mono color="var(--color-cream-50)" />
-      <nav className="flex items-center gap-4 flex-1">
+      <nav aria-label="Admin" className="flex items-center gap-4 flex-1">
         <a href="/admin/verifications" className="text-sm hover:text-cream-200">
           {labels?.verifications ?? 'Verifications'}
         </a>

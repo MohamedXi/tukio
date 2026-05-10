@@ -90,12 +90,18 @@ export function AvailabilityCalendar({
       case 'ArrowDown':
         next = addDays(current, 7);
         break;
-      case 'Home':
-        next = startOfDay(addDays(current, -current.getDay() + 1));
+      case 'Home': {
+        // P2 fix: weekStartsOn=1 (Monday). Convert Sunday=0 to 6, Mon=1→0, Tue=2→1, ...
+        const mondayOffset = (current.getDay() + 6) % 7;
+        next = startOfDay(addDays(current, -mondayOffset));
         break;
-      case 'End':
-        next = endOfDay(addDays(current, 7 - current.getDay()));
+      }
+      case 'End': {
+        // P2 fix: end of Monday-first week → Sunday at offset (6 - mondayOffset) days forward
+        const mondayOffset = (current.getDay() + 6) % 7;
+        next = endOfDay(addDays(current, 6 - mondayOffset));
         break;
+      }
       case 'PageUp':
         e.preventDefault();
         onMonthChange?.(subMonths(month, 1));
@@ -184,7 +190,7 @@ export function AvailabilityCalendar({
                   tabIndex={isSelected ? 0 : -1}
                   disabled={isDisabled}
                   aria-disabled={isDisabled || undefined}
-                  aria-pressed={isSelected || undefined}
+                  aria-selected={isSelected || undefined}
                   aria-label={formatDateLabel({ date, status, isSelected })}
                   onClick={() => !isDisabled && onSelectDate?.(date)}
                   onKeyDown={(e) => handleKeyDown(e, date)}

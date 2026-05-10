@@ -1,3 +1,4 @@
+'use client';
 import { SearchX, ShoppingCart, Calendar, Inbox, Tag, MessageSquare, Star } from 'lucide-react';
 import { Button } from '../../components/Button/Button';
 import { cn } from '../../utils/cn';

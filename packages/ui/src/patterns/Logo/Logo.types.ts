@@ -12,4 +12,6 @@ export interface LogoMarkProps {
   color?: string;
   className?: string;
   'aria-label'?: string;
+  /** When true, renders as decorative (aria-hidden), no role="img". Default false. */
+  decorative?: boolean;
 }

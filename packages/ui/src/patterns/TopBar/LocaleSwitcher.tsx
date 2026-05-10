@@ -15,11 +15,17 @@ export function LocaleSwitcher({
   onLocaleChange,
   className,
 }: LocaleSwitcherProps) {
-  const current = availableLocales.find((l) => l.code === locale) ?? availableLocales[0]!;
+  // P13 fix: guard against empty availableLocales (no non-null assertion)
+  const safeLocales =
+    availableLocales.length > 0
+      ? availableLocales
+      : [{ code: locale, label: locale.toUpperCase() }];
+  const current = safeLocales.find((l) => l.code === locale) ?? safeLocales[0]!;
 
   return (
     <Popover.Root>
       <Popover.Trigger
+        type="button"
         className={cn(
           'inline-flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium text-charcoal-700',
           'hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200',
@@ -36,7 +42,7 @@ export function LocaleSwitcher({
           sideOffset={4}
           className="bg-cream-50 border border-cream-200 rounded-md shadow-md p-1 min-w-[100px] z-50"
         >
-          {availableLocales.map((l) => (
+          {safeLocales.map((l) => (
             <button
               key={l.code}
               type="button"

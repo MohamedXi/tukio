@@ -43,6 +43,8 @@ export interface FilterSidebarProps {
   groups: FilterGroup[];
   values: FilterValues;
   onChange: (values: FilterValues) => void;
+  /** P7 fix: Called when user clicks Apply (mobile drawer auto-closes). */
+  onApply?: () => void;
   resultCount?: number;
   applyLabel?: string;
   clearLabel?: string;

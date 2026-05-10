@@ -1,6 +1,6 @@
 # Story 0.5: Implement 12 composite patterns (@tukio/ui/patterns) extracted from Cloud Design bundle
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -302,6 +302,79 @@ Status: review
   - [x] 18.3 — `pnpm lint && pnpm typecheck` à la racine → tous passent
   - [x] 18.4 — `pnpm dev` → 4 apps démarrent, `apps/public` rend les patterns correctement
   - [x] 18.5 — Commit `feat(ui): implement 12 composite patterns with Radix slider/popover/checkbox, date-fns, Playwright e2e tests` — Story 0.5 done
+
+### Review Findings
+
+> Code review — 2026-05-10 | Sources: Blind Hunter · Edge Case Hunter · Acceptance Auditor
+
+#### Decision Needed
+
+- [x] [Review][Decision] **D1** — `Map` component MVP placeholder ignore silencieusement 5 props (`markers`, `center`, `zoom`, `onMarkerClick`, `provider`). Choix : (A) émettre un `console.warn` en dev quand les props sont passées, (B) restreindre les types au MVP et les ré-élargir en V1+, (C) accepter le no-op silencieux (statu quo). [packages/ui/src/patterns/Map/Map.tsx]
+- [ ] [Review][Decision] **D2** — `TopBar variant="seller"` rend `<ProSidebar>` (sidebar verticale) au lieu d'un header horizontal. Architecturalement confus. Choix : (A) garder le dispatch interne actuel, (B) renommer en `<AppShell variant>` + sub-components, (C) extraire `<ProSidebar>` comme pattern indépendant et `<TopBar>` ne gère que les 3 variants horizontaux. [packages/ui/src/patterns/TopBar/TopBar.tsx]
+- [ ] [Review][Decision] **D3** — Patterns avec `<a href>` hardcodés (TopBar, Footer, ProSidebar) provoquent full page reload dans Next.js (pas de client routing). Choix : (A) ajouter prop `linkComponent?: ComponentType` injectable, (B) utiliser pattern `asChild` Radix Slot pour permettre `<TopBar><a href><Link></a></TopBar>`, (C) accepter full-reload pour Sprint 0 (premier MVP). [packages/ui/src/patterns/{TopBar,Footer,TopBar/ProSidebar}/*.tsx]
+- [x] [Review][Decision] **D4** — `ConversationThread` utilise `<Input>` (single-line) alors que le code gère `Shift+Enter` pour newline (impossible sur input). Choix : (A) remplacer par `<textarea>` avec auto-resize, (B) retirer le code Shift+Enter mort. Affecte l'API du Composer. [packages/ui/src/patterns/ConversationThread/ConversationThread.tsx]
+
+#### Patches (HIGH)
+
+- [ ] [Review][Patch] **P1** AvailabilityCalendar — cellules disabled inaccessibles au clavier (HTML `disabled` ne reçoit pas focus). Fix : utiliser `aria-disabled` + roving tabindex (focus suit la nav clavier, pas `isSelected`). [AvailabilityCalendar.tsx:179-202]
+- [x] [Review][Patch] **P2** AvailabilityCalendar — Home/End off-by-one : `getDay()` est Sunday-based (0=dim) mais le grid est Monday-based (`weekStartsOn: 1`). Sur dimanche, Home avance d'un jour au lieu de reculer de 6. [AvailabilityCalendar.tsx:93-97]
+- [x] [Review][Patch] **P3** AvailabilityCalendar — `aria-pressed` invalide sur `role="gridcell"` (réservé aux toggle buttons). Remplacer par `aria-selected`. [AvailabilityCalendar.tsx:187]
+- [ ] [Review][Patch] **P4** AvailabilityCalendar — focus perdu aux frontières de mois (ArrowDown depuis dernier jour). Quand target hors grid : appeler `onMonthChange()` puis re-focus. [AvailabilityCalendar.tsx:120-128]
+- [x] [Review][Patch] **P5** FileUpload — id DOM hardcodé `tukio-file-upload-input` → collision si 2 instances rendues. Utiliser `useId()`. [FileUpload.tsx:139,143]
+- [x] [Review][Patch] **P6** FileUpload — fuite d'object URLs avec noms de fichier dupliqués (`urls[f.name]` écrase). Clé sur `${f.name}-${index}` ou utiliser `WeakMap`. [FileUpload.tsx:60]
+- [x] [Review][Patch] **P7** FilterSidebar — bouton Apply n'a pas de `onClick` (décoratif). Ajouter prop `onApply` + fermer mobile drawer après application. [FilterSidebar.tsx:198-200]
+- [x] [Review][Patch] **P8** Footer — `style={{ gridTemplateColumns }}` inline écrase les classes Tailwind responsive (`max-md:grid-cols-2 max-sm:grid-cols-1`). Le grid mobile ne fonctionne PAS. Fix : utiliser CSS variable + `grid-cols-[var(--cols)]` ou injecter via `<style>` scoped. [Footer.tsx:23-26]
+- [x] [Review][Patch] **P9** Footer — copyright hardcodé "© 2026". Fix : `new Date().getFullYear()` ou prop `year`. [Footer.tsx:8]
+- [x] [Review][Patch] **P10** Footer — `legalRight` default en français ("Hébergeur LCEN…") viole la convention i18n-agnostic / EN defaults. Remplacer par EN ou `''`. [Footer.tsx:9]
+- [x] [Review][Patch] **P11** TopBar `LocaleSwitcher` `Popover.Trigger` sans `type="button"` → submit accidentel si placé dans `<form>`. [LocaleSwitcher.tsx:22]
+- [x] [Review][Patch] **P12** TopBar — `<nav>` blocks sans `aria-label` (multi-landmarks indistinguables). Ajouter `aria-label="Primary navigation"` etc. [TopBar.tsx:53,102,152]
+- [x] [Review][Patch] **P13** TopBar `LocaleSwitcher.tsx:18` — `availableLocales[0]!` crash sur tableau vide. Guard. [LocaleSwitcher.tsx:18]
+
+#### Patches (AC violations — sub-components)
+
+- [x] [Review][Patch] **P14** AC4 — `ConversationThread.Bubble` et `.Composer` sub-components manquants à l'export. Refactor extraction + `Object.assign`. [ConversationThread/index.ts]
+- [ ] [Review][Patch] **P15** AC5 — `ReviewsDisplay.Summary/.Breakdown/.List/.Item` sub-components manquants. [ReviewsDisplay/index.ts]
+- [ ] [Review][Patch] **P16** AC7 — `AvailabilityCalendar.Header/.Day` sub-components manquants. [AvailabilityCalendar/index.ts]
+
+#### Patches (AC violations — autres)
+
+- [x] [Review][Patch] **P17** AC8 — Filter groups non-pliables. Ajouter `<button aria-expanded aria-controls>` par groupe avec state collapsed. [FilterSidebar.tsx:51-178]
+- [x] [Review][Patch] **P18** AC9 — FileUpload manque `aria-describedby` vers helper text décrivant types acceptés. Ajouter `<p id={helperId}>` + `aria-describedby={helperId}` sur le label. [FileUpload.tsx]
+- [x] [Review][Patch] **P19** AC11 — `role="alert"` sur ErrorPage appliqué à toutes variants (404/500/maintenance). Spec scope au server error uniquement. Restreindre à `variant === '500'`. [ErrorPage.tsx:51]
+
+#### Patches (MEDIUM)
+
+- [x] [Review][Patch] **P20** PricingDisplay — index keys (`map((item, index) => key={index})`) cassent le state si réordering. PricingItem doit avoir `id` ou key composite `label+amount`. [PricingDisplay.tsx:24]
+- [x] [Review][Patch] **P21** ReviewsDisplay — `useState(pageSize)` initialisé une fois, pas reset si `reviews` change (e.g. switch filtre). Ajouter `useEffect(() => setVisible(pageSize), [reviews, pageSize])`. [ReviewsDisplay.tsx:33]
+- [x] [Review][Patch] **P22** FilterSidebar — `current as string[]` sans guard runtime. Si consumer passe `string`, `.includes()` matche substring (corruption silencieuse). Ajouter `Array.isArray(current) ? current : []`. [FilterSidebar.tsx:49]
+- [x] [Review][Patch] **P23** FilterSidebar — `activeCount` compte les ranges non-modifiés (toujours `[min, max]` truthy). Comparer à default. [FilterSidebar.tsx:220-222]
+- [x] [Review][Patch] **P24** FilterSidebar — `current[0]!` non-null assert masque crash si tableau vide. Validate `Array.isArray && length === 2`. [FilterSidebar.tsx:145-146]
+- [x] [Review][Patch] **P25** Logo — empty-string sentinel pour decorative est fragile. Remplacer par prop explicite `decorative?: boolean` sur LogoMark. [LogoMark.tsx:15]
+- [x] [Review][Patch] **P26** ConversationThread — `formatRelativeTime` default `toLocaleTimeString()` cause SSR/client mismatch (hydration warning). Utiliser `Intl.DateTimeFormat` avec locale stable ou rendre obligatoire. [ConversationThread.tsx:15]
+- [x] [Review][Patch] **P27** `'use client'` manquant sur composants acceptant des function props (`EmptyState.onAction`, `ErrorPage.onRetry/onGoHome`, `PricingDisplay.formatMoney`, `Footer`, `Map`). En Next.js Server Component context : "Functions cannot be passed directly to Client Components". Ajouter `'use client'`. [EmptyState/ErrorPage/PricingDisplay/Footer/Map.tsx]
+
+#### Patches (LOW)
+
+- [ ] [Review][Patch] **P28** lucide-react peer version `^1.14.0` est suspect (latest stable serait 0.x). Vérifier et corriger. [packages/ui/package.json:72]
+- [x] [Review][Patch] **P29** LogoMark — `stroke={color}` / `fill={color}` directement → bypass `currentColor`, casse forced-colors mode et theming CSS. Utiliser `currentColor` + `style={{ color }}`. [LogoMark.tsx:31,37]
+
+#### Deferred
+
+- [x] [Review][Defer] **W1** AC15 — Playwright e2e tests (4 parcours) absents. Documenté comme deferred dans Completion Notes (scope creep, requires browser+server). Reprendre Story 0.11 (CI Lighthouse + e2e).
+- [x] [Review][Defer] **W2** AC16 — Demo page `apps/public/page.tsx` non étendue avec les 12 patterns. Travail visuel important, deferred pour validation utilisateur séparée.
+- [x] [Review][Defer] **W3** AvailabilityCalendar — `weekStartsOn` hardcodé à 1 (Monday-first). Locale support (US Sunday-first) requiert prop dédiée + recalcul. Defer V1+.
+- [x] [Review][Defer] **W4** FileUpload non-controlled (state interne). Refactor pour exposer `value`/`onChange` controlled pattern : impacte les consumers (Story 3.4). Defer.
+- [x] [Review][Defer] **W5** ProSidebar pas de mobile drawer/sheet. Sur mobile la sidebar prend tout l'écran. Defer Story 0.11+.
+- [x] [Review][Defer] **W6** ConversationThread `aria-live="polite"` sur la liste entière → re-announce sur chaque mutation. Pattern standard : live region séparée + n'annoncer que le dernier message. Defer (refactor ARIA complexe).
+- [x] [Review][Defer] **W7** TopBar `<a href>` hardcodés (`/categories`, `/account`, etc.). Lié à D3.
+- [x] [Review][Defer] **W8** `EmptyState`, `ErrorPage`, `PricingDisplay`, `StepIndicator` — `<h1>`/`<h2>` hardcodés. Defer (prop `as` ou `headingLevel` à ajouter).
+- [x] [Review][Defer] **W9** P1 AvailabilityCalendar — disabled→aria-disabled + roving tabindex (state machine refactor avec `focusedDate`). Defer pour Story 0.11+ (refactor a11y conséquent).
+- [x] [Review][Defer] **W10** P4 AvailabilityCalendar — focus aux frontières de mois (appel `onMonthChange` depuis arrow keys). Lié à W9, même refactor.
+- [x] [Review][Defer] **W11** P15 ReviewsDisplay sub-components (`Summary`/`Breakdown`/`List`/`Item` extraction). Defer — code monolithique fonctionnel, extraction cosmétique.
+- [x] [Review][Defer] **W12** P16 AvailabilityCalendar sub-components (`Header`/`Day` extraction). Defer.
+- [x] [Review][Defer] **W13** P28 lucide-react peer version `^1.14.0` — DISMISSED après vérification : `pnpm view lucide-react version` retourne bien `1.14.0` (latest stable).
+- [x] [Review][Defer] **W14** D2 ProSidebar split — `TopBar variant="seller"` reste pour Sprint 0. Refactor architectural (renommer `<AppShell>` ou extraire) defer Story 0.11+ quand patterns multiples consomment.
+- [x] [Review][Defer] **W15** D3 `linkComponent` prop pour TopBar/Footer — full reload accepté Sprint 0 placeholder. Sera ajouté quand routing applicatif arrive (Story 0.13 Vercel multi-zones + Story 7.1 next-intl middleware).
 
 ## Dev Notes
 

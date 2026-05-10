@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import * as Slider from '@radix-ui/react-slider';
 import * as Checkbox from '@radix-ui/react-checkbox';
-import { Check, Filter as FilterIcon } from 'lucide-react';
+import { Check, ChevronDown, Filter as FilterIcon } from 'lucide-react';
 import { Button } from '../../components/Button/Button';
 import { Modal } from '../../components/Modal/Modal';
 import { cn } from '../../utils/cn';
@@ -15,6 +15,45 @@ import type {
   RangeFilter,
   ToggleFilter,
 } from './FilterSidebar.types';
+
+// P22 fix: runtime guard — if a consumer passes string instead of array, treat as empty
+function asArray(v: unknown): string[] {
+  return Array.isArray(v) ? (v as string[]) : [];
+}
+
+// P23 fix: detect if a range value differs from its default [min, max]
+function isRangeModified(current: unknown, group: RangeFilter): boolean {
+  if (!Array.isArray(current) || current.length !== 2) return false;
+  return current[0] !== group.min || current[1] !== group.max;
+}
+
+/** P17 fix: collapsible group wrapper with aria-expanded/aria-controls */
+function CollapsibleFieldset({ legend, children }: { legend: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(true);
+  const id = useId();
+  const contentId = `filter-group-${id}`;
+  return (
+    <fieldset className="flex flex-col gap-2 border-0 p-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={contentId}
+        className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-700 mb-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 rounded"
+      >
+        <legend className="contents">{legend}</legend>
+        <ChevronDown
+          size={14}
+          className={cn('transition-transform', !open && '-rotate-90')}
+          aria-hidden="true"
+        />
+      </button>
+      <div id={contentId} hidden={!open} className="flex flex-col gap-2">
+        {children}
+      </div>
+    </fieldset>
+  );
+}
 
 function FilterGroupRenderer({
   group,
@@ -46,10 +85,9 @@ function CheckboxFilterControl({
   values: FilterValues;
   onChange: (values: FilterValues) => void;
 }) {
-  const current = (values[group.id] as string[]) ?? [];
+  const current = asArray(values[group.id]);
   return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="text-sm font-semibold text-charcoal-700 mb-2">{group.legend}</legend>
+    <CollapsibleFieldset legend={group.legend}>
       {group.options.map((opt) => {
         const checked = current.includes(opt.value);
         return (
@@ -73,7 +111,7 @@ function CheckboxFilterControl({
           </label>
         );
       })}
-    </fieldset>
+    </CollapsibleFieldset>
   );
 }
 
@@ -86,10 +124,9 @@ function RadioFilterControl({
   values: FilterValues;
   onChange: (values: FilterValues) => void;
 }) {
-  const current = values[group.id] as string | undefined;
+  const current = typeof values[group.id] === 'string' ? (values[group.id] as string) : undefined;
   return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="text-sm font-semibold text-charcoal-700 mb-2">{group.legend}</legend>
+    <CollapsibleFieldset legend={group.legend}>
       {group.options.map((opt) => (
         <label key={opt.value} className="inline-flex items-center gap-2 cursor-pointer text-sm">
           <input
@@ -103,7 +140,7 @@ function RadioFilterControl({
           <span className="flex-1 text-charcoal-700">{opt.label}</span>
         </label>
       ))}
-    </fieldset>
+    </CollapsibleFieldset>
   );
 }
 
@@ -116,11 +153,18 @@ function RangeFilterControl({
   values: FilterValues;
   onChange: (values: FilterValues) => void;
 }) {
-  const current = (values[group.id] as number[]) ?? [group.min, group.max];
+  // P24 fix: validate array length before destructuring; fall back to [min, max]
+  const raw = values[group.id];
+  const current: [number, number] =
+    Array.isArray(raw) &&
+    raw.length === 2 &&
+    typeof raw[0] === 'number' &&
+    typeof raw[1] === 'number'
+      ? [raw[0], raw[1]]
+      : [group.min, group.max];
   const formatValue = group.formatValue ?? ((v: number) => v.toString());
   return (
-    <fieldset className="flex flex-col gap-3">
-      <legend className="text-sm font-semibold text-charcoal-700 mb-2">{group.legend}</legend>
+    <CollapsibleFieldset legend={group.legend}>
       <Slider.Root
         value={current}
         min={group.min}
@@ -133,19 +177,21 @@ function RangeFilterControl({
           <Slider.Range className="absolute bg-brand-500 rounded-full h-full" />
         </Slider.Track>
         <Slider.Thumb
+          aria-label={`${group.legend} minimum`}
+          aria-valuetext={formatValue(current[0])}
           className="block w-4 h-4 bg-cream-50 border-2 border-brand-500 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-          aria-label={`${group.legend} min`}
         />
         <Slider.Thumb
+          aria-label={`${group.legend} maximum`}
+          aria-valuetext={formatValue(current[1])}
           className="block w-4 h-4 bg-cream-50 border-2 border-brand-500 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-          aria-label={`${group.legend} max`}
         />
       </Slider.Root>
       <div className="flex justify-between text-xs text-charcoal-600 tabular-nums">
-        <span>{formatValue(current[0]!)}</span>
-        <span>{formatValue(current[1]!)}</span>
+        <span>{formatValue(current[0])}</span>
+        <span>{formatValue(current[1])}</span>
       </div>
-    </fieldset>
+    </CollapsibleFieldset>
   );
 }
 
@@ -160,7 +206,7 @@ function ToggleFilterControl({
 }) {
   const current = Boolean(values[group.id]);
   return (
-    <fieldset>
+    <fieldset className="border-0 p-0">
       <legend className="sr-only">{group.legend}</legend>
       <label className="inline-flex items-center gap-2 cursor-pointer text-sm">
         <Checkbox.Root
@@ -182,10 +228,11 @@ function FilterContent({
   groups,
   values,
   onChange,
+  onApply,
   resultCount,
   applyLabel,
   clearLabel,
-}: Pick<FilterSidebarProps, 'groups' | 'values' | 'onChange' | 'resultCount'> & {
+}: Pick<FilterSidebarProps, 'groups' | 'values' | 'onChange' | 'onApply' | 'resultCount'> & {
   applyLabel: string;
   clearLabel: string;
 }) {
@@ -195,7 +242,8 @@ function FilterContent({
         <FilterGroupRenderer key={group.id} group={group} values={values} onChange={onChange} />
       ))}
       <div className="flex flex-col gap-2 pt-4 border-t border-cream-200">
-        <Button variant="primary" className="w-full">
+        {/* P7 fix: Apply button now has onClick wired to onApply prop */}
+        <Button variant="primary" className="w-full" onClick={onApply}>
           {resultCount !== undefined ? `${applyLabel} (${resultCount})` : applyLabel}
         </Button>
         <Button variant="ghost" onClick={() => onChange({})}>
@@ -210,6 +258,7 @@ export function FilterSidebar({
   groups,
   values,
   onChange,
+  onApply,
   resultCount,
   applyLabel = 'View results',
   clearLabel = 'Clear all',
@@ -217,9 +266,22 @@ export function FilterSidebar({
   className,
 }: FilterSidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const activeCount = Object.values(values).filter((v) =>
-    Array.isArray(v) ? v.length > 0 : Boolean(v),
-  ).length;
+
+  // P23 fix: only count truly modified filters (not default range values)
+  const activeCount = groups.reduce((acc, group) => {
+    const v = values[group.id];
+    if (group.type === 'range') return acc + (isRangeModified(v, group) ? 1 : 0);
+    if (group.type === 'checkbox') return acc + (Array.isArray(v) && v.length > 0 ? 1 : 0);
+    if (group.type === 'radio') return acc + (typeof v === 'string' && v ? 1 : 0);
+    if (group.type === 'toggle') return acc + (v ? 1 : 0);
+    return acc;
+  }, 0);
+
+  // Apply handler that also closes the mobile drawer
+  const handleApply = () => {
+    onApply?.();
+    setMobileOpen(false);
+  };
 
   return (
     <>
@@ -235,6 +297,7 @@ export function FilterSidebar({
           groups={groups}
           values={values}
           onChange={onChange}
+          onApply={handleApply}
           resultCount={resultCount}
           applyLabel={applyLabel}
           clearLabel={clearLabel}
@@ -260,6 +323,7 @@ export function FilterSidebar({
             groups={groups}
             values={values}
             onChange={onChange}
+            onApply={handleApply}
             resultCount={resultCount}
             applyLabel={applyLabel}
             clearLabel={clearLabel}

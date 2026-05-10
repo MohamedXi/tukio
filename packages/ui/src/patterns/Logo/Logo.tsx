@@ -24,7 +24,8 @@ export function Logo({
       aria-label={ariaLabel}
       style={{ height: size }}
     >
-      <LogoMark size={size} color={dotColor} aria-label="" />
+      {/* P25 fix: explicit decorative prop instead of empty-string sentinel */}
+      <LogoMark size={size} color={dotColor} decorative />
       <span
         className="font-display font-medium leading-none"
         style={{ fontSize: size * 0.78, color: wordColor, letterSpacing: '-0.01em' }}

@@ -23,10 +23,10 @@ describe('ConversationThread', () => {
     );
     expect(screen.getByText('Hello!')).toBeInTheDocument();
     expect(screen.getByText('Hi there!')).toBeInTheDocument();
-    // Own messages aligned right (justify-end), others left
+    // After Bubble extraction (P14): alignment classes are on the inner div, not <li>
     const items = container.querySelectorAll('li');
-    expect(items[0]).toHaveClass('justify-start');
-    expect(items[1]).toHaveClass('justify-end');
+    expect(items[0]?.firstElementChild).toHaveClass('justify-start');
+    expect(items[1]?.firstElementChild).toHaveClass('justify-end');
   });
 
   it('list has aria-live=polite', () => {
