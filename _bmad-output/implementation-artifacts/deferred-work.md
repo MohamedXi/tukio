@@ -69,3 +69,12 @@
 - **D-F7** — `jwks-rsa` mock test pas de cache — déférée : tests E2E uniquement, ré-évaluer Story 0.9 (testcontainers Keycloak réel).
 - **D-F8** — Public-key rotation race window — déférée : Keycloak grace period standard, doc Story 1.1.
 - **D-F9** — Infinite redirect loop quand `loginRedirectUri` matches `protectedPaths: ['/']` — déférée : edge case opérationnel, à wirer Story Epic 1+ avec Keycloak réel.
+
+## Deferred from: dev-mode runtime fix for identity-svc (2026-05-10)
+
+> **Contexte** : `pnpm dev` cassait sur identity-svc avec `Cannot find module dist/main`. Cause profonde : path mapping `@tukio/*` → `./packages/*/src` (sources TS) + `package.json` `exports` qui pointent vers TS sources → Node ne peut pas exécuter au runtime. Fix appliqué : NestJS webpack mode + custom `webpack.config.js` qui (a) ajoute `extensionAlias: { '.js': ['.ts', '.js'] }` pour nodenext imports, (b) bundle les `@tukio/*` packages au lieu de les externalize. dist/main.js redevient flat. Tests + builds OK.
+
+- **W1** — Story 0.2 D8 (build packages first + dist/ exports) reste **non résolu**. Le webpack bundle est un workaround : il ne propage pas les benefits d'ESM tree-shaking entre packages, et chaque service va dupliquer le bundle de @tukio/* dans son dist/main.js. À résoudre en Story 0.10 (Docker Compose) ou Story 0.11 (CI) — quand on aura plusieurs services réels en prod.
+- **W2** — Les 9 autres services NestJS (gateway-api, catalog-svc, booking-svc, payment-svc, order-svc, messaging-svc, notification-svc, review-svc, media-svc) tournent encore avec `nest start --watch` (sans webpack) **uniquement parce qu'ils sont des scaffolds vides** ne consommant pas `@tukio/*` packages. Dès qu'ils commenceront à consommer `@tukio/contracts`, `@tukio/auth`, `@tukio/messaging` (Stories Epic 2-7), ils casseront avec le même symptôme. Migration : copier `webpack.config.js` + `nest-cli.json` updates + scripts `package.json` d'identity-svc lors du scaffolding via `replicate-pretre-structure.sh` (Story 0.6 Task 12).
+- **W3** — `webpack.config.js` actuel d'identity-svc inline une regex `/^@tukio\//` pour détecter les workspace packages. À factoriser dans un fichier partagé `webpack.tukio.config.js` au workspace root quand W2 sera traitée.
+- **W4** — Mode debug Node DevTools (`--inspect`) a été préservé dans `start:debug` mais pas re-testé. À valider quand on aura un cas concret de debug runtime.
