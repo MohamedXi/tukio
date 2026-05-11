@@ -1,4 +1,4 @@
-import { LOCALE_BCP47, type Locale } from '../config/locales.js';
+import { LOCALE_BCP47, type Locale } from '../config/locales';
 
 // Threshold (seconds) → unit. Picks the largest unit whose magnitude makes
 // sense for the diff ("il y a 5 min" not "il y a 300 sec").
@@ -24,12 +24,18 @@ export interface FormatRelativeTimeOptions {
 //   formatRelativeTime(fiveMinAgo, 'fr') → "il y a 5 minutes"
 //   formatRelativeTime(yesterday,  'fr') → "hier"
 //   formatRelativeTime(inOneHour,  'en') → "in 1 hour"
+//
+// Throws `RangeError` on invalid date input. Previously, NaN diffs silently
+// fell through to `rtf.format(0, 'second')` ("now"), masking real bugs.
 export function formatRelativeTime(
   date: Date | string,
   locale: Locale,
   options: FormatRelativeTimeOptions = {},
 ): string {
   const target = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(target.getTime())) {
+    throw new RangeError(`[formatRelativeTime] received an invalid date: ${String(date)}`);
+  }
   const now = options.now ?? new Date();
   const diffSeconds = Math.round((target.getTime() - now.getTime()) / 1000);
 

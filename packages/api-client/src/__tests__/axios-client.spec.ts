@@ -132,4 +132,44 @@ describe('createTukioApiClient', () => {
     await client.get('/v1/r');
     expect(received).toBe('fixed-corr-id');
   });
+
+  it('retries on 5xx with envelope-shaped body (NFR45) — converts to ApiError after exhaustion', async () => {
+    const client = createTukioApiClient({ baseURL: BASE_URL, maxRetries: 2 });
+    const mock = new MockAdapter(client);
+    let calls = 0;
+    mock.onGet('/v1/flaky').reply(() => {
+      calls += 1;
+      return [
+        503,
+        {
+          method: 'GET',
+          code: 503,
+          error: {
+            type: 'https://tukio.one/errors/service-unavailable',
+            title: 'Service unavailable',
+            detail: 'Database connection refused',
+            instance: '/v1/flaky',
+            tukioCode: 'SERVICE-UNAVAILABLE-001',
+          },
+          meta: { timestamp: 'now', correlationId: 'c', locale: 'fr' },
+        },
+      ];
+    });
+
+    await expect(client.get('/v1/flaky')).rejects.toBeInstanceOf(ApiError);
+    // Initial call + 2 retries = 3 attempts.
+    expect(calls).toBe(3);
+  });
+
+  it('does NOT retry on plain network error when error.config is undefined (defensive guard)', async () => {
+    const client = createTukioApiClient({ baseURL: BASE_URL, maxRetries: 3 });
+    // Stub interceptors to inject a network-like error without a config.
+    client.interceptors.request.use(() => {
+      // axios swallows errors thrown in the request interceptor and surfaces
+      // them as request rejections — config is undefined in that path.
+      throw new Error('synthetic-pre-request-failure');
+    });
+
+    await expect(client.get('/v1/x')).rejects.toThrow();
+  });
 });

@@ -99,4 +99,45 @@ describe('isErrorEnvelope', () => {
   it('rejects objects with `error` but no `tukioCode`', () => {
     expect(isErrorEnvelope({ error: { title: 'x' } })).toBe(false);
   });
+
+  it('rejects envelope missing `method` (incomplete shape)', () => {
+    expect(isErrorEnvelope({ code: 404, error: { tukioCode: 'X' }, meta: {} })).toBe(false);
+  });
+
+  it('rejects envelope missing `meta`', () => {
+    expect(isErrorEnvelope({ method: 'GET', code: 404, error: { tukioCode: 'X' } })).toBe(false);
+  });
+
+  it('rejects envelope where `error` is null', () => {
+    expect(isErrorEnvelope({ method: 'GET', code: 404, error: null, meta: {} })).toBe(false);
+  });
+});
+
+describe('throwApiErrorFromEnvelope (defensive)', () => {
+  it('falls back to UNKNOWN-ERROR-001 + API error when fields are missing', () => {
+    const malformed = {
+      method: 'GET',
+      code: 500,
+      error: {} as never,
+      meta: {} as never,
+    };
+    try {
+      throwApiErrorFromEnvelope(malformed as never);
+    } catch (e) {
+      const err = e as ApiError;
+      expect(err.tukioCode).toBe('UNKNOWN-ERROR-001');
+      expect(err.title).toBe('API error');
+      expect(err.detail).toBe('');
+    }
+  });
+
+  it('does not crash when meta is undefined', () => {
+    const malformed = {
+      method: 'GET',
+      code: 500,
+      error: { tukioCode: 'X', title: 'T', detail: 'D' },
+      // meta intentionally missing
+    } as unknown as ErrorEnvelope;
+    expect(() => throwApiErrorFromEnvelope(malformed)).toThrow(ApiError);
+  });
 });

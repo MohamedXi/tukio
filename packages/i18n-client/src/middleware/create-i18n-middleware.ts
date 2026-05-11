@@ -1,5 +1,5 @@
 import createMiddleware from 'next-intl/middleware';
-import { LOCALES, DEFAULT_LOCALE } from '../config/locales.js';
+import { LOCALES, DEFAULT_LOCALE } from '../config/locales';
 
 export interface CreateI18nMiddlewareOptions {
   // 'always' = every URL is prefixed (`/fr/...`, `/en/...`); 'as-needed' = only
@@ -22,4 +22,4 @@ export function createTukioI18nMiddleware(options: CreateI18nMiddlewareOptions =
 // Re-export composeMiddlewares for backwards compat (callers that import from
 // `@tukio/i18n-client/middleware`). New code should use the dedicated subpath
 // `@tukio/i18n-client/middleware/compose` if available.
-export { composeMiddlewares, type NextMiddleware } from './compose-middlewares.js';
+export { composeMiddlewares, type NextMiddleware } from './compose-middlewares';

@@ -1,7 +1,7 @@
 'use client';
 import Link, { type LinkProps } from 'next/link';
 import type { ReactNode } from 'react';
-import { useCurrentLocale } from '../hooks/use-current-locale.js';
+import { useCurrentLocale } from '../hooks/use-current-locale';
 
 export interface LocaleLinkProps extends Omit<LinkProps, 'href'> {
   href: string;

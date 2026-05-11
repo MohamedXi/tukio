@@ -73,4 +73,11 @@ describe('ApiError', () => {
     expect(err.issues).toHaveLength(1);
     expect(err.issues?.[0]?.path).toBe('email');
   });
+
+  it('falls back to readable message when title/detail are empty (no `[X] undefined: undefined`)', () => {
+    const err = new ApiError('UNKNOWN-001', 500, '', '');
+    expect(err.message).not.toContain('undefined');
+    expect(err.message).toContain('API error');
+    expect(err.message).toContain('<no detail>');
+  });
 });

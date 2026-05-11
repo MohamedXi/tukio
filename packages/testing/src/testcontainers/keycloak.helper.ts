@@ -59,18 +59,25 @@ export async function startKeycloakContainer(
   const port = container.getMappedPort(8080);
   const url = `http://${host}:${port}`;
 
-  let admin: KcAdminClient | null = null;
-  const getAdminClient = async (): Promise<KcAdminClient> => {
-    if (!admin) {
-      admin = new KcAdminClient({ baseUrl: url, realmName: 'master' });
-      await admin.auth({
-        username: adminUser,
-        password: adminPassword,
-        grantType: 'password',
-        clientId: 'admin-cli',
-      });
+  // Cache the IN-FLIGHT Promise<KcAdminClient>, not the resolved client.
+  // Concurrent test files calling getAdminClient() in parallel otherwise
+  // race: both create a new KcAdminClient + auth, the second clobbers the
+  // first → intermittent 401s downstream.
+  let adminPromise: Promise<KcAdminClient> | null = null;
+  const getAdminClient = (): Promise<KcAdminClient> => {
+    if (!adminPromise) {
+      adminPromise = (async () => {
+        const client = new KcAdminClient({ baseUrl: url, realmName: 'master' });
+        await client.auth({
+          username: adminUser,
+          password: adminPassword,
+          grantType: 'password',
+          clientId: 'admin-cli',
+        });
+        return client;
+      })();
     }
-    return admin;
+    return adminPromise;
   };
 
   return {

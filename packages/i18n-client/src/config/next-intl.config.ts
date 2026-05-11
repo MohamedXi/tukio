@@ -1,7 +1,7 @@
 import { getRequestConfig } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { isLocale, type Locale } from './locales.js';
-import { DEFAULT_TIME_ZONE } from './time-zones.js';
+import { isLocale, type Locale } from './locales';
+import { DEFAULT_TIME_ZONE } from './time-zones';
 
 export type LoadMessages = (locale: Locale) => Promise<Record<string, unknown>>;
 

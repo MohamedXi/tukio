@@ -5,21 +5,42 @@ export type NextMiddleware = (
   event: NextFetchEvent,
 ) => Promise<NextResponse | undefined> | NextResponse | undefined;
 
-// Compose multiple middlewares left-to-right. Returns early if a middleware
-// produced a redirect or non-200 response. Used to chain i18n + auth:
+// Headers set by Next.js middleware/proxy to control routing. Their presence
+// on a `NextResponse` means the middleware has actively decided how the
+// request should be served — composition must preserve that decision rather
+// than discarding it via a generic `NextResponse.next()`.
+const ROUTING_HEADERS = ['x-middleware-rewrite', 'x-middleware-redirect', 'location'] as const;
+
+function hasRoutingDecision(res: NextResponse): boolean {
+  return ROUTING_HEADERS.some((h) => res.headers.has(h));
+}
+
+// Compose multiple middlewares left-to-right. A middleware "claims" the
+// response by returning a `NextResponse` that EITHER has non-200 status
+// (redirect / error) OR carries routing headers (`x-middleware-rewrite`,
+// `location`, …). next-intl's createMiddleware returns 200 + rewrite headers
+// on every locale-prefixed path — checking status alone discarded its
+// rewrite decision silently. Now we honour any routing-headers response too.
 //
-//   export default composeMiddlewares(
-//     createTukioI18nMiddleware(),
-//     createKeycloakAuthMiddleware({ ... }),
-//   );
+// Each middleware is wrapped in try/catch so an exception in one (e.g.
+// transient Keycloak failure in auth middleware) does not cascade into a
+// blank 500 with zero diagnostics.
 export function composeMiddlewares(...middlewares: NextMiddleware[]): NextMiddleware {
   return async (request, event) => {
     for (const mw of middlewares) {
-      const result = await mw(request, event);
+      let result: NextResponse | undefined;
+      try {
+        result = (await mw(request, event)) ?? undefined;
+      } catch (e) {
+        if (typeof console !== 'undefined' && console.error) {
+          console.error('[composeMiddlewares] middleware threw', e);
+        }
+        throw e;
+      }
       if (result instanceof NextResponse) {
-        // Non-200 (redirect / rewrite / error) means a middleware decided the
-        // response — short-circuit to preserve its decision.
-        if (result.status !== 200) return result;
+        if (result.status !== 200 || hasRoutingDecision(result)) {
+          return result;
+        }
       }
     }
     return NextResponse.next();

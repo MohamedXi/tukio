@@ -21,8 +21,20 @@ export interface BookingFixture {
   updatedAt: Date;
 }
 
+// Tukio business is Europe/Paris (MVP Pays de la Loire). Using
+// `toISOString().slice(0, 10)` would shift dates near midnight by one day
+// (UTC). For bookings on a calendar visible to FR users, we want the date
+// they see, not UTC.
+const PARIS_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Paris',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
 function asYyyyMmDd(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  // en-CA produces YYYY-MM-DD natively, no manual reformat needed.
+  return PARIS_DATE_FORMATTER.format(date);
 }
 
 export function buildBooking(overrides: Partial<BookingFixture> = {}): BookingFixture {

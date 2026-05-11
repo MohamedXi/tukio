@@ -30,6 +30,28 @@ describe('<Hreflang>', () => {
     expect(markup).toContain('hrefLang="x-default"');
     expect(markup).toContain('rel="canonical"');
   });
+
+  it('throws on empty canonicalHref (review fix — invalid SEO signal)', () => {
+    expect(() => renderToStaticMarkup(<Hreflang canonicalHref="" alternates={[]} />)).toThrow(
+      /canonicalHref/,
+    );
+  });
+
+  it('deduplicates alternates by locale (first entry wins, review fix)', () => {
+    const markup = renderToStaticMarkup(
+      <Hreflang
+        canonicalHref="https://tukio.one/fr"
+        alternates={[
+          { locale: 'fr', href: 'https://tukio.one/fr/a' },
+          { locale: 'fr', href: 'https://tukio.one/fr/b' },
+          { locale: 'en', href: 'https://tukio.one/en' },
+        ]}
+      />,
+    );
+    expect(markup).toContain('https://tukio.one/fr/a');
+    expect(markup).not.toContain('https://tukio.one/fr/b');
+    expect(markup).toContain('https://tukio.one/en');
+  });
 });
 
 // LocaleLink uses next/link + useLocale (next-intl). Each test resets the

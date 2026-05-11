@@ -1,6 +1,6 @@
 'use client';
 import { useLocale } from 'next-intl';
-import { isLocale, type Locale } from '../config/locales.js';
+import { isLocale, type Locale } from '../config/locales';
 
 // Wrapper over next-intl's useLocale() that narrows the return type from
 // `string` to Tukio's `Locale` union. The middleware (createTukioI18nMiddleware)

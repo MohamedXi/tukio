@@ -78,3 +78,11 @@
 - **W2** — Les 9 autres services NestJS (gateway-api, catalog-svc, booking-svc, payment-svc, order-svc, messaging-svc, notification-svc, review-svc, media-svc) tournent encore avec `nest start --watch` (sans webpack) **uniquement parce qu'ils sont des scaffolds vides** ne consommant pas `@tukio/*` packages. Dès qu'ils commenceront à consommer `@tukio/contracts`, `@tukio/auth`, `@tukio/messaging` (Stories Epic 2-7), ils casseront avec le même symptôme. Migration : copier `webpack.config.js` + `nest-cli.json` updates + scripts `package.json` d'identity-svc lors du scaffolding via `replicate-pretre-structure.sh` (Story 0.6 Task 12).
 - **W3** — `webpack.config.js` actuel d'identity-svc inline une regex `/^@tukio\//` pour détecter les workspace packages. À factoriser dans un fichier partagé `webpack.tukio.config.js` au workspace root quand W2 sera traitée.
 - **W4** — Mode debug Node DevTools (`--inspect`) a été préservé dans `start:debug` mais pas re-testé. À valider quand on aura un cas concret de debug runtime.
+
+## Deferred from: code review of 0-9-setup-tukio-api-client-i18n-client-testing (2026-05-11)
+
+- **D-09-1** — AC17 migration Story 0.7 chaos test (`it.skip` → `it()` real testcontainer) + Story 0.8 e2e (nock JWKS mock → real Keycloak testcontainer). Infrastructure shipped Story 0.9 (`startNatsContainer`, `startKeycloakContainer`). Migration deferred Story 0.11 quand le tag `@nightly` séparera fast (mocks) / slow (testcontainers) tests CI.
+- **D-09-2** — `formatPercent` doesn't validate `value > 1` (caller error : passe `5` au lieu de `0.05`). Caller-responsibility, documenter via JSDoc + types stricter. Pas de fix code.
+- **D-09-3** — `meilisearch.helper.ts` utilise `version: 'latest'` (CI flake risk si Meilisearch ships breaking minor). Pin à v1.10 explicite lors de Story 0.10 (Docker Compose pinning).
+- **D-09-4** — `nats.helper.ts` `client.drain()` après pause peut laisser connection ouverte. Best-effort cleanup OK pour le MVP, raffiner usage chaos-test réel Story 0.11.
+- **D-09-5** — `useCurrentLocale` throws inside React render (no Error Boundary required). Stories Epic 1+ wirent Error Boundary niveau app. Pattern documenté dans `@tukio/i18n-client/README.md`.

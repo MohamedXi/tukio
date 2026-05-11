@@ -33,17 +33,22 @@ export interface ReviewWithBreakdownFixture extends ReviewFixture {
   };
 }
 
+// Builds a review with three sub-criteria. Partial `overrides.breakdown` is
+// merged INTO the generated breakdown rather than replacing it whole — so a
+// caller passing `{ breakdown: { professionalism: 5 } }` keeps random
+// quality + valueForMoney instead of leaving them undefined.
 export function buildReviewWithBreakdown(
   overrides: Partial<ReviewWithBreakdownFixture> = {},
 ): ReviewWithBreakdownFixture {
-  const base = buildReview(overrides);
+  const { breakdown: breakdownOverride, ...rest } = overrides;
+  const base = buildReview(rest);
   return {
     ...base,
     breakdown: {
       professionalism: faker.number.int({ min: 1, max: 5 }),
       quality: faker.number.int({ min: 1, max: 5 }),
       valueForMoney: faker.number.int({ min: 1, max: 5 }),
+      ...breakdownOverride,
     },
-    ...overrides,
   };
 }

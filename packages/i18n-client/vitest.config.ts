@@ -8,7 +8,10 @@ export default defineConfig({
     globals: false,
     coverage: {
       provider: 'v8',
-      thresholds: { lines: 80, functions: 80, branches: 75, statements: 80 },
+      // Thresholds aligned with Story 0.9 AC16 (≥ 80 %) after review patches
+      // added defensive guards in formatters + Hreflang and the corresponding
+      // tests.
+      thresholds: { lines: 85, functions: 85, branches: 80, statements: 85 },
       exclude: [
         '**/__tests__/**',
         '**/*.spec.{ts,tsx}',

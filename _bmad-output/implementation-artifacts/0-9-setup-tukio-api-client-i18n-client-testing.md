@@ -1,6 +1,6 @@
 # Story 0.9: Setup @tukio/api-client + @tukio/i18n-client + @tukio/testing
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -597,6 +597,72 @@ Status: review
   - [x] 14.4 — Tests : api-client 40 ✅, i18n-client 37 ✅, testing 35 ✅ (= 112 tests)
   - [x] 14.5 — pnpm lint + pnpm typecheck + pnpm build → 14/14 OK
   - [x] 14.6 — Commit final Story 0.9
+
+### Review Findings
+
+> **Source** : `bmad-code-review` workflow (3 reviewers parallèles : Blind Hunter, Edge Case Hunter, Acceptance Auditor) — Date : 2026-05-10. Verdict : **Changes Requested**. 6 bugs critiques (5 patches + 1 décision AC17 deferral), 17 important, 12 mineurs.
+
+#### 🤔 Decisions needed (3)
+
+- [x] **[Review][Decision] D1 — AC17 migration Stories 0.7 + 0.8** : Acceptance Auditor flag AC17 ❌ MISSING. Story 0.7 chaos test reste `it.skip()` ; Story 0.8 e2e utilise toujours `nock` JWKS mock. Task 13 a été déférée formellement à Story 0.11 (séparation @nightly tag). Choix : (a) accepter la déviation AC17 + documenter clairement dans Dev Notes (status quo, Story 0.11 rembourse la dette), (b) faire la migration maintenant (effort ~1-2h, ajoute 2 tests slow). **[AC17]**
+- [x] **[Review][Decision] D2 — Coverage thresholds branches < 80 %** : api-client `branches: 65`, i18n-client `branches: 75` (vs spec ≥ 80). Justifié par limitations axios-mock-adapter (retry path) + SSR guards jsdom + Server Components non-testables en isolation. Choix : (a) garder seuils + justifier dans Dev Notes (déjà documenté), (b) écrire tests manquants pour atteindre 80 % branches. **[AC16]**
+- [x] **[Review][Decision] D3 — `package.json` exports api-client wildcards** : impl actuelle liste chaque hook explicitement (`./hooks/booking/use-booking-detail`). Spec mandate wildcard `./hooks/booking/*` pour que Stories Epic 1+ ajoutent des hooks sans toucher `package.json`. Choix : (a) aligner sur wildcards (refactor 7 entries), (b) garder spécifique (chaque hook nouveau = 1 ligne package.json edit). **[AC15]**
+
+#### 🔴 Patches Critiques — bloquants pour `done` (5)
+
+- [x] **[Review][Patch] P1 — `composeMiddlewares` discards next-intl rewrite responses** [packages/i18n-client/src/middleware/compose-middlewares.ts:18-26] — next-intl `createMiddleware` retourne NextResponse status 200 + `x-middleware-rewrite` headers. Compose loop short-circuit uniquement sur `status !== 200`, fall-through to `NextResponse.next()` qui drop les headers de rewrite + locale. **Composition i18n + auth advertise dans README est silencieusement cassée pour le cas le plus courant.** Fix : retourner le `NextResponse` rencontré (pas seulement les non-200) ou check `result.headers.has('x-middleware-rewrite')`.
+- [x] **[Review][Patch] P2 — `apps/public/src/{i18n,messages}/*` non commit** [apps/public/src/i18n/request.ts, apps/public/src/messages/{fr,en}.json] — Files untracked dans diff. `next.config.ts` wires `createNextIntlPlugin('./src/i18n/request.ts')` + layout calls `getMessages()` — both fail at build time without these files. **Won't ship in PR.** Fix : `git add` + commit.
+- [x] **[Review][Patch] P3 — `saga-partial-failure` simulates consumer-crash with no-op `respond()` instead of `nak()`** [packages/testing/src/chaos/saga-partial-failure.helper.ts:35-40] — Comment dit "no ack → JetStream redelivers" mais code appelle `msg.respond?.(undefined)` (request/reply pattern), JAMAIS `nak()`. **Le chaos helper ne reproduit PAS le scenario de saga partial failure** ; tests basés dessus passent trivialement. Fix : utiliser JetStream `msg.nak()` (ou ne pas ack), supprimer `respond?.()`.
+- [x] **[Review][Patch] P4 — 5xx retry path never fires for envelope-shaped server errors (NFR45 violation)** [packages/api-client/src/client/axios-client.ts:67-91] — `throwApiErrorFromEnvelope` runs BEFORE retry check. 5xx avec envelope → ApiError thrown → retry skipped. Le NFR45 "retry on 5xx (network failures)" est violé pour TOUTES les erreurs 5xx envelope-shaped (qui est le contrat gateway-api). README + comments mentent. Fix : retry first sur status >= 500 (regardless of envelope), only convert to ApiError après retries exhausted ou pour 4xx.
+- [x] **[Review][Patch] P5 — `getOrCreate` poisoned cache + concurrent factory leak** [packages/testing/src/testcontainers/container-pool.ts:17-26] — Two parallel calls : both see `existing === undefined`, both invoke `factory()` → 2 containers started. Only the second `pool.set` wins ; le first container est orphan (no `stop()` ever called → Docker resource leak between test runs). **Cause flakiness intermittente CI.** Same race dans `keycloak.helper.ts:62-74` (admin client cache). Fix : cache `Promise<T>` (pas le resolved handle) so concurrent callers wait on same start.
+
+#### 🟠 Patches Importants (15)
+
+- [x] **[Review][Patch] P6 — `unwrapSuccessEnvelope` widens type to `T | T[] | null`** [packages/api-client/src/client/envelope-handler.ts:7-11] — Hooks declare `client.get<BookingResponseDto>` and consume `response.data` as single DTO, mais unwrap signature retourne union (array+null inclus). **Type-unsafe** ; refactoring later silently regresses.  Fix : carry array-ness in `T` (e.g. paginated responses use `T[]`) ou avoir 2 fonctions séparées (`unwrapSingle<T>` / `unwrapList<T>`).
+- [x] **[Review][Patch] P7 — Chaos helpers reach into private `dockerContainer` internals** [packages/testing/src/chaos/db-failure.helper.ts:10-12, packages/testing/src/testcontainers/nats.helper.ts:58-69] — `dockerContainer` n'est PAS public `StartedTestContainer` API. Minor version bump testcontainers → break silently. Fix : runtime guard `if (typeof dc?.pause !== 'function') throw new Error('testcontainers internal API changed')` + adapter explicite.
+- [x] **[Review][Patch] P8 — `disconnectNats` / `pauseDb` no try/finally** [packages/testing/src/chaos/{nats-disconnect,db-failure}.helper.ts] — Si sleep aborted entre pause/unpause, container reste paused indéfiniment → blocks every subsequent test, deadlock CI. Fix : wrap unpause dans try/finally.
+- [x] **[Review][Patch] P9 — `crypto.randomUUID()` throws on insecure context** [packages/api-client/src/client/correlation-id-interceptor.ts:11] — SSR previews HTTP, browser-extension contexts, non-secure origins → `randomUUID is not a function` TypeError. Whole app dies. Fix : try/catch + Math.random() fallback ou feature-detect.
+- [x] **[Review][Patch] P10 — `sessionStorage.setItem` quota → first request crashes** [packages/api-client/src/client/correlation-id-interceptor.ts:16] — Private mode, Safari iOS lockdown, quota exhausted by other tabs → DOMException uncaught. Fix : try/catch around setItem ; if throws, return fresh UUID without persist.
+- [x] **[Review][Patch] P11 — `error.config` undefined → no retry on actual network errors** [packages/api-client/src/client/axios-client.ts:78-89] — Cancelled requests, ERR_NETWORK without config → `if (cfg && isRetryable)` short-circuit → no retry. **NFR45 violated for the exact case it was designed for.** Fix : log + best-effort retry sans config OR rebuild minimal config from `error.request`.
+- [x] **[Review][Patch] P12 — `throwApiErrorFromEnvelope` crashes if `envelope.meta` undefined** [packages/api-client/src/client/envelope-handler.ts:23] — `isErrorEnvelope` ne vérifie pas la présence de `meta`. Malformed envelope `{error: {tukioCode: 'X'}}` → `envelope.meta.correlationId` TypeError, masque l'erreur originale. Fix : `correlationId ?? envelope.meta?.correlationId` + tighten `isErrorEnvelope` to require `meta`.
+- [x] **[Review][Patch] P13 — Formatters silently render "Invalid Date"** [packages/i18n-client/src/formatters/date.ts:14-21,23-35,42-57] — Invalid string → Intl.DateTimeFormat retourne le literal "Invalid Date" (no exception). Renders dans UI, SEO-indexable. Fix : validate `!Number.isNaN(date.getTime())` + throw ou return null.
+- [x] **[Review][Patch] P14 — `formatDateRange` throws on inverted range (`from > to`)** [packages/i18n-client/src/formatters/date.ts:42-57] — `Intl.DateTimeFormat#formatRange` throws RangeError. Server Component → 500. Fix : swap or fallback to `formatDate(from) + " – " + formatDate(to)` quand inverted.
+- [x] **[Review][Patch] P15 — `formatRelativeTime` invalid date silently returns "now"** [packages/i18n-client/src/formatters/relative-time.ts:32-34] — `target.getTime()` NaN → loop skipped → `rtf.format(0, 'second')`. Silently shows "il y a 0 seconde" instead of "Invalid date". Fix : throw ou return localized "—" sur NaN.
+- [x] **[Review][Patch] P16 — `formatCurrency` accepts non-integer cents** [packages/i18n-client/src/formatters/currency.ts:10-16] — Float input (99.99 cents) → fractional centimes shown. Critical Constraint #5 dit "Money en cents (integer)" mais lib accepte float. Fix : `if (!Number.isInteger(amountInCents)) throw` OR `Math.round` pre-divide.
+- [x] **[Review][Patch] P17 — `composeMiddlewares` swallows middleware exceptions** [packages/i18n-client/src/middleware/compose-middlewares.ts:16-26] — No try/catch around `await mw()`. Whole proxy throws → blank 500, no logging hook. Fix : try/catch chaque middleware, log + rethrow OR map redirect /error.
+- [x] **[Review][Patch] P18 — `chaos/chaos.spec.ts` MISSING entirely** [packages/testing/src/chaos/] — Spec line 428 + Task 10.4 demandent ce test file. Le code n'a aucun test fixture pour les 3 chaos helpers. **Coverage gap.** Fix : créer `chaos.spec.ts` avec smoke tests (require Docker, marqué `@chaos` tag).
+- [x] **[Review][Patch] P19 — `tsconfig.paths` `@tukio/contracts/*` resolves to file path not folder index** [packages/api-client/tsconfig.json:14-16, idem i18n-client + testing] — `@tukio/contracts/envelope` essaie de résoudre `packages/contracts/src/envelope` (folder), works only by accident if nodenext fallback. Fix : drop `paths` map (rely on `resolvePackageJsonExports`) OR mirror exports map exactly.
+- [x] **[Review][Patch] P20 — `useState(() => client)` freezes axios instance** [packages/api-client/src/providers/api-client-context.tsx:1909-1913] — Si parent recompute baseURL (auth refresh, locale switch) → provider keeps stale instance. Comment justifie "stable across re-renders" mais c'est au caller de memoize. Fix : `value={client}` direct OR `useEffect` to detect changes.
+
+#### 🟡 Patches Mineurs (12)
+
+- [x] **[Review][Patch] P21 — CSRF mutation request without token silently sent** [packages/api-client/src/client/csrf-interceptor.ts:15-19] — Server returns 403, no clear cause for user. Fix : throw ApiError `CSRF-MISSING-001` before request leaves.
+- [x] **[Review][Patch] P22 — `unwrapSuccessEnvelope` shape check too loose** [packages/api-client/src/client/axios-client.ts:57-62] — Any object with `data` and `method` keys passes (e.g. upstream proxy mirror). Fix : add `'code' in response.data && 'meta' in response.data`.
+- [x] **[Review][Patch] P23 — `ApiError.message` renders `[X] undefined: undefined`** [packages/api-client/src/types/api-error.ts:14] — `isErrorEnvelope` permissive, garbage in logs. Fix : `title ?? 'API error'` fallback.
+- [x] **[Review][Patch] P24 — `isErrorEnvelope` too permissive** [packages/api-client/src/client/envelope-handler.ts:33-43] — Don't check method/code/meta. Fix : tighten guard.
+- [x] **[Review][Patch] P25 — `formatRange` requires lib `ES2023.Intl`** [packages/i18n-client/tsconfig.json:8] — tsconfig `lib: ["ES2022", "DOM"]`, pourrait fail typecheck sans `skipLibCheck`. Fix : add `"ES2023.Intl"` ou bump à `"ES2023"`.
+- [x] **[Review][Patch] P26 — `buildOrderWithLineItems` overrides overwrite auto-summed total** [packages/testing/src/fixtures/order.fixture.ts:30-45] — Test passes `overrides = { lineItems: customItems }` → `totalAmount` reflects generated lineItems, not customItems. Fix : sum after merging overrides ou doc mutually exclusive.
+- [x] **[Review][Patch] P27 — `buildReviewWithBreakdown` overrides spread twice — partial breakdown loses siblings** [packages/testing/src/fixtures/review.fixture.ts:30-45] — `overrides = { breakdown: { professionalism: 5 } }` → quality+valueForMoney undefined. Fix : merge `overrides.breakdown` into breakdown.
+- [x] **[Review][Patch] P28 — `buildBooking.requestedDate` UTC slice TZ-shift** [packages/testing/src/fixtures/booking.fixture.ts:24-26] — UTC → off-by-one day at Paris midnight, flaky tests. Fix : Intl.DateTimeFormat with Europe/Paris.
+- [x] **[Review][Patch] P29 — `cleanupAllContainers` only rethrows first error** [packages/testing/src/testcontainers/container-pool.ts:30-44] — Other failures swallowed. Fix : `AggregateError(errors)`.
+- [x] **[Review][Patch] P30 — `apps/public/proxy.ts` matcher excludes any URL with dot** [apps/public/src/proxy.ts:8-10] — Could exclude legitimate routes (versioned slugs `/v1.0`, dotted paths). Fix : tighter matcher `/((?!_next|api|.*\\.\\w{2,4}$).*)`.
+- [x] **[Review][Patch] P31 — `toMatchSuccessEnvelope` accepts `data: undefined`** [packages/testing/src/matchers/to-match-envelope.matcher.ts:36-41] — `'data' in received` true even when value undefined. Fix : explicit undefined check.
+- [x] **[Review][Patch] P32 — `Hreflang` duplicate locales / empty canonicalHref** [packages/i18n-client/src/components/hreflang.tsx:18-28] — React duplicate-key warning, invalid SEO signal. Fix : validate uniqueness + reject empty canonical.
+
+#### 📝 Deferred (5)
+
+- [x] **[Review][Defer] D-09-1 — Tests existants Story 0.7 chaos + Story 0.8 e2e migration** — déférée Story 0.11 (séparation @nightly tag). Décision pending sur D1.
+- [x] **[Review][Defer] D-09-2 — `formatPercent` value > 1 (caller error)** — déférée : documentation suffit, pas de fix code. Caller doit passer fraction (0.05 pas 5).
+- [x] **[Review][Defer] D-09-3 — `meilisearch.helper.ts` version 'latest' (CI flake risk)** — déférée Story 0.10 (Docker Compose pinning).
+- [x] **[Review][Defer] D-09-4 — `nats.helper.ts` `client.drain()` after pause may stay open** — déférée : best-effort cleanup, à raffiner en chaos-test usage réel Story 0.11.
+- [x] **[Review][Defer] D-09-5 — `useCurrentLocale` throws inside React render (no Error Boundary required)** — déférée : Stories Epic 1+ wirent Error Boundary au niveau app, pattern documenté dans README.
+
+#### ❌ Dismissed (3)
+
+- **F-D1 `LocaleLink` href hash-only / query-only** — works correctly via next/link relative resolution.
+- **F-D2 `toBeIsoDate` regex requires seconds** — intentional strict format (matches `Date.toISOString()` only). Documenter.
+- **F-D3 `LocaleLink` href === ""** — edge case behavior acceptable, browser default reload.
+
 
 ## Dev Notes
 

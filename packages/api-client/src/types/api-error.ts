@@ -14,7 +14,11 @@ export class ApiError extends Error {
     public readonly correlationId?: string,
     public readonly instance?: string,
   ) {
-    super(`[${tukioCode}] ${title}: ${detail}`);
+    // Defensive: malformed envelopes can reach here with empty title/detail.
+    // Avoid the eyesore `[X] undefined: undefined` in logs / Sentry.
+    const renderedTitle = title || 'API error';
+    const renderedDetail = detail || '<no detail>';
+    super(`[${tukioCode}] ${renderedTitle}: ${renderedDetail}`);
     this.name = 'ApiError';
     Object.setPrototypeOf(this, ApiError.prototype);
   }

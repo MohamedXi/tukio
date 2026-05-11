@@ -147,3 +147,35 @@ describe('formatRelativeTime', () => {
     expect(result).toMatch(/year/);
   });
 });
+
+describe('formatters — invalid input guards (review fixes)', () => {
+  it('formatDate throws RangeError on invalid string', () => {
+    expect(() => formatDate('not-a-date', 'fr')).toThrow(RangeError);
+  });
+
+  it('formatDateTime throws RangeError on invalid string', () => {
+    expect(() => formatDateTime('garbage', 'fr')).toThrow(RangeError);
+  });
+
+  it('formatDateRange throws RangeError on invalid `from`', () => {
+    expect(() => formatDateRange('garbage', '2026-06-22', 'fr')).toThrow(RangeError);
+  });
+
+  it('formatDateRange swaps inverted range (from > to) instead of crashing', () => {
+    const result = formatDateRange('2026-06-22', '2026-06-15', 'fr');
+    expect(result).toContain('15');
+    expect(result).toContain('22');
+  });
+
+  it('formatRelativeTime throws on invalid date input', () => {
+    expect(() => formatRelativeTime('garbage', 'fr')).toThrow(RangeError);
+  });
+
+  it('formatCurrency throws TypeError on non-integer cents (ADR-014 invariant)', () => {
+    expect(() => formatCurrency(99.99, 'EUR', 'fr')).toThrow(TypeError);
+  });
+
+  it('formatCurrency accepts 0', () => {
+    expect(formatCurrency(0, 'EUR', 'fr')).toMatch(/0/);
+  });
+});

@@ -1,5 +1,5 @@
 # generated: 2026-05-09
-# last_updated: 2026-05-10 (Story 0.9 review — @tukio/api-client + @tukio/i18n-client + @tukio/testing — 112 tests, 70+ files)
+# last_updated: 2026-05-11 (Story 0.9 done — code review applied 30 patches + 3 decisions, 155 tests, branches ≥ 80%)
 # project: tukio.one
 # project_key: NOKEY
 # tracking_system: file-system
@@ -52,7 +52,7 @@ development_status:
   0-6-pattern-pretre-scaffolding-template-identity-svc: done
   0-7-setup-tukio-messaging-nats-jetstream: done
   0-8-setup-tukio-auth-backend-frontend: done
-  0-9-setup-tukio-api-client-i18n-client-testing: review
+  0-9-setup-tukio-api-client-i18n-client-testing: done
   0-10-docker-compose-dev-local-bootstrap-scripts: ready-for-dev
   0-11-ci-github-actions-pipeline: ready-for-dev
   0-12-helm-charts-k8s-argocd-staging-observability: ready-for-dev

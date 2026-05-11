@@ -33,10 +33,11 @@ export function toMatchSuccessEnvelope(
         `Expected SuccessEnvelope shape (with method/code/meta), got: ${JSON.stringify(received)}`,
     };
   }
-  if (!('data' in received)) {
+  if (!('data' in received) || received.data === undefined) {
     return {
       pass: false,
-      message: () => 'Expected SuccessEnvelope to have a `data` field (got ErrorEnvelope?).',
+      message: () =>
+        'Expected SuccessEnvelope to have a defined `data` field (got ErrorEnvelope or `data: undefined`?).',
     };
   }
   if (expected?.code !== undefined && received.code !== expected.code) {

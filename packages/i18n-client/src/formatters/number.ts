@@ -1,4 +1,4 @@
-import { LOCALE_BCP47, type Locale } from '../config/locales.js';
+import { LOCALE_BCP47, type Locale } from '../config/locales';
 
 export function formatNumber(
   value: number,

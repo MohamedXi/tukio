@@ -27,15 +27,20 @@ export function buildOrder(overrides: Partial<OrderFixture> = {}): OrderFixture 
   };
 }
 
+// Builds an order whose `totalAmount` is auto-summed from its line items.
+// Overrides are applied AFTER the sum so a caller-provided `totalAmount`
+// wins, but if the caller only overrides `lineItems`, the sum is recomputed
+// from the overridden line items (not the generated ones).
 export function buildOrderWithLineItems(
   itemsCount: number,
   overrides: Partial<OrderFixture> = {},
 ): OrderFixture {
-  const lineItems: OrderLineItemFixture[] = Array.from({ length: itemsCount }, () => ({
+  const generatedLineItems: OrderLineItemFixture[] = Array.from({ length: itemsCount }, () => ({
     bookingId: faker.string.uuid(),
     proId: faker.string.uuid(),
     amount: { amount: faker.number.int({ min: 5_000, max: 50_000 }), currency: 'EUR' },
   }));
+  const lineItems = overrides.lineItems ?? generatedLineItems;
   const total = lineItems.reduce((acc, li) => acc + li.amount.amount, 0);
   return buildOrder({
     lineItems,
