@@ -1,5 +1,9 @@
 import type { Metadata } from 'next';
+import { NextIntlClientProvider, hasLocale } from 'next-intl';
+import { getMessages } from 'next-intl/server';
+import { notFound } from 'next/navigation';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
+import { LOCALES } from '@tukio/i18n-client/config';
 import './globals.css';
 
 const fraunces = Fraunces({
@@ -39,12 +43,22 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
+  // Defensive: middleware makes unknown locales unreachable in normal flow,
+  // but a hardcoded URL like /xx/ would still hit this layout.
+  if (!hasLocale(LOCALES, locale)) {
+    notFound();
+  }
+  const messages = await getMessages();
   return (
     <html
       lang={locale}
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
+      </body>
     </html>
   );
 }
