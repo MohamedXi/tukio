@@ -278,6 +278,60 @@ Status: review
   - [x] 12.6 — `pnpm docker:reset` → cleanup + redémarrage complet OK en 53 s
   - [x] 12.7 — Commit `feat(infra): docker-compose dev local + bootstrap scripts (Story 0.10)` — Story 0.10 done
 
+### Review Findings (AI — 2026-05-13)
+
+> Triage from 3-layer adversarial code review (Blind Hunter + Edge Case Hunter + Acceptance Auditor).
+> Counts initiaux : **3 decision-needed**, **21 patch**, **15 defer**, ~22 dismissed.
+> Après résolution decisions (2026-05-13 21:25) : **0 decision-needed**, **21 patch**, **18 defer** (3 decisions déférées).
+
+#### Decisions résolues (2026-05-13)
+
+- [x] [Review][Defer] **Admin TOTP MFA non effectivement enforcé pour `tukio-admin`** → **deferred Story 1.7** (admin 2FA TOTP obligatoire). Story 1.7 wire l'auth flow override per-client + admin user seeding avec `configure-totp` required-action. Gap noté en release notes 0.10. [`infra/scripts/bootstrap-keycloak-realm.sh:213-225`]
+- [x] [Review][Defer] **Wildcard redirect URI `https://*.tukio.one/*`** → **kept** pour preview envs Vercel (`pr-*.tukio.one`) + staging. Override prod plus strict via Phasetwo Story 0.12. [`infra/scripts/bootstrap-keycloak-realm.sh:128`]
+- [x] [Review][Defer] **`seed-categories.ts` service_types curated vs spec** → **kept curated** (pop-up tents sans lighting/dismantling, linens sans setup, etc.). Validation canonique des service_types → Story 3.1 (catalog data model + product owner review). [`infra/scripts/seed-categories.ts:60-220`]
+
+#### Patches (unchecked = à appliquer)
+
+- [x] [Review][Patch] **bootstrap-databases.sh swallows migration failures + stderr discarded** — `pnpm migration:run >/dev/null 2>&1 || echo "⚠️ failed (continuing)"` masque les erreurs réelles. Track failures, exit non-zero si CI mode. [`infra/scripts/bootstrap-databases.sh:99-108`]
+- [x] [Review][Patch] **data-source.ts hardcoded `DB_PASSWORD` fallback sans NODE_ENV guard** — env.schema.ts guarde déjà avec `NODE_ENV !== 'production'`, mais data-source.ts (TypeORM CLI path) a un fallback nu. Aligner. [`apps/identity-svc/src/infrastructure/persistence/typeorm/data-source.ts:22`]
+- [x] [Review][Patch] **`postgres-init/01-create-tukio-databases.sql` non re-runnable** — Pas de `IF NOT EXISTS` (CREATE DATABASE ne supporte pas) et pas de DO/EXCEPTION block. Si Postgres re-init partiel un jour, crash. Wrapper chaque CREATE DATABASE dans un DO $$ BEGIN ... EXCEPTION WHEN duplicate_database. [`infra/docker-compose/postgres-init/01-create-tukio-databases.sql:9-19`]
+- [x] [Review][Patch] **`tukio-api` client secret upsert overwrites manual rotation** — Chaque idempotent re-run du bootstrap réécrit le secret au dev default. Si un dev rotate via Keycloak UI, le bootstrap suivant régresse. Skip secret update on existing client unless `--force-secret` flag. [`infra/scripts/bootstrap-keycloak-realm.sh:174-183`]
+- [x] [Review][Patch] **run-chaos-tests.sh shell word-split unquoted `$command`** — `pnpm --filter="$filter" run $command` casse si l'arg contient des espaces. Refactor en bash array per target. [`infra/scripts/run-chaos-tests.sh:43`]
+- [x] [Review][Patch] **`get_client_uuid` swallows kcadm errors + no UUID validation** — Si kcadm écrit une erreur sur stdout, head/tr la capture comme "uuid". Valider regex `^[0-9a-f-]{36}$` avant `clients/${uuid}` call. [`infra/scripts/bootstrap-keycloak-realm.sh:122-126`]
+- [x] [Review][Patch] **`export-keycloak-realm.sh` depends on python3 sans fallback** — `python3 -m json.tool` undeclared dans README prereqs. Préférer `jq` (avec fallback python3) ou documenter explicitement le prereq. [`infra/scripts/export-keycloak-realm.sh:21,32`]
+- [x] [Review][Patch] **seed-categories.ts probes only `categories` table** — Si `sub_categories`/`category_translations`/`sub_category_translations` manquent, le script crash mid-seed. Probe les 4 tables avant la boucle. [`infra/scripts/seed-categories.ts:117-127`]
+- [x] [Review][Patch] **seed-categories.ts manque try/finally + SIGINT handler** — `client.connect()` throw → `client.end()` jamais appelé. Pas de SIGINT handler. [`infra/scripts/seed-categories.ts:106-114, 244-248`]
+- [x] [Review][Patch] **seed-categories.ts upsert UNION ALL race** — `INSERT … ON CONFLICT DO NOTHING RETURNING … UNION ALL SELECT … WHERE …` peut retourner 2 rows sous concurrence ; `rows[0].inserted` faux. Refactor en `INSERT ... ON CONFLICT DO UPDATE SET ... RETURNING id` + flag séparé. [`infra/scripts/seed-categories.ts:136-156`]
+- [x] [Review][Patch] **`PG_USER` non validé → shell injection via GRANT** — `GRANT ALL PRIVILEGES ON DATABASE ... TO ${PG_USER}` est interpolé sans guillemets. Validate `^[a-zA-Z_][a-zA-Z0-9_]*$` upfront. [`infra/scripts/bootstrap-databases.sh:84`]
+- [x] [Review][Patch] **`PGPASSWORD` exporté globalement** — Leak via `set -x` ou env dumps CI. Scoper l'export par-commande. [`infra/scripts/bootstrap-databases.sh:21`]
+- [x] [Review][Patch] **`pnpm filter` no match silent skip** — Si `apps/$svc` renommé ou typo, le filter ne matche pas, échec silencieux. Use `--if-present` ou check filter resolves. [`infra/scripts/bootstrap-databases.sh:99`]
+- [x] [Review][Patch] **OTP_EXEC_ID multi-row not asserted** — Si kcadm renvoie plusieurs lignes match "Conditional OTP", awk en prend une au hasard ; mauvaise execution élevée à REQUIRED → flow cassé. Assert count == 1. [`infra/scripts/bootstrap-keycloak-realm.sh:216-220`]
+- [x] [Review][Patch] **seed-categories.ts `service_types text[]` column not probed** — Si Story 3.1 nomme cette colonne différemment, UPDATE crash mid-seed. Probe `information_schema.columns`. [`infra/scripts/seed-categories.ts:168-171`]
+- [x] [Review][Patch] **`export-keycloak-realm.sh` ne valide pas la réponse curl** — Si curl reçoit 401/500 + python KeyError, l'OUTPUT_FILE est tronqué. Write to tmpfile → validate JSON → mv. [`infra/scripts/export-keycloak-realm.sh:27-30`]
+- [x] [Review][Patch] **`export-keycloak-realm.sh` grep counts double-count** — Pretty-print peut wrapper `clientId` sur plusieurs lignes. Use `jq '.clients | length'` plutôt. [`infra/scripts/export-keycloak-realm.sh:32-37`]
+- [x] [Review][Patch] **`export-keycloak-realm.sh` no `mkdir -p` parent dir** — Sur fresh clone, `infra/scripts/keycloak/` peut manquer si `.gitkeep` absent. Add `mkdir -p "$(dirname "$OUTPUT_FILE")"`. [`infra/scripts/export-keycloak-realm.sh:26`]
+- [x] [Review][Patch] **`mailhog/mailhog:latest` non pinné** — Toutes les autres images sont version-locked. Pin à un tag explicite (e.g. `mailhog/mailhog:v1.0.1`) ou digest. [`infra/docker-compose/docker-compose.dev.yml:130`]
+- [x] [Review][Patch] **Story 3.10 status flip leaked into Story 0.10 commit `d79f8ec`** — `sprint-status.yaml` a un changement `3-10-listing-detail-public-page: backlog → ready-for-dev` qui n'est pas Story 0.10. Split en commit séparé ou revert du commit 0.10. [`_bmad-output/implementation-artifacts/sprint-status.yaml:99`]
+- [x] [Review][Patch] **Completion Notes claims realm-export.json = 2513 lignes** — Fichier réel = 2316 lignes. Cosmetic mais à corriger. [`_bmad-output/implementation-artifacts/0-10-…md` (Completion Notes)]
+
+#### Deferred (déjà checkés — pre-existing ou non-bloquant pour 0.10)
+
+- [x] [Review][Defer] **Keycloak healthcheck dépend du whitespace JSON littéral** — Fragile mais fonctionne ; refactor attend que Keycloak offre un endpoint plus standardisé. [`infra/docker-compose/docker-compose.dev.yml:81-85`]
+- [x] [Review][Defer] **`KC_HOSTNAME=localhost` bake une assumption host-only** — Tokens `iss: http://localhost:8080` ; si un service backend tourne en container (Story 0.12+), JWT validation casse sur mismatch. Intentionnel pour le workflow Sprint 0 (services en host via `pnpm dev`). [`infra/docker-compose/docker-compose.dev.yml:69`]
+- [x] [Review][Defer] **Pre-existing identity-svc unit-test bug** — `jest.config.ts` manque mapping `@tukio/contracts/exceptions/domain` (présent dans `test/jest-e2e.json`). Vérifié sur baseline `develop`, même échec. Hors scope 0.10. [`apps/identity-svc/jest.config.ts`]
+- [x] [Review][Defer] **Race concurrente bootstrap** — Deux devs / dev+CI run en parallèle sur la même DB ; pas réaliste en pratique. [`infra/scripts/bootstrap-databases.sh`]
+- [x] [Review][Defer] **Keycloak realm update ne supprime pas les fields** — Idempotence partielle : retirer une ligne du JSON local ne la retire pas du realm en place. Quirk Keycloak documenté. [`infra/scripts/bootstrap-keycloak-realm.sh:60-67`]
+- [x] [Review][Defer] **`$PSQL` unquoted word-splitting** — Fonctionne pour les paramètres connus ; refactor en array serait propre. [`infra/scripts/bootstrap-databases.sh:34`]
+- [x] [Review][Defer] **Migration Ctrl-C laisse état half-applied** — Concern TypeORM-level, pas réglable côté script. [`infra/scripts/bootstrap-databases.sh:99-108`]
+- [x] [Review][Defer] **README Conventional commits indentation** — À re-vérifier ; potentiel cosmétique. [`README.md` Conventions]
+- [x] [Review][Defer] **seed-categories.ts UPDATE service_types destructif** — Réécrit toute manual addition dev. Acceptable pour un seed dev. [`infra/scripts/seed-categories.ts:168-171`]
+- [x] [Review][Defer] **`echo $REALM_JSON | kcadm -f -` SIGPIPE truncation possible** — Refactor en tmpfile serait propre ; pas observé en pratique. [`infra/scripts/bootstrap-keycloak-realm.sh:64-72`]
+- [x] [Review][Defer] **`COMPOSE_PROFILE` non validé** — Si override pointe sur un profile inexistant, stack démarre incomplet. Defensive coding. [`infra/scripts/run-chaos-tests.sh:11-12`]
+- [x] [Review][Defer] **`tukio_test_postgres` collision avec stack pré-existant** — CI fresh runners ; dev rare. [`infra/scripts/run-chaos-tests.sh`]
+- [x] [Review][Defer] **Stale `.env.local` detection** — Si un dev a un `.env.local` Story 0.6 avec `tukio_identity_user`, le `pnpm dev` échouera de manière confuse. Doctor script futur. [N/A — tooling]
+- [x] [Review][Defer] **`KCADM` string interp re-exec docker à chaque iter** — Optimisation mineure. [`infra/scripts/bootstrap-keycloak-realm.sh:24`]
+- [x] [Review][Defer] **`tmpfs:512m` OOM sur runners CI petits** — Documenter min-RAM dans Story 0.11. [`infra/docker-compose/docker-compose.test.yml:21-22`]
+
 ## Dev Notes
 
 ### Pourquoi cette story est la 10ᵉ — contexte stratégique
@@ -686,7 +740,7 @@ echo "✅ Databases bootstrapped successfully"
 - 4 idempotent bootstrap/chaos shell scripts + 1 TypeScript seed script + 1 export helper
 - 11 Postgres databases pre-created at boot via init SQL; 11th is migrations-applied for identity-svc
 - Keycloak `tukio` realm with 5 roles, 4 OIDC clients (PKCE S256), MFA TOTP required at the browser flow
-- `realm-export.json` committed (2513 lines, full partial-export incl. clients + roles)
+- `realm-export.json` committed (2316 lines, full partial-export incl. clients + roles)
 - 1 root `.env.example` + 10 backend service `.env.example` updated with consistent hostnames
 - README in `infra/docker-compose/` (Quick Start + URLs + Troubleshooting + Re-export workflow)
 - Root README updated with 5-min Quick Start

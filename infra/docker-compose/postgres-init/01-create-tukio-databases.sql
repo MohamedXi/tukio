@@ -5,15 +5,28 @@
 --
 -- All databases are owned by the default POSTGRES_USER ("tukio"). Re-running
 -- bootstrap-databases.sh remains idempotent.
+--
+-- NOTE: Postgres doesn't support `CREATE DATABASE IF NOT EXISTS` and CREATE
+-- DATABASE cannot run inside a transaction/DO block. The `\gexec` meta-command
+-- (executed by psql, which runs `.sql` files in the entrypoint init dir)
+-- pre-generates the CREATE statement only when the DB is missing — making
+-- the file safe to replay if anyone ever runs it outside the entrypoint flow
+-- (Story 0.10 / H4 review finding).
 
-CREATE DATABASE keycloak;
-CREATE DATABASE tukio_identity;
-CREATE DATABASE tukio_catalog;
-CREATE DATABASE tukio_booking;
-CREATE DATABASE tukio_order;
-CREATE DATABASE tukio_payment;
-CREATE DATABASE tukio_messaging;
-CREATE DATABASE tukio_review;
-CREATE DATABASE tukio_notification;
-CREATE DATABASE tukio_media;
+SELECT 'CREATE DATABASE ' || quote_ident(d)
+FROM unnest(ARRAY[
+  'keycloak',
+  'tukio_identity',
+  'tukio_catalog',
+  'tukio_booking',
+  'tukio_order',
+  'tukio_payment',
+  'tukio_messaging',
+  'tukio_review',
+  'tukio_notification',
+  'tukio_media'
+]) AS d
+WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = d)
+\gexec
+
 -- tukio_meta is POSTGRES_DB, already created by the entrypoint.

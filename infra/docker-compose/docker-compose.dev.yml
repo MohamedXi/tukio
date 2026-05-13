@@ -128,7 +128,7 @@ services:
       - tukio_dev_network
 
   mailhog:
-    image: mailhog/mailhog:latest
+    image: mailhog/mailhog:v1.0.1
     container_name: tukio_mailhog
     ports:
       - '1025:1025' # SMTP

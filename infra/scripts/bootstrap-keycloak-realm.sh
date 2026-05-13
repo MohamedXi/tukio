@@ -107,14 +107,33 @@ done
 
 # ─── 4. OIDC clients ─────────────────────────────────────────────────
 # Helper: get client UUID by clientId (empty if missing).
-# kcadm CSV format outputs values only (no header row).
+# kcadm CSV format outputs values only (no header row). We validate the
+# result is UUID-shaped before returning so a kcadm error spilling on stdout
+# can't masquerade as a "uuid" we then PUT to (M3 review finding).
+UUID_RE='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+
 get_client_uuid() {
   local client_id="$1"
-  $KCADM get clients -r "${KEYCLOAK_REALM}" -q "clientId=${client_id}" --fields id --format csv --noquotes 2>/dev/null \
+  local raw
+  raw="$($KCADM get clients -r "${KEYCLOAK_REALM}" -q "clientId=${client_id}" --fields id --format csv --noquotes 2>/dev/null \
     | head -n1 \
     | tr -d '\r\n[:space:]' \
-    || true
+    || true)"
+  if [[ "$raw" =~ $UUID_RE ]]; then
+    echo "$raw"
+  fi
+  # Empty output → caller treats as "missing" and creates the client.
 }
+
+# Story 0.10 / H6 review finding: re-running the bootstrap silently
+# overwrote the tukio-api confidential client secret to its dev default
+# even when an operator had rotated it via the admin UI.
+# Strategy:
+#   - For PUBLIC clients we always update (idempotent, safe).
+#   - For CONFIDENTIAL clients (those carrying a "secret" key), we strip
+#     the secret on update so the existing one is preserved. Pass
+#     FORCE_CLIENT_SECRET=1 to opt back in to overwriting.
+FORCE_CLIENT_SECRET="${FORCE_CLIENT_SECRET:-0}"
 
 upsert_client() {
   local client_id="$1"
@@ -122,8 +141,14 @@ upsert_client() {
   local uuid
   uuid="$(get_client_uuid "$client_id")"
   if [ -n "$uuid" ]; then
-    echo "  ⏭️  client '${client_id}' exists (uuid=${uuid}) — updating"
-    echo "$payload" | $KCADM update "clients/${uuid}" -r "${KEYCLOAK_REALM}" -f - >/dev/null
+    local update_payload="$payload"
+    if [ "$FORCE_CLIENT_SECRET" != "1" ]; then
+      # Drop the "secret" line if present. Conservative sed: only matches a
+      # full key-on-its-own-line so we don't accidentally munge JSON values.
+      update_payload="$(echo "$payload" | sed '/^[[:space:]]*"secret"[[:space:]]*:/d' | sed 's/,\([[:space:]]*\)}\([[:space:]]*\)$/\1}\2/')"
+    fi
+    echo "  ⏭️  client '${client_id}' exists (uuid=${uuid}) — updating (secret preserved unless FORCE_CLIENT_SECRET=1)"
+    echo "$update_payload" | $KCADM update "clients/${uuid}" -r "${KEYCLOAK_REALM}" -f - >/dev/null
   else
     echo "  ✅ creating client '${client_id}'"
     echo "$payload" | $KCADM create clients -r "${KEYCLOAK_REALM}" -f - >/dev/null
@@ -236,14 +261,21 @@ $KCADM update "realms/${KEYCLOAK_REALM}" -s 'otpPolicyType=totp' \
 
 # Elevate the "Browser - Conditional OTP" execution to REQUIRED so that any user
 # with the `configure-totp` required action will be forced to set up TOTP.
-OTP_EXEC_ID="$($KCADM get "authentication/flows/browser/executions" -r "${KEYCLOAK_REALM}" \
+# Assert exactly ONE matching execution to avoid silently elevating the wrong
+# step if Keycloak ships multiple "Conditional OTP" entries (EH-10 review finding).
+OTP_EXEC_LINES="$($KCADM get "authentication/flows/browser/executions" -r "${KEYCLOAK_REALM}" \
   --format csv --noquotes --fields id,displayName 2>/dev/null \
-  | awk -F, 'tolower($2) ~ /conditional otp/ {print $1; exit}')"
-if [ -n "${OTP_EXEC_ID:-}" ]; then
+  | awk -F, 'tolower($2) ~ /conditional otp/ {print $1}')"
+OTP_EXEC_COUNT="$(echo -n "$OTP_EXEC_LINES" | grep -c . || true)"
+if [ "$OTP_EXEC_COUNT" -eq 1 ]; then
+  OTP_EXEC_ID="$OTP_EXEC_LINES"
   $KCADM update "authentication/flows/browser/executions" -r "${KEYCLOAK_REALM}" \
     -b "{\"id\":\"${OTP_EXEC_ID}\",\"requirement\":\"REQUIRED\"}" >/dev/null \
     && echo "  ✅ browser flow: Conditional OTP set to REQUIRED" \
     || echo "  ⚠️  could not update Conditional OTP requirement"
+elif [ "$OTP_EXEC_COUNT" -gt 1 ]; then
+  echo "  ❌ multiple 'Conditional OTP' executions found in browser flow (count=$OTP_EXEC_COUNT) — refusing to elevate (would risk wrong execution)."
+  exit 1
 else
   echo "  ⚠️  Conditional OTP execution not found in browser flow (skipped)"
 fi

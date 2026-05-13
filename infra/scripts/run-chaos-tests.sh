@@ -37,26 +37,26 @@ trap cleanup EXIT INT TERM
 echo "🚀 Starting chaos test stack (profile: ${COMPOSE_PROFILE})…"
 docker compose -f "$COMPOSE_FILE" --profile "$COMPOSE_PROFILE" up -d --wait
 
-declare -a CHAOS_TARGETS=(
-  # filter:  package name              command
-  "@tukio/messaging|test --testNamePattern=@chaos"
-  "identity-svc|test --testPathPattern=chaos"
-)
+# Each target = name + bash-array of args. M1 — avoid `pnpm … run $command`
+# word-splitting fragility: a future arg containing spaces/globs (e.g.
+# --testNamePattern='foo bar') would shatter on the unquoted expansion.
+run_chaos() {
+  local filter="$1"; shift
+  echo ""
+  echo "🌪️  Running chaos suite for '${filter}'…"
+  if (cd "$REPO_ROOT" && pnpm --filter="$filter" run "$@"); then
+    echo "  ✅ ${filter} chaos OK"
+    return 0
+  else
+    echo "  ❌ ${filter} chaos FAILED"
+    return 1
+  fi
+}
 
 declare -i failures=0
 
-for target in "${CHAOS_TARGETS[@]}"; do
-  filter="${target%%|*}"
-  command="${target#*|}"
-  echo ""
-  echo "🌪️  Running chaos suite for '${filter}'…"
-  if pnpm --filter="$filter" run $command; then
-    echo "  ✅ ${filter} chaos OK"
-  else
-    echo "  ❌ ${filter} chaos FAILED"
-    failures=$((failures + 1))
-  fi
-done
+run_chaos "@tukio/messaging" test --testNamePattern=@chaos || failures=$((failures + 1))
+run_chaos "identity-svc"     test --testPathPattern=chaos  || failures=$((failures + 1))
 
 echo ""
 if [ "$failures" -eq 0 ]; then

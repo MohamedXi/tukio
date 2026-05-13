@@ -11,7 +11,7 @@
 | `keycloak`    | `quay.io/keycloak/keycloak:25.0` | `8080`         | OIDC for `tukio-web` / `tukio-admin` / `tukio-api` |
 | `meilisearch` | `getmeili/meilisearch:v1.13`     | `7700`         | Per-locale search index (Story 3.7)                |
 | `redis`       | `redis:7-alpine`                 | `6379`         | Rate limiting, caches, idempotency, locks          |
-| `mailhog`     | `mailhog/mailhog:latest`         | `1025`, `8025` | SMTP sink + Web UI (stand-in for Resend in dev)    |
+| `mailhog`     | `mailhog/mailhog:v1.0.1`         | `1025`, `8025` | SMTP sink + Web UI (stand-in for Resend in dev)    |
 
 NestJS services run on the **host** via `pnpm dev` (Turborepo HMR). They reach
 the stack through `localhost`. Volumes are named so data survives across

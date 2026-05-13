@@ -15,12 +15,24 @@ const parsePort = (v: string | undefined, fallback: number): number => {
   return isNaN(n) ? fallback : n;
 };
 
+// H2 review finding: never let the dev password be the silent fallback in
+// non-development environments. Mirror the EnvSchema guard used at app boot.
+const nodeEnv = process.env.NODE_ENV ?? 'development';
+const dbPassword =
+  process.env.DB_PASSWORD ??
+  (nodeEnv === 'production' ? '' : 'tukio_dev_password');
+if (!dbPassword) {
+  throw new Error(
+    'DB_PASSWORD is required in production. Set it via env (e.g. Doppler) before running migrations.',
+  );
+}
+
 const dataSource = new DataSource({
   type: 'postgres',
   host: process.env.DB_HOST ?? 'localhost',
   port: parsePort(process.env.DB_PORT, 5432),
   username: process.env.DB_USER ?? 'tukio',
-  password: process.env.DB_PASSWORD ?? 'tukio_dev_password',
+  password: dbPassword,
   database: process.env.DB_NAME ?? 'tukio_identity',
   entities: [UserProfileEntity],
   migrations: ['src/infrastructure/persistence/typeorm/migrations/*.{ts,js}'],
