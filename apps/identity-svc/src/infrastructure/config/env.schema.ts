@@ -14,7 +14,8 @@ export const EnvSchema = z
     // Postgres — no default for secrets; must be explicitly provided in non-dev envs.
     DB_HOST: z.string().min(1).default('localhost'),
     DB_PORT: z.coerce.number().int().positive().default(5432),
-    DB_USER: z.string().min(1).default('tukio_identity_user'),
+    // Default shared dev user provisioned by Story 0.10 docker-compose.
+    DB_USER: z.string().min(1).default('tukio'),
     DB_PASSWORD: z.string().min(1), // no default — must be provided explicitly
     DB_NAME: z.string().min(1).default('tukio_identity'),
     DB_VERBOSE: z
@@ -43,7 +44,7 @@ export const validateEnv = (raw: Record<string, unknown>): Env => {
   // In production the variable MUST be set explicitly.
   const withDefaults =
     !raw['DB_PASSWORD'] && raw['NODE_ENV'] !== 'production'
-      ? { DB_PASSWORD: 'changeme', ...raw }
+      ? { DB_PASSWORD: 'tukio_dev_password', ...raw }
       : raw;
 
   const parsed = EnvSchema.safeParse(withDefaults);
