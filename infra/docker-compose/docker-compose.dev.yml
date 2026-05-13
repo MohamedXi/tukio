@@ -1,0 +1,148 @@
+# Tukio — local dev stack (Story 0.10)
+# Usage:  pnpm docker:up:wait
+# Stack:  Postgres 16 + NATS 2.10 (JetStream) + Keycloak 25 + Meilisearch v1 + Redis 7 + MailHog
+# NestJS services run on the host via `pnpm dev` (HMR) and connect via localhost.
+
+name: tukio-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tukio_postgres
+    environment:
+      POSTGRES_USER: tukio
+      POSTGRES_PASSWORD: tukio_dev_password
+      POSTGRES_DB: tukio_meta
+    ports:
+      - '5432:5432'
+    volumes:
+      - tukio_postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tukio -d tukio_meta']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - tukio_dev_network
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: tukio_nats
+    command:
+      - '-js'
+      - '-m'
+      - '8222'
+      - '--store_dir=/data'
+    ports:
+      - '4222:4222' # client protocol
+      - '8222:8222' # monitoring HTTP
+    volumes:
+      - tukio_nats_data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O- http://localhost:8222/healthz | grep -q ''"status":"ok"''']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - tukio_dev_network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: tukio_keycloak
+    command: ['start-dev']
+    environment:
+      # Keycloak 25 uses KEYCLOAK_ADMIN/KEYCLOAK_ADMIN_PASSWORD; the
+      # KC_BOOTSTRAP_ADMIN_* names land in Keycloak 26+. Set both for
+      # forward compat.
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: tukio
+      KC_DB_PASSWORD: tukio_dev_password
+      KC_HOSTNAME: localhost
+      KC_HTTP_ENABLED: 'true'
+      KC_HEALTH_ENABLED: 'true'
+      KC_METRICS_ENABLED: 'true'
+    ports:
+      - '8080:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Keycloak 25 exposes /health on the management port (9000); the image
+      # ships RHEL UBI without curl/wget, so we probe via bash /dev/tcp.
+      test:
+        - 'CMD'
+        - '/bin/bash'
+        - '-c'
+        - 'response=$$(exec 3<>/dev/tcp/localhost/9000; printf "GET /health/ready HTTP/1.0\r\nHost: localhost\r\n\r\n" >&3; cat <&3); echo "$$response" | grep -q "\"status\": \"UP\""'
+      interval: 10s
+      timeout: 10s
+      retries: 18
+      start_period: 30s
+    networks:
+      - tukio_dev_network
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.13
+    container_name: tukio_meilisearch
+    environment:
+      MEILI_MASTER_KEY: tukio_dev_master_key_change_in_prod
+      MEILI_ENV: development
+    ports:
+      - '7700:7700'
+    volumes:
+      - tukio_meilisearch_data:/meili_data
+    healthcheck:
+      # Meilisearch binds IPv4 only; localhost may resolve to ::1 first inside the container.
+      test:
+        ['CMD-SHELL', 'wget -q -O- http://127.0.0.1:7700/health | grep -q ''"status":"available"''']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 3s
+    networks:
+      - tukio_dev_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: tukio_redis
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - tukio_redis_data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 2s
+    networks:
+      - tukio_dev_network
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: tukio_mailhog
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # Web UI
+    networks:
+      - tukio_dev_network
+
+volumes:
+  tukio_postgres_data:
+  tukio_nats_data:
+  tukio_meilisearch_data:
+  tukio_redis_data:
+
+networks:
+  tukio_dev_network:
+    name: tukio_dev_network
+    driver: bridge

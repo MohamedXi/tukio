@@ -1,0 +1,115 @@
+# Agent Convention System (ACS) manifest.
+# Declares which `.agents/` layers are active and what conventions agents follow.
+# Reference: https://dev.to/jackby03/why-every-ai-assisted-project-needs-a-agents-folder-49i3
+acs_version: 0.1
+
+project:
+  name: tukio.one
+  description: >
+    B2B2C marketplace for event services (tents, marquees, event furniture,
+    decor, catering…). Pilots in Pays de la Loire with two MVP categories
+    (tents-marquees + event-furniture). Two customer types: B2C particuliers
+    (MVP) + B2B pros (V1+). Pros onboard via Stripe Connect Express + admin
+    KYC. Bookings use escrowed Stripe payments + a saga state machine.
+    Bilingual FR/EN from day one.
+
+    Monorepo: 4 Next.js 16 frontends + 10 NestJS 11 microservices + 8 shared
+    `@tukio/*` packages, orchestrated by Turborepo + pnpm. Backend follows
+    Pattern Pretre (Clean Architecture). Frontend uses an atomic design
+    system (`@tukio/ui` components vs patterns) on Tailwind v4 tokens.
+    All work is scoped through BMad story files; sprint state lives in
+    `_bmad-output/implementation-artifacts/sprint-status.yaml`.
+  scope: monorepo-fullstack
+  language: typescript
+  framework: nestjs+nextjs
+  package_manager: pnpm
+  pnpm_version: '>=10.0.0'
+  node_version: '>=22.16.0'
+  turborepo: '>=2.9.0'
+  prd_reference: _bmad-output/planning-artifacts/prd.md
+  architecture_reference: _bmad-output/planning-artifacts/architecture.md
+  ux_reference: _bmad-output/planning-artifacts/ux-spec.md
+
+# Codebases. The first 4 are Next.js apps (3000–3003), the last 10 are
+# NestJS services (4000–4009). Each lives in `apps/<name>/`.
+codebases:
+  frontends:
+    - { name: public, port: 3000, audience: 'Marketing, search, listing detail' }
+    - { name: customer, port: 3001, audience: 'Authenticated B2C / B2B customer area' }
+    - { name: seller, port: 3002, audience: 'Pro dashboard (KYC, listings, bookings)' }
+    - { name: admin, port: 3003, audience: 'Moderation console (2FA TOTP required)' }
+  services:
+    - { name: gateway-api, port: 4000, role: 'Public REST gateway, validates Keycloak JWT' }
+    - {
+        name: identity-svc,
+        port: 4001,
+        role: 'Users, profiles, OIDC mirror — canonical Pretre reference',
+      }
+    - { name: catalog-svc, port: 4002, role: 'Listings, categories, Meilisearch sync' }
+    - { name: booking-svc, port: 4003, role: 'Booking saga state machine' }
+    - { name: order-svc, port: 4004, role: 'Orders, saga consumer' }
+    - { name: payment-svc, port: 4005, role: 'Stripe Connect, webhooks, payouts' }
+    - { name: messaging-svc, port: 4006, role: 'Customer ↔ pro messaging' }
+    - { name: review-svc, port: 4007, role: 'Reviews, ratings, recency weight' }
+    - { name: notification-svc, port: 4008, role: 'Resend emails, in-app feed' }
+    - { name: media-svc, port: 4009, role: 'Cloudflare Images signed uploads' }
+
+# Shared workspaces under `packages/`. Always imported via subpaths.
+packages:
+  - {
+      name: '@tukio/contracts',
+      purpose: 'DTOs, NATS event schemas (versioned), REST envelope types',
+    }
+  - {
+      name: '@tukio/ui',
+      purpose: 'Design system: tokens + components (atoms) + patterns (composites)',
+    }
+  - { name: '@tukio/auth', purpose: 'KeycloakJwtGuard, RolesGuard, JWKS cache (backend)' }
+  - { name: '@tukio/auth-client', purpose: 'next-intl + Keycloak PKCE wiring (frontend)' }
+  - { name: '@tukio/messaging', purpose: 'OutboxRelayService, NatsJetStreamModule, Inbox dedup' }
+  - { name: '@tukio/api-client', purpose: 'Typed REST client (gateway-api consumer)' }
+  - { name: '@tukio/i18n-client', purpose: 'next-intl helpers, locale dispatch' }
+  - { name: '@tukio/testing', purpose: 'testcontainers helpers (PG/NATS/Keycloak/Meili/Redis)' }
+
+# Order matters: layers later in the list override layers earlier.
+layers:
+  - context # what the project is — read first
+  - skills # how-to procedures with concrete steps
+  - commands # agent shortcuts (`/check`, `/ship`, `/infra-up`, `/infra-reset`, `/chaos`)
+  - agents # specialised personas to adopt for specific tasks
+  - permissions # write-access policy enforced on agent actions
+
+entry_point: ../AGENTS.md
+
+tooling:
+  validated_with:
+    - claude-code
+    - codex
+    - cursor
+  notes:
+    - 'Codex auto-loads ../AGENTS.md; .agents/* must be referenced by the router.'
+    - 'Claude Code auto-loads ../CLAUDE.md, which @-imports AGENTS.md, .agents/acs.yaml and .agents/context/code-style.md.'
+    - 'BMad framework lives in _bmad/. Do NOT edit BMad files (`_bmad/`, `.claude/commands/BMad/`, `.claude/skills/bmad-*`) — upstream updates wipe local changes. Override via `_bmad/custom/<skill>.toml` or `_bmad/custom/<skill>.user.toml`.'
+
+# Top-level conventions every agent must respect regardless of persona.
+hard_rules:
+  - 'Backend services follow Pattern Pretre (Clean Architecture): `domain/` (pure TS, no I/O), `usecases/` (orchestration over domain ports), `infrastructure/` (adapters). Forbidden imports in `domain/` enforced by `eslint.config.mjs` (`FORBIDDEN_IN_DOMAIN`). See .agents/context/pretre-pattern.md.'
+  - 'Frontends consume `@tukio/ui` via subpath imports only — `import { Button } from "@tukio/ui/components/Button"`. Barrel imports of named values rejected by `tukio/no-barrel-import-ui`. See .agents/context/atomic-design.md.'
+  - 'Every backend HTTP response wraps in the canonical envelope `{ method, code, data | error, pagination?, meta }`. Source of truth: `@tukio/contracts/envelope`. See .agents/context/rest-envelope.md.'
+  - 'Bilingual FR/EN from day one via next-intl. Zero hardcoded user-facing text in components. Backend templates dispatch by `meta.locale`. See .agents/context/i18n.md.'
+  - 'Tech layer is 100 % English: paths, identifiers, DB names, NATS event names, branches, commit messages. UI content is bilingual (4.3). FR slugs live in `*_translations` tables for SEO hreflang. See .agents/context/code-style.md `Language` section.'
+  - 'Cross-service events go through `OutboxPublisher` (transactional outbox in `@tukio/messaging`), never direct `nats.publish()` from a use case. Enforced by `tukio/no-direct-event-publish`. See .agents/context/messaging.md.'
+  - 'Every change is scoped through a BMad story file in `_bmad-output/implementation-artifacts/<X-Y>-<slug>.md`. Sprint lifecycle ledger: `sprint-status.yaml`. Do not edit story files outside the sections each workflow authorizes. See .agents/context/bmad-workflow.md.'
+  - 'Stack is locked. No new framework / DB / queue / IdP without an ADR added to `_bmad-output/planning-artifacts/architecture.md`. See .agents/context/stack.md for the full list with versions.'
+  - 'Latest stable versions of every dependency (Next.js 16, React 19, NestJS 11, Tailwind v4, pnpm 10). No version pinned to an older major without a written reason.'
+  - 'Git workflow: `main` carries README only, `develop` is the integration branch, story branches `feature/story-<X.Y>-<slug>`. Conventional Commits enforced by commitlint. Never `git commit --amend`, `--no-verify`, or `push --force` to shared branches without explicit user authorization. See .agents/context/git-workflow.md.'
+  - 'Never edit files under `_bmad/` (upstream BMad framework). Customise via `_bmad/custom/<skill>.toml` (team) or `_bmad/custom/<skill>.user.toml` (personal). See .agents/context/bmad-workflow.md.'
+  - 'Every backend service has its own logical Postgres database (`tukio_<service>`) on the shared dev instance. Migrations via TypeORM CLI per service (`pnpm --filter=<svc> migration:run`). See .agents/context/infrastructure.md.'
+  - 'Run `/check` before declaring any task done: lint + typecheck + test. CI parity. See .agents/commands/check.md.'
+
+manifest:
+  context: ./context/
+  skills: ./skills/
+  commands: ./commands/
+  agents: ./agents/
+  permissions: ./permissions/policy.yaml

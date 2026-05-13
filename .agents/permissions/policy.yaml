@@ -1,0 +1,251 @@
+# Write-access policy for AI agents working on tukio.one.
+# Agents MUST resolve their proposed actions against this policy before
+# touching the filesystem. `confirm` rules require explicit user approval at
+# the point of action (not via a blanket session approval).
+policy_version: 0.1
+
+# Globs are evaluated top-down; the first matching rule wins.
+write:
+  # ─── Hard denies ──────────────────────────────────────────────
+  - { path: '.env', action: deny, reason: 'Local secrets. Use .env.example as the template.' }
+  - { path: '.env.local', action: deny, reason: 'Local secrets.' }
+  - { path: '**/.env.local', action: deny, reason: 'Local secrets in any workspace.' }
+  - { path: '**/*.pem', action: deny, reason: 'Cryptographic material.' }
+  - { path: '**/*.key', action: deny, reason: 'Cryptographic material.' }
+  - { path: 'node_modules/**', action: deny, reason: 'Managed by pnpm.' }
+  - { path: '**/node_modules/**', action: deny, reason: 'Managed by pnpm.' }
+  - { path: '**/dist/**', action: deny, reason: 'Build output.' }
+  - { path: '**/.next/**', action: deny, reason: 'Next.js build cache.' }
+  - { path: '**/.turbo/**', action: deny, reason: 'Turborepo cache.' }
+  - { path: '**/coverage/**', action: deny, reason: 'Test artefacts.' }
+  - { path: '**/coverage-e2e/**', action: deny, reason: 'Test artefacts.' }
+  - {
+      path: 'pnpm-lock.yaml',
+      action: deny,
+      reason: 'Managed by pnpm. Edit package.json then run `pnpm install`.',
+    }
+  - { path: '.husky/_/**', action: deny, reason: 'Husky internals.' }
+  - {
+      path: '_bmad/**',
+      action: deny,
+      reason: 'Upstream BMad framework — overwritten on update. Customise via _bmad/custom/<skill>.toml instead.',
+    }
+  - {
+      path: '.claude/commands/BMad/**',
+      action: deny,
+      reason: 'Upstream BMad agent definitions — overwritten on update.',
+    }
+  - {
+      path: '.claude/skills/bmad-**',
+      action: deny,
+      reason: 'Upstream BMad skills — overwritten on update.',
+    }
+  - { path: 'firebase-debug.log', action: deny, reason: 'Generated debug artefact.' }
+  - { path: '**/*.tsbuildinfo', action: deny, reason: 'TypeScript incremental build cache.' }
+
+  # ─── Confirm before writing ───────────────────────────────────
+  - {
+      path: 'package.json',
+      action: confirm,
+      reason: 'Root deps affect every workspace. See .agents/skills/upgrade-deps.md.',
+    }
+  - {
+      path: '**/package.json',
+      action: confirm,
+      reason: 'Workspace deps require user approval — even per-app additions ripple via Turborepo.',
+    }
+  - {
+      path: 'tsconfig.base.json',
+      action: confirm,
+      reason: 'Compiler options affect every workspace; surface the change first.',
+    }
+  - {
+      path: '**/tsconfig*.json',
+      action: confirm,
+      reason: 'Per-workspace TS config changes — call out before editing.',
+    }
+  - {
+      path: 'eslint.config.mjs',
+      action: confirm,
+      reason: 'Lint scope changes affect every workspace; never replace inline disables silently.',
+    }
+  - { path: '**/eslint.config.*', action: confirm, reason: 'Per-workspace lint changes.' }
+  - { path: 'turbo.json', action: confirm, reason: 'Pipeline + cache key changes are repo-wide.' }
+  - {
+      path: '.husky/**',
+      action: confirm,
+      reason: 'Hook changes can break commits for the whole team.',
+    }
+  - { path: 'commitlint.config.*', action: confirm, reason: 'Commit-msg policy is repo-wide.' }
+  - { path: 'lint-staged.config.*', action: confirm, reason: 'Pre-commit pipeline change.' }
+  - { path: '.github/**', action: confirm, reason: 'CI / repo automation changes.' }
+  - {
+      path: 'AGENTS.md',
+      action: confirm,
+      reason: 'Entry point read by all agents — coordinate before edits.',
+    }
+  - {
+      path: 'CLAUDE.md',
+      action: confirm,
+      reason: 'Claude-Code entry point — coordinate before edits.',
+    }
+  - { path: '.agents/acs.yaml', action: confirm, reason: 'ACS manifest — affects every agent.' }
+  - {
+      path: '.agents/permissions/policy.yaml',
+      action: confirm,
+      reason: 'Self-modifying permission policy — surface the change.',
+    }
+  - {
+      path: 'infra/docker-compose/**',
+      action: confirm,
+      reason: 'Dev/test stack manifest — verify YAML before editing.',
+    }
+  - {
+      path: 'infra/scripts/**',
+      action: confirm,
+      reason: 'Bootstrap scripts — verify idempotence claim before editing.',
+    }
+  - {
+      path: '_bmad-output/planning-artifacts/**',
+      action: confirm,
+      reason: 'PRD / architecture / UX spec — use a BMad workflow (`/bmad-edit-prd`, `/bmad-create-architecture`) instead of direct edits.',
+    }
+  - {
+      path: '_bmad-output/implementation-artifacts/sprint-status.yaml',
+      action: confirm,
+      reason: 'Sprint lifecycle ledger — let BMad workflows update it.',
+    }
+  - {
+      path: 'apps/identity-svc/src/infrastructure/persistence/typeorm/migrations/**',
+      action: confirm,
+      reason: 'Migrations are append-only history — use `migration:generate` rather than hand-editing.',
+    }
+  - { path: '**/migrations/**', action: confirm, reason: 'Same idea for any service.' }
+  - {
+      path: 'infra/scripts/keycloak/realm-export.json',
+      action: confirm,
+      reason: 'Generated artefact — regenerate via `bash infra/scripts/export-keycloak-realm.sh`.',
+    }
+
+  # ─── Explicit allows — main work areas ────────────────────────
+  - { path: 'apps/**/src/**', action: allow }
+  - { path: 'apps/**/test/**', action: allow }
+  - { path: 'packages/**/src/**', action: allow }
+  - { path: 'packages/**/__tests__/**', action: allow }
+  - { path: 'tools/**/src/**', action: allow }
+  - { path: 'tools/**/__tests__/**', action: allow }
+  - { path: 'apps/**/AGENTS.md', action: allow }
+  - { path: 'apps/**/AGENTS.override.md', action: allow }
+  - { path: 'packages/**/AGENTS.md', action: allow }
+  - { path: 'packages/**/README.md', action: allow }
+  - { path: 'apps/**/README.md', action: allow }
+  - { path: '.agents/**', action: allow }
+  - { path: 'docs/**', action: allow }
+  - { path: '_bmad-output/implementation-artifacts/*.md', action: allow }
+  - { path: 'README.md', action: allow }
+  - { path: '.env.example', action: allow }
+  - { path: 'apps/**/.env.example', action: allow }
+
+  # ─── Default ──────────────────────────────────────────────────
+  - {
+      path: '**',
+      action: confirm,
+      reason: 'Unrecognised location — surface the path before writing.',
+    }
+
+# Tools agents may invoke without confirmation.
+shell:
+  allow:
+    # Read-only inspection
+    - 'git status'
+    - 'git diff'
+    - 'git diff *'
+    - 'git log'
+    - 'git log *'
+    - 'git show *'
+    - 'git branch *'
+    - 'git remote *'
+    - 'git stash list'
+    - 'pnpm view *'
+    - 'pnpm list *'
+    - 'pnpm outdated'
+    - 'pnpm why *'
+    - 'docker ps'
+    - 'docker logs *'
+    - 'docker inspect *'
+    - 'docker compose -f * config*'
+    - 'docker compose -f * ps'
+    - 'docker compose -f * logs *'
+
+    # Safe quality gates (no side effects)
+    - 'pnpm lint'
+    - 'pnpm lint:fix'
+    - 'pnpm typecheck'
+    - 'pnpm test'
+    - 'pnpm test:watch'
+    - 'pnpm test:cov'
+    - 'pnpm format'
+    - 'pnpm format:check'
+    - 'pnpm --filter=* lint'
+    - 'pnpm --filter=* typecheck'
+    - 'pnpm --filter=* test'
+    - 'pnpm --filter=* test:e2e'
+    - 'pnpm --filter=* test:cov'
+
+    # Build / dev (idempotent)
+    - 'pnpm dev'
+    - 'pnpm build'
+    - 'pnpm --filter=* dev'
+    - 'pnpm --filter=* build'
+
+    # Idempotent infra ops (covered by Story 0.10)
+    - 'pnpm docker:up'
+    - 'pnpm docker:up:wait'
+    - 'pnpm docker:down'
+    - 'pnpm docker:logs'
+    - 'pnpm docker:bootstrap'
+    - 'pnpm docker:test:up'
+    - 'pnpm docker:test:up:slow'
+    - 'pnpm docker:test:down'
+    - 'pnpm seed:categories'
+    - 'pnpm chaos:test'
+    - 'bash infra/scripts/bootstrap-databases.sh'
+    - 'bash infra/scripts/bootstrap-keycloak-realm.sh'
+    - 'bash infra/scripts/export-keycloak-realm.sh'
+
+    # Migrations (per-service)
+    - 'pnpm --filter=* migration:generate*'
+    - 'pnpm --filter=* migration:run'
+    - 'pnpm --filter=* migration:revert'
+
+  confirm:
+    - 'pnpm install'
+    - 'pnpm install *'
+    - 'pnpm add *'
+    - 'pnpm remove *'
+    - 'pnpm update *'
+    - 'pnpm audit*'
+    - 'pnpm docker:down:volumes' # wipes data volumes
+    - 'pnpm docker:reset' # wipes + rebootstraps
+    - 'docker rm *'
+    - 'docker volume *'
+    - 'docker system *'
+    - 'git commit*'
+    - 'git push*'
+    - 'git checkout -- *' # discards local changes
+    - 'git reset *'
+    - 'git restore *'
+    - 'rm -rf *'
+    - 'gh pr create*'
+    - 'gh pr merge*'
+
+  deny:
+    - 'git push --force *'
+    - 'git push -f *'
+    - 'git push origin main*' # main is README-only
+    - 'git push origin main --*'
+    - 'rm -rf /'
+    - 'rm -rf ~/'
+    - 'rm -rf ~'
+    - 'pnpm publish*'
+    - 'docker volume rm tukio_postgres_data*' # explicit destructive guard

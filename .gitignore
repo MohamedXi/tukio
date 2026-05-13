@@ -44,3 +44,8 @@ Thumbs.db
 # Next.js
 .vercel
 next-env.d.ts
+
+# Claude Code runtime artefacts
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+firebase-debug.log
