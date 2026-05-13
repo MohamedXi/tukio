@@ -1,5 +1,5 @@
 # generated: 2026-05-09
-# last_updated: 2026-05-13 (Story 3.10 listing detail public page ready-for-dev — Server Component + JSON-LD Service Schema.org foundation + 410 Gone pattern + similar listings Meilisearch + sticky CTA placeholder Epic 4)
+# last_updated: 2026-05-13 (Story 0.10 done — code review applied 21 patches + 3 decisions deferred to Stories 1.7 / 0.12 / 3.1, docker-compose dev stack opérationnel)
 # project: tukio.one
 # project_key: NOKEY
 # tracking_system: file-system
@@ -53,7 +53,7 @@ development_status:
   0-7-setup-tukio-messaging-nats-jetstream: done
   0-8-setup-tukio-auth-backend-frontend: done
   0-9-setup-tukio-api-client-i18n-client-testing: done
-  0-10-docker-compose-dev-local-bootstrap-scripts: review
+  0-10-docker-compose-dev-local-bootstrap-scripts: done
   0-11-ci-github-actions-pipeline: ready-for-dev
   0-12-helm-charts-k8s-argocd-staging-observability: ready-for-dev
   0-13-initialize-adrs-vercel-multi-zones-acquisition-schema: ready-for-dev
