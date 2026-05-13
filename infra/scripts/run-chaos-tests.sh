@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Tukio — run chaos tests (Story 0.10)
+#
+# Spins up the CI-tuned stack (`docker-compose.test.yml --profile slow-services`),
+# runs every chaos suite tagged via Jest/Vitest naming, and tears the stack down
+# on exit (signal-safe via `trap`).
+#
+# Conventions:
+#   - Jest:   test names tagged with `@chaos` are filtered via --testNamePattern='@chaos'.
+#   - Vitest: same convention, --testNamePattern='@chaos' (Vitest CLI parity).
+#   - Service-side chaos files use the `*.chaos-spec.ts` suffix to keep them out
+#     of the default test run.
+#
+# Usage:
+#   pnpm chaos:test
+#
+# Env overrides:
+#   COMPOSE_FILE   (default: infra/docker-compose/docker-compose.test.yml)
+#   COMPOSE_PROFILE (default: slow-services)
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+COMPOSE_FILE="${COMPOSE_FILE:-infra/docker-compose/docker-compose.test.yml}"
+COMPOSE_PROFILE="${COMPOSE_PROFILE:-slow-services}"
+
+cd "$REPO_ROOT"
+
+cleanup() {
+  echo ""
+  echo "🧹 Tearing down chaos test stack…"
+  docker compose -f "$COMPOSE_FILE" --profile "$COMPOSE_PROFILE" down -v --remove-orphans >/dev/null 2>&1 || true
+  echo "✅ Stack down"
+}
+trap cleanup EXIT INT TERM
+
+echo "🚀 Starting chaos test stack (profile: ${COMPOSE_PROFILE})…"
+docker compose -f "$COMPOSE_FILE" --profile "$COMPOSE_PROFILE" up -d --wait
+
+declare -a CHAOS_TARGETS=(
+  # filter:  package name              command
+  "@tukio/messaging|test --testNamePattern=@chaos"
+  "identity-svc|test --testPathPattern=chaos"
+)
+
+declare -i failures=0
+
+for target in "${CHAOS_TARGETS[@]}"; do
+  filter="${target%%|*}"
+  command="${target#*|}"
+  echo ""
+  echo "🌪️  Running chaos suite for '${filter}'…"
+  if pnpm --filter="$filter" run $command; then
+    echo "  ✅ ${filter} chaos OK"
+  else
+    echo "  ❌ ${filter} chaos FAILED"
+    failures=$((failures + 1))
+  fi
+done
+
+echo ""
+if [ "$failures" -eq 0 ]; then
+  echo "✅ All chaos suites passed"
+  exit 0
+else
+  echo "❌ ${failures} chaos suite(s) failed"
+  exit 1
+fi

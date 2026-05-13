@@ -1,0 +1,133 @@
+# Tukio — CI / integration test stack (Story 0.10)
+# Usage:  pnpm docker:test:up && pnpm test:integration && pnpm docker:test:down
+# Tuned for CI speed: tmpfs for Postgres data, anonymous volumes, fast healthchecks,
+# random host ports so it can coexist with docker-compose.dev.yml on a dev machine.
+#
+# Keycloak is in the `slow-services` profile; CI pipelines that don't need OIDC can
+# skip it by omitting `--profile slow-services`.
+
+name: tukio-test
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tukio_test_postgres
+    environment:
+      POSTGRES_USER: tukio
+      POSTGRES_PASSWORD: tukio_dev_password
+      POSTGRES_DB: tukio_meta
+    ports:
+      - '5433:5432'
+    tmpfs:
+      - /var/lib/postgresql/data:rw,size=512m
+    volumes:
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tukio -d tukio_meta']
+      interval: 2s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
+    networks:
+      - tukio_test_network
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: tukio_test_nats
+    command:
+      - '-js'
+      - '-m'
+      - '8222'
+    ports:
+      - '4223:4222'
+      - '8223:8222'
+    # Anonymous volume — wiped on every `down -v`
+    volumes:
+      - /data
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O- http://localhost:8222/healthz | grep -q ''"status":"ok"''']
+      interval: 2s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
+    networks:
+      - tukio_test_network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: tukio_test_keycloak
+    profiles: ['slow-services']
+    command: ['start-dev']
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: tukio
+      KC_DB_PASSWORD: tukio_dev_password
+      KC_HOSTNAME: localhost
+      KC_HTTP_ENABLED: 'true'
+      KC_HEALTH_ENABLED: 'true'
+    ports:
+      - '8081:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - 'CMD'
+        - '/bin/bash'
+        - '-c'
+        - 'response=$$(exec 3<>/dev/tcp/localhost/9000; printf "GET /health/ready HTTP/1.0\r\nHost: localhost\r\n\r\n" >&3; cat <&3); echo "$$response" | grep -q "\"status\": \"UP\""'
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    networks:
+      - tukio_test_network
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.13
+    container_name: tukio_test_meilisearch
+    environment:
+      MEILI_MASTER_KEY: tukio_dev_master_key_change_in_prod
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: 'true'
+    ports:
+      - '7701:7700'
+    volumes:
+      - /meili_data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'wget -q -O- http://127.0.0.1:7700/health | grep -q ''"status":"available"''']
+      interval: 2s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
+    networks:
+      - tukio_test_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: tukio_test_redis
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    ports:
+      - '6380:6379'
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping | grep -q PONG']
+      interval: 2s
+      timeout: 3s
+      retries: 5
+      start_period: 1s
+    networks:
+      - tukio_test_network
+
+  # MailHog is intentionally omitted — integration tests mock SMTP at the
+  # application layer (notification-svc) rather than hitting a real SMTP server.
+
+networks:
+  tukio_test_network:
+    name: tukio_test_network
+    driver: bridge

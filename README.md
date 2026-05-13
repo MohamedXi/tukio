@@ -19,11 +19,25 @@
 
 ## Getting started
 
-Prerequisites: **Node.js 22 LTS**, **pnpm 10+**.
+Prerequisites: **Node.js 22 LTS**, **pnpm 10+**, **Docker Desktop 4.x+** (or
+Docker Engine 24+ on Linux).
+
+### Quick Start (≈ 5 minutes)
 
 ```bash
-pnpm install        # install all workspaces
-pnpm dev            # start the 14 codebases in parallel via Turborepo
+pnpm install              # install all workspaces (~1 min)
+pnpm docker:up:wait       # PG + NATS + Keycloak + Meilisearch + Redis + MailHog (~30-45 s)
+pnpm docker:bootstrap     # 11 DBs + Keycloak realm + 2 pilot categories (~10 s)
+pnpm dev                  # Turborepo runs the 14 codebases
+```
+
+See [`infra/docker-compose/README.md`](infra/docker-compose/README.md) for
+URLs, troubleshooting, and the full command list (`docker:reset`,
+`docker:logs`, `chaos:test`, …).
+
+### Daily commands
+
+```bash
 pnpm lint           # ESLint across all workspaces
 pnpm typecheck      # tsc --noEmit
 pnpm test           # Vitest (frontends) + Jest (backends)
@@ -37,7 +51,7 @@ The `prepare` script wires Husky on first install (pre-commit + commit-msg hooks
 - **Code, DB, API, events: English only.** No French in URL paths, identifiers,
   table names, or event names. UI/content stays bilingual (FR/EN via `next-intl`).
 - **Conventional commits** enforced by commitlint. Allowed types: `feat | fix |
-  docs | chore | refactor | test | perf | ci | build | style`.
+docs | chore | refactor | test | perf | ci | build | style`.
 - **Clean Architecture (Pretre pattern)** in NestJS services: `domain/` (pure),
   `usecases/` (orchestration), `infrastructure/` (adapters).
 - **REST envelope** standard: `{ method, code, data | error, pagination?, meta }`.
