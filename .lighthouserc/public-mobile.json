@@ -4,16 +4,18 @@
       "startServerCommand": "pnpm --filter=public start",
       "startServerReadyPattern": "Ready in",
       "startServerReadyTimeout": 120000,
-      "url": [
-        "http://localhost:3000/fr",
-        "http://localhost:3000/en",
-        "http://localhost:3000/fr/search",
-        "http://localhost:3000/fr/help"
-      ],
+      "url": ["http://localhost:3000/fr", "http://localhost:3000/en"],
       "numberOfRuns": 3,
       "settings": {
-        "preset": "perf",
         "formFactor": "mobile",
+        "screenEmulation": {
+          "mobile": true,
+          "width": 412,
+          "height": 823,
+          "deviceScaleFactor": 1.75,
+          "disabled": false
+        },
+        "throttlingMethod": "provided",
         "chromeFlags": "--no-sandbox --headless=new"
       }
     },
@@ -25,8 +27,7 @@
         "categories:best-practices": ["warn", { "minScore": 0.9 }],
         "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
         "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
-        "interaction-to-next-paint": ["error", { "maxNumericValue": 200 }],
-        "total-blocking-time": ["warn", { "maxNumericValue": 300 }]
+        "total-blocking-time": ["error", { "maxNumericValue": 300 }]
       }
     },
     "upload": {

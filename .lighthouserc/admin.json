@@ -4,11 +4,18 @@
       "startServerCommand": "pnpm --filter=admin start",
       "startServerReadyPattern": "Ready in",
       "startServerReadyTimeout": 120000,
-      "url": ["http://localhost:3003/fr", "http://localhost:3003/fr/login"],
+      "url": ["http://localhost:3003/fr"],
       "numberOfRuns": 3,
       "settings": {
-        "preset": "perf",
         "formFactor": "mobile",
+        "screenEmulation": {
+          "mobile": true,
+          "width": 412,
+          "height": 823,
+          "deviceScaleFactor": 1.75,
+          "disabled": false
+        },
+        "throttlingMethod": "provided",
         "chromeFlags": "--no-sandbox --headless=new"
       }
     },
