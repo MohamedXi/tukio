@@ -82,6 +82,22 @@ allow trusted bot merges.
 6. Open a PR — the CI will run lint/typecheck/test/build for the new
    service, and `build-images.yml` will push its image on merge.
 
+## Setup guides per tool
+
+End-to-end setup guides for each external dependency live in
+[`docs/ci-cd/`](../docs/ci-cd/index.md) (FR — operational documentation):
+
+- [`codecov.md`](../docs/ci-cd/codecov.md) — Codecov GitHub App + token
+- [`turborepo-remote-cache.md`](../docs/ci-cd/turborepo-remote-cache.md) — Vercel cache backend
+- [`lighthouse-ci.md`](../docs/ci-cd/lighthouse-ci.md) — Lighthouse CI GitHub App
+- [`slack-webhooks.md`](../docs/ci-cd/slack-webhooks.md) — 3 Slack incoming webhooks
+- [`branch-protection.md`](../docs/ci-cd/branch-protection.md) — `main` + `develop` rules
+- [`trivy-cve-management.md`](../docs/ci-cd/trivy-cve-management.md) — CVE exceptions workflow
+- [`argocd-deployment.md`](../docs/ci-cd/argocd-deployment.md) — Story 0.12 placeholder
+
+Start with [`docs/ci-cd/index.md`](../docs/ci-cd/index.md) for the
+recommended setup order and a final-verification checklist.
+
 ## See also
 
 - [`CI_PIPELINE.md`](./CI_PIPELINE.md) — full pipeline diagram &
