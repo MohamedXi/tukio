@@ -1,0 +1,83 @@
+version: 2
+
+# PRs land on `develop` — `main` carries the README only (project git workflow).
+# In a pnpm monorepo with a single root lockfile, Dependabot follows the root
+# `package.json` for ALL workspace deps. Per-workspace `directories:` blocks
+# would duplicate PRs and fail on workspaces without their own lockfile.
+
+updates:
+  # ─── npm — single root block (pnpm monorepo) ─────────────────────────
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Paris
+    target-branch: develop
+    open-pull-requests-limit: 10
+    labels: [dependencies, auto, npm]
+    assignees: [MohamedXi]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      next-react:
+        patterns: ['next', 'react', 'react-dom', '@types/react', '@types/react-dom']
+      nestjs:
+        patterns: ['@nestjs/*', 'nestjs-*']
+      typeorm-pg:
+        patterns: ['typeorm', 'pg', '@types/pg']
+      tukio-tooling:
+        patterns: ['eslint*', 'prettier', 'vitest', 'jest', 'typescript', '@types/node']
+      minor-and-patch:
+        update-types: [minor, patch]
+        patterns: ['*']
+        exclude-patterns:
+          ['next', 'react', 'react-dom', '@types/react*', '@nestjs/*', 'nestjs-*', 'typeorm', 'pg']
+
+  # ─── github-actions ──────────────────────────────────────────────────
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/Paris
+    target-branch: develop
+    open-pull-requests-limit: 5
+    labels: [dependencies, auto, ci]
+    assignees: [MohamedXi]
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']
+
+  # ─── docker — service Dockerfiles base images ────────────────────────
+  - package-ecosystem: docker
+    directories:
+      - /apps/gateway-api
+      - /apps/identity-svc
+      - /apps/catalog-svc
+      - /apps/booking-svc
+      - /apps/order-svc
+      - /apps/payment-svc
+      - /apps/messaging-svc
+      - /apps/review-svc
+      - /apps/notification-svc
+      - /apps/media-svc
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:30'
+      timezone: Europe/Paris
+    target-branch: develop
+    open-pull-requests-limit: 5
+    labels: [dependencies, auto, docker]
+    assignees: [MohamedXi]
+    commit-message:
+      prefix: chore(docker)
+    groups:
+      docker:
+        patterns: ['*']

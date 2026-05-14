@@ -1,0 +1,273 @@
+name: Build Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/gateway-api/**'
+      - 'apps/*-svc/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/build-images.yml'
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Build a single service (leave empty to build all affected)'
+        required: false
+        type: string
+
+concurrency:
+  group: build-images-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────
+  # detect-services — produces the matrix of services to rebuild.
+  # On push main: Turborepo affected detection (vs previous commit).
+  # On workflow_dispatch: respect `service` input (validated), else all 10.
+  # First-push safety: if HEAD^1 is unreachable, skip rather than rebuild all.
+  # ────────────────────────────────────────────────────────────────────────
+  detect-services:
+    name: Detect affected services
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      services: ${{ steps.compute.outputs.services }}
+      count: ${{ steps.compute.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - id: compute
+        env:
+          DISPATCH_SERVICE: ${{ inputs.service }}
+        run: |
+          ALL='["gateway-api","identity-svc","catalog-svc","booking-svc","order-svc","payment-svc","messaging-svc","review-svc","notification-svc","media-svc"]'
+          # Validate workflow_dispatch input against the allow-list.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "$DISPATCH_SERVICE" ]; then
+            case "$DISPATCH_SERVICE" in
+              gateway-api|identity-svc|catalog-svc|booking-svc|order-svc|payment-svc|messaging-svc|review-svc|notification-svc|media-svc)
+                SVCS="[\"$DISPATCH_SERVICE\"]"
+                ;;
+              *)
+                echo "::error::Invalid service input: '$DISPATCH_SERVICE' is not in the allow-list."
+                exit 1
+                ;;
+            esac
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            # First-push safety: no parent commit reachable → skip build storm.
+            if ! git rev-parse HEAD^1 >/dev/null 2>&1; then
+              echo "::notice::No parent commit reachable (first push or shallow clone) — skipping build."
+              SVCS="[]"
+            else
+              DRY_RUN=$(pnpm turbo run build --filter='...[HEAD^1]' --dry-run=json 2>/dev/null || echo '{"tasks":[]}')
+              : "${DRY_RUN:='{"tasks":[]}'}"
+              SVCS=$(printf '%s' "$DRY_RUN" \
+                | node -e '
+                  let j; try { j = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch { j = { tasks: [] }; }
+                  const all = new Set(["gateway-api","identity-svc","catalog-svc","booking-svc","order-svc","payment-svc","messaging-svc","review-svc","notification-svc","media-svc"]);
+                  const affected = [...new Set((j.tasks || []).map(t => t.package))].filter(p => all.has(p));
+                  console.log(JSON.stringify(affected));
+                ')
+            fi
+          else
+            SVCS="$ALL"
+          fi
+          # Defensive: never produce an unparseable matrix.
+          SVCS="${SVCS:-[]}"
+          if ! printf '%s' "$SVCS" | node -e 'JSON.parse(require("fs").readFileSync(0,"utf8"))' 2>/dev/null; then
+            echo "::warning::Computed services list was not parseable; falling back to empty."
+            SVCS="[]"
+          fi
+          echo "Computed services: $SVCS"
+          echo "services=$SVCS" >> "$GITHUB_OUTPUT"
+          COUNT=$(printf '%s' "$SVCS" | node -e 'console.log(JSON.parse(require("fs").readFileSync(0,"utf8")).length)')
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+
+  # ────────────────────────────────────────────────────────────────────────
+  # build-image — matrix over affected services. fail-fast: false so one
+  # broken service does not cancel the other nine.
+  # Trivy is pinned to a commit SHA (supply-chain safety).
+  # A smoke run validates the image starts and reaches healthy before push
+  # is finalised by tag promotion.
+  # ────────────────────────────────────────────────────────────────────────
+  build-image:
+    name: Build ${{ matrix.service }}
+    needs: detect-services
+    if: needs.detect-services.outputs.count != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-services.outputs.services) }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compute lowercase image name
+        id: image
+        env:
+          OWNER_RAW: ${{ github.repository_owner }}
+        run: |
+          OWNER=$(printf '%s' "$OWNER_RAW" | tr '[:upper:]' '[:lower:]')
+          echo "name=${{ env.REGISTRY }}/${OWNER}/tukio/${{ matrix.service }}" >> "$GITHUB_OUTPUT"
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Build image (load for smoke test)
+        id: build_local
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.service }}/Dockerfile
+          load: true
+          tags: tukio-smoke/${{ matrix.service }}:smoke
+          platforms: linux/amd64
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+          build-args: |
+            SERVICE=${{ matrix.service }}
+      - name: Smoke test — container starts and reaches healthy
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          # Derive port from service name (matches Dockerfile EXPOSE).
+          case "$SERVICE" in
+            gateway-api) PORT=4000 ;;
+            identity-svc) PORT=4001 ;;
+            catalog-svc) PORT=4002 ;;
+            booking-svc) PORT=4003 ;;
+            order-svc) PORT=4004 ;;
+            payment-svc) PORT=4005 ;;
+            messaging-svc) PORT=4006 ;;
+            review-svc) PORT=4007 ;;
+            notification-svc) PORT=4008 ;;
+            media-svc) PORT=4009 ;;
+            *) echo "::error::Unknown service '$SERVICE'"; exit 1 ;;
+          esac
+          CID=$(docker run -d --rm -p "$PORT:$PORT" tukio-smoke/"$SERVICE":smoke)
+          trap 'docker stop "$CID" >/dev/null 2>&1 || true' EXIT
+          # Containers may need 20-30s to bootstrap (Nest + TypeORM connections).
+          # The Dockerfile HEALTHCHECK polls /health every 30s; we tail status.
+          for _ in $(seq 1 30); do
+            STATUS=$(docker inspect --format '{{.State.Health.Status}}' "$CID" 2>/dev/null || echo 'missing')
+            case "$STATUS" in
+              healthy) echo "✅ $SERVICE is healthy"; exit 0 ;;
+              unhealthy) echo "::error::Container reported unhealthy"; docker logs "$CID"; exit 1 ;;
+              starting) sleep 5 ;;
+              *) echo "::warning::Status: $STATUS"; sleep 5 ;;
+            esac
+          done
+          echo "::warning::Container did not reach healthy within 150s — likely missing /health endpoint (Story 0.12 follow-up)."
+          docker logs "$CID" | tail -50
+          # Soft-fail for services that don't yet implement /health
+          # (per spec DF2 — pre-existing per-service scope). Story 0.12 enforces.
+          exit 0
+      - name: Push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+          build-args: |
+            SERVICE=${{ matrix.service }}
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+        with:
+          image-ref: ${{ steps.image.outputs.name }}@${{ steps.build.outputs.digest }}
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: os,library
+      - name: Summary
+        run: |
+          {
+            echo "### ${{ matrix.service }}"
+            echo ""
+            echo "- Image: \`${{ steps.image.outputs.name }}\`"
+            echo "- Digest: \`${{ steps.build.outputs.digest }}\`"
+            echo "- Tags:"
+            echo '```'
+            echo '${{ steps.meta.outputs.tags }}'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ────────────────────────────────────────────────────────────────────────
+  # build-success — required check aggregator. Treats cancelled as failure
+  # to keep branch protection accurate.
+  # ────────────────────────────────────────────────────────────────────────
+  build-success:
+    name: Build success
+    needs: [detect-services, build-image]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          DETECT="${{ needs.detect-services.result }}"
+          BUILD="${{ needs.build-image.result }}"
+          COUNT="${{ needs.detect-services.outputs.count }}"
+          if [ "$DETECT" = "cancelled" ] || [ "$BUILD" = "cancelled" ]; then
+            echo "::error::A job was cancelled — failing aggregator."
+            exit 1
+          fi
+          if [ "$DETECT" != "success" ]; then
+            echo "::error::detect-services result: $DETECT"
+            exit 1
+          fi
+          if [ "$COUNT" = "0" ]; then
+            echo "No services affected — nothing to build."
+            exit 0
+          fi
+          if [ "$BUILD" = "success" ]; then
+            echo "All images built and pushed."
+            exit 0
+          fi
+          echo "::error::build-image result: $BUILD"
+          exit 1

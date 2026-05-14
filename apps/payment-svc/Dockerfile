@@ -1,16 +1,60 @@
-# Placeholder Dockerfile for payment-svc — Story 0.1.
-# Real multi-stage workspace build arrives in Story 0.10 / 0.12.
-ARG NODE_VERSION=22-alpine
+# syntax=docker/dockerfile:1.7
+# Multi-stage build for payment-svc (port 4005).
+# Generated from infra/scripts/gen-dockerfiles.sh — re-run on workspace changes.
 
-FROM node:${NODE_VERSION}
+# ──────────────────────────────────────────────────────────────────────
+# Stage 1 — builder. Installs the whole pnpm workspace, then builds only
+# the requested service. Layer ordering optimises rebuild cost: lockfile
+# → packages → service-specific source.
+# ──────────────────────────────────────────────────────────────────────
+ARG NODE_VERSION=22.16.0-alpine
+FROM node:${NODE_VERSION} AS builder
+
 WORKDIR /app
+ENV CI=true PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable && corepack prepare pnpm@10.12.1 --activate
 
-COPY package.json ./
-RUN pnpm install --prod
+# Lockfile + workspace metadata — invalidates only when deps change.
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig.base.json webpack.tukio.cjs ./
+COPY .npmrc* ./
 
-COPY dist ./dist
+# Shared packages (always needed — workspace dep graph).
+COPY packages ./packages
+COPY tools ./tools
 
-ENV NODE_ENV=production
+# Service-specific source.
+COPY apps/payment-svc ./apps/payment-svc
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --prefer-offline
+
+RUN pnpm --filter=payment-svc build
+
+# Produce a self-contained deploy directory (resolves workspace deps).
+RUN pnpm --filter=payment-svc deploy --prod --legacy /deploy
+
+# ──────────────────────────────────────────────────────────────────────
+# Stage 2 — runner. Minimal Alpine + non-root user + healthcheck.
+# ──────────────────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION} AS runner
+
+WORKDIR /app
+RUN apk add --no-cache curl tini \
+ && addgroup -g 1001 -S nodejs \
+ && adduser -u 1001 -S -G nodejs -s /bin/sh tukio
+
+COPY --from=builder --chown=tukio:nodejs /deploy ./
+
+USER tukio
+
+ENV NODE_ENV=production \
+    PORT=4005 \
+    SERVICE_NAME=payment-svc
+
 EXPOSE 4005
-CMD ["node", "dist/main"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl -fsS "http://localhost:${PORT}/health" || exit 1
+
+ENTRYPOINT ["/sbin/tini","--"]
+CMD ["node","dist/main"]

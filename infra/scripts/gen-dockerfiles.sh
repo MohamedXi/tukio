@@ -1,5 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+declare -A SERVICES=(
+  [gateway-api]=4000
+  [identity-svc]=4001
+  [catalog-svc]=4002
+  [booking-svc]=4003
+  [order-svc]=4004
+  [payment-svc]=4005
+  [messaging-svc]=4006
+  [review-svc]=4007
+  [notification-svc]=4008
+  [media-svc]=4009
+)
+
+# Resolve repo root from the script's own location — portable across machines
+# and CI runners.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+for svc in "${!SERVICES[@]}"; do
+  port="${SERVICES[$svc]}"
+  cat > "${ROOT}/apps/${svc}/Dockerfile" <<DOCKERFILE
 # syntax=docker/dockerfile:1.7
-# Multi-stage build for identity-svc (port 4001).
+# Multi-stage build for ${svc} (port ${port}).
 # Generated from infra/scripts/gen-dockerfiles.sh — re-run on workspace changes.
 
 # ──────────────────────────────────────────────────────────────────────
@@ -8,10 +32,10 @@
 # → packages → service-specific source.
 # ──────────────────────────────────────────────────────────────────────
 ARG NODE_VERSION=22.16.0-alpine
-FROM node:${NODE_VERSION} AS builder
+FROM node:\${NODE_VERSION} AS builder
 
 WORKDIR /app
-ENV CI=true PNPM_HOME=/pnpm PATH=/pnpm:$PATH
+ENV CI=true PNPM_HOME=/pnpm PATH=/pnpm:\$PATH
 RUN corepack enable && corepack prepare pnpm@10.12.1 --activate
 
 # Lockfile + workspace metadata — invalidates only when deps change.
@@ -23,42 +47,45 @@ COPY packages ./packages
 COPY tools ./tools
 
 # Service-specific source.
-COPY apps/identity-svc ./apps/identity-svc
+COPY apps/${svc} ./apps/${svc}
 
 # --ignore-scripts blocks postinstall hooks in transitive deps (supply-chain
-# safety). `pnpm rebuild` is then executed for the workspace's allow-listed
+# safety). \`pnpm rebuild\` is then executed for the workspace's allow-listed
 # native binaries (declared in root package.json#pnpm.onlyBuiltDependencies).
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile --prefer-offline --ignore-scripts \
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \\
+    pnpm install --frozen-lockfile --prefer-offline --ignore-scripts \\
  && pnpm rebuild
 
-RUN pnpm --filter=identity-svc build
+RUN pnpm --filter=${svc} build
 
 # Produce a self-contained deploy directory (resolves workspace deps).
-RUN pnpm --filter=identity-svc deploy --prod --legacy /deploy
+RUN pnpm --filter=${svc} deploy --prod --legacy /deploy
 
 # ──────────────────────────────────────────────────────────────────────
 # Stage 2 — runner. Minimal Alpine + non-root user + healthcheck.
 # ──────────────────────────────────────────────────────────────────────
-FROM node:${NODE_VERSION} AS runner
+FROM node:\${NODE_VERSION} AS runner
 
 WORKDIR /app
-RUN apk add --no-cache curl tini \
- && addgroup -g 1001 -S nodejs \
+RUN apk add --no-cache curl tini \\
+ && addgroup -g 1001 -S nodejs \\
  && adduser -u 1001 -S -G nodejs -s /bin/sh tukio
 
 COPY --from=builder --chown=tukio:nodejs /deploy ./
 
 USER tukio
 
-ENV NODE_ENV=production \
-    PORT=4001 \
-    SERVICE_NAME=identity-svc
+ENV NODE_ENV=production \\
+    PORT=${port} \\
+    SERVICE_NAME=${svc}
 
-EXPOSE 4001
+EXPOSE ${port}
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -fsS "http://localhost:${PORT}/health" || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \\
+  CMD curl -fsS "http://localhost:\${PORT}/health" || exit 1
 
 ENTRYPOINT ["/sbin/tini","--"]
 CMD ["node","dist/main"]
+DOCKERFILE
+  echo "Generated apps/${svc}/Dockerfile (port ${port})"
+done

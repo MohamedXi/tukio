@@ -1,5 +1,5 @@
 # generated: 2026-05-09
-# last_updated: 2026-05-14 (Story 4.1 booking-svc Pretre + Booking aggregate state machine 5 statuses + saga producer foundation R11 ready-for-dev — Epic 4 ouverture critique : 5 VOs + 4 ports + BookingStateMachine + 9 use cases (3 full + 6 skeletons) + 6 outbox events booking.*.v1 + cross-svc ListingSnapshotClient HTTP)
+# last_updated: 2026-05-14 (Story 4.3 cart UI mono-vendor + persistence Zustand ready-for-dev — tunnel Visitor → Customer pre-checkout MVP : Zustand store shared `@tukio/ui/stores/cart.store.ts` cross-apps + cookie cross-zone `.tukio.one` + booking-svc EXTEND avec Cart aggregate + 5 use cases + tables cart/cart_line dans tukio_booking + gateway-api 5 endpoints + UPDATE Story 3.10 CtaReserveSticky full add-to-cart + MultiVendorWarningModal promoted @tukio/ui/patterns + merge anonymous→customer Story 1.4 callback + 12 Playwright e2e + Lighthouse NFR3 LCP < 1s gate)
 # project: tukio.one
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09
-last_updated: 2026-05-13
+last_updated: 2026-05-14
 project: tukio.one
 project_key: NOKEY
 tracking_system: file-system
@@ -54,7 +54,7 @@ development_status:
   0-8-setup-tukio-auth-backend-frontend: done
   0-9-setup-tukio-api-client-i18n-client-testing: done
   0-10-docker-compose-dev-local-bootstrap-scripts: done
-  0-11-ci-github-actions-pipeline: ready-for-dev
+  0-11-ci-github-actions-pipeline: done
   0-12-helm-charts-k8s-argocd-staging-observability: ready-for-dev
   0-13-initialize-adrs-vercel-multi-zones-acquisition-schema: ready-for-dev
   epic-0-retrospective: optional
@@ -104,8 +104,8 @@ development_status:
   # ─── Epic 4 — Booking, Cart & Payment Saga (MVP) ──────────────────────
   epic-4: in-progress
   4-1-booking-svc-pretre-saga-state-machine: ready-for-dev
-  4-2-order-svc-payment-svc-pretre-saga-consumers: backlog
-  4-3-cart-ui-mono-vendor-persistence-zustand: backlog
+  4-2-order-svc-payment-svc-pretre-saga-consumers: ready-for-dev
+  4-3-cart-ui-mono-vendor-persistence-zustand: ready-for-dev
   4-4-booking-submission-3-layer-race-condition-protection: backlog
   4-5-stripe-paymentintent-elements-checkout: backlog
   4-6-pro-pending-requests-page-delai-expiration: backlog
