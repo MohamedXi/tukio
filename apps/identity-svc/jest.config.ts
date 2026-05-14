@@ -10,18 +10,43 @@ const config: Config = {
     '^.+\\.(t|j)s$': [
       'ts-jest',
       {
-        tsconfig: '<rootDir>/../tsconfig.json',
+        // Inline tsconfig overrides forces CJS output regardless of
+        // workspace `"type": "module"` (e.g. @tukio/contracts). Mirrors
+        // the e2e config — without it ts-jest emits ESM for cross-package
+        // imports and Node fails with "Unexpected token 'export'".
+        tsconfig: {
+          module: 'commonjs',
+          moduleResolution: 'node',
+          esModuleInterop: true,
+          experimentalDecorators: true,
+          emitDecoratorMetadata: true,
+          resolvePackageJsonExports: false,
+          allowJs: true,
+          target: 'ES2022',
+        },
       },
     ],
   },
+  transformIgnorePatterns: ['/node_modules/(?!.*?(jose)/)'],
   moduleNameMapper: {
     // Strip `.js` extension from relative imports (NodeNext ESM → ts-jest CJS).
     '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@tukio/contracts$': '<rootDir>/../../../packages/contracts/src/index.ts',
-    '^@tukio/contracts/(.*)\\.js$':
+    // Resolve @tukio/contracts/* subpaths. Jest ignores package.json `exports`,
+    // so we mirror its mapping by trying, in order:
+    //   1. <name>.ts                   — direct file (e.g. types/Money.ts)
+    //   2. <name>.exception.ts         — domain exceptions convention
+    //   3. <name>/index.ts             — barrel folder
+    '^@tukio/contracts/(.*)\\.js$': [
       '<rootDir>/../../../packages/contracts/src/$1.ts',
-    '^@tukio/contracts/(.*)$':
+      '<rootDir>/../../../packages/contracts/src/$1.exception.ts',
+      '<rootDir>/../../../packages/contracts/src/$1/index.ts',
+    ],
+    '^@tukio/contracts/(.*)$': [
       '<rootDir>/../../../packages/contracts/src/$1.ts',
+      '<rootDir>/../../../packages/contracts/src/$1.exception.ts',
+      '<rootDir>/../../../packages/contracts/src/$1/index.ts',
+    ],
   },
   collectCoverageFrom: [
     'domain/**/*.ts',

@@ -1,0 +1,96 @@
+name: Lighthouse CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/public/**'
+      - 'apps/customer/**'
+      - 'apps/seller/**'
+      - 'apps/admin/**'
+      - 'packages/ui/**'
+      - 'packages/i18n-client/**'
+      - '.lighthouserc/**'
+      - '.github/workflows/lighthouse-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: lighthouse-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# Pinned via `pnpm dlx @lhci/cli@<LHCI_VERSION>` — avoid `pnpm add @latest` which
+# would mutate pnpm-lock.yaml mid-CI and break `--frozen-lockfile` downstream.
+env:
+  LHCI_VERSION: '0.14.0'
+
+jobs:
+  lighthouse:
+    name: Lighthouse — ${{ matrix.config }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - config: public-desktop
+            app: public
+          - config: public-mobile
+            app: public
+          - config: customer
+            app: customer
+          - config: seller
+            app: seller
+          - config: admin
+            app: admin
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - name: Restore pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: apps/${{ matrix.app }}/.next/cache
+          key: nextjs-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles('apps/${{ matrix.app }}/next.config.*', 'pnpm-lock.yaml') }}
+          restore-keys: nextjs-${{ matrix.app }}-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - name: Check if app is affected
+        id: affected
+        if: github.event_name == 'pull_request'
+        run: |
+          DRY_RUN=$(pnpm turbo run build --filter='...[origin/${{ github.base_ref }}]' --dry-run=json 2>/dev/null || echo '{"tasks":[]}')
+          : "${DRY_RUN:='{"tasks":[]}'}"
+          AFFECTED=$(printf '%s' "$DRY_RUN" \
+            | node -e '
+              let j; try { j = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch { j = { tasks: [] }; }
+              console.log((j.tasks || []).some(t => t.package === "${{ matrix.app }}") ? "yes" : "no");
+            ' || echo "yes")
+          echo "affected=${AFFECTED}" >> "$GITHUB_OUTPUT"
+      - name: Skip — app not affected
+        if: github.event_name == 'pull_request' && steps.affected.outputs.affected == 'no'
+        run: echo "::notice::${{ matrix.app }} not affected by this PR — skipping Lighthouse."
+      - name: Build app
+        if: github.event_name == 'workflow_dispatch' || steps.affected.outputs.affected == 'yes'
+        run: pnpm --filter=${{ matrix.app }} build
+      - name: Run Lighthouse CI
+        if: github.event_name == 'workflow_dispatch' || steps.affected.outputs.affected == 'yes'
+        run: pnpm dlx "@lhci/cli@${{ env.LHCI_VERSION }}" autorun --config=.lighthouserc/${{ matrix.config }}.json
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}

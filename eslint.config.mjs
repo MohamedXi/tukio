@@ -43,7 +43,8 @@ export default [
       'tools/**',
     ],
   },
-  // Workspace-level boundaries (apps/packages/tools) + tukio custom rules — keep light, warn-only
+  // Workspace-level boundaries (apps/packages/tools) + tukio custom rules.
+  // Story 0.11 — most rules promoted to `error` (Sprint 0 is now-or-never).
   {
     files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
     plugins: { boundaries, tukio: tukioPlugin },
@@ -62,14 +63,63 @@ export default [
           rules: [],
         },
       ],
-      // Event naming convention: lowercase.dot.separated.v1 format (AC8)
+      // NATS event naming (Story 0.2)
       'tukio/event-naming': 'error',
-      // Anti-barrel imports from @tukio/contracts (warn at Sprint 0, error in Story 0.11)
-      'tukio/no-barrel-import-contracts': 'warn',
-      // No direct NATS publish in use cases — must go via OutboxPublisher (warn → error Story 0.11)
-      'tukio/no-direct-event-publish': 'warn',
-      // Anti-barrel imports from @tukio/ui (warn at Sprint 0, error in Story 0.11)
-      'tukio/no-barrel-import-ui': 'warn',
+      // Anti-barrel imports (Stories 0.2 / 0.3) — promoted warn → error in Story 0.11
+      'tukio/no-barrel-import-contracts': 'error',
+      'tukio/no-barrel-import-ui': 'error',
+      // OutboxPublisher discipline (Story 0.7) — promoted warn → error in Story 0.11
+      'tukio/no-direct-event-publish': 'error',
+      // Story 0.11 — new rules
+      'tukio/no-fr-paths': 'error',
+      'tukio/no-class-validator': 'error',
+      'tukio/error-code-format': 'error',
+      'tukio/no-buyer': 'error',
+      // Filename-scoped internally (apps/<svc>/src/infrastructure/http/**)
+      'tukio/no-bypass-envelope': 'error',
+      // Warn-only — heuristic, may produce false-positives until typed publish helpers exist
+      'tukio/require-correlation-id': 'warn',
+    },
+  },
+  // `no-hardcoded-text` + `no-pure-black-white` — frontend-only. Backend
+  // services may legitimately use `#000`/`#fff` (PDF generation, Stripe Elements
+  // iframe theme, chart palettes) and don't speak next-intl.
+  {
+    files: [
+      'apps/public/src/**/*.{tsx,jsx,ts}',
+      'apps/customer/src/**/*.{tsx,jsx,ts}',
+      'apps/seller/src/**/*.{tsx,jsx,ts}',
+      'apps/admin/src/**/*.{tsx,jsx,ts}',
+      'packages/ui/src/**/*.{tsx,jsx,ts}',
+    ],
+    plugins: { tukio: tukioPlugin },
+    rules: {
+      'tukio/no-hardcoded-text': 'error',
+      'tukio/no-pure-black-white': 'error',
+    },
+  },
+  // Storybook / test files / story rule fixtures are exempt from heuristic
+  // rules that flag legitimate test content. Black/white hex literals, FR-path
+  // fixtures, hardcoded English copy, and "buyer" all appear intentionally in
+  // test data.
+  {
+    files: [
+      '**/*.stories.{ts,tsx,jsx}',
+      '**/*.spec.{ts,tsx,jsx}',
+      '**/*.test.{ts,tsx,jsx}',
+      '**/*.e2e-spec.{ts,tsx}',
+      '**/__tests__/**/*',
+      '**/test/**/*',
+      '**/fixtures/**/*',
+      '**/messages/**/*.{json,ts}',
+    ],
+    plugins: { tukio: tukioPlugin },
+    rules: {
+      'tukio/no-hardcoded-text': 'off',
+      'tukio/no-buyer': 'off',
+      'tukio/no-pure-black-white': 'off',
+      'tukio/no-fr-paths': 'off',
+      'tukio/error-code-format': 'off',
     },
   },
   // Pattern Pretre Clean Architecture — strict boundaries (Story 0.6 AC2/AC8)

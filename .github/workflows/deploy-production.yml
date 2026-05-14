@@ -1,0 +1,85 @@
+name: Deploy — production
+
+# Placeholder workflow (Story 0.11). Story 0.12 finalises ArgoCD integration
+# against the Hetzner production cluster + real secrets. Tag-driven release;
+# `production` GitHub Environment requires a manual approval before deploy.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production-${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: write
+  id-token: write
+
+# Workflow-level env so `if:` conditions can reference populated values.
+env:
+  ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+  ARGOCD_PRODUCTION_TOKEN: ${{ secrets.ARGOCD_PRODUCTION_TOKEN }}
+  SLACK_WEBHOOK_DEPLOYS_PROD: ${{ secrets.SLACK_WEBHOOK_DEPLOYS_PROD }}
+
+jobs:
+  argocd-sync:
+    name: ArgoCD sync — tukio-production
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://tukio.one
+    timeout-minutes: 15
+    steps:
+      - name: Skip notice (Story 0.12 finalises)
+        run: |
+          echo "::notice::Placeholder mode — Story 0.12 wires the real ArgoCD sync."
+          echo "Required secrets (to be configured in Story 0.12):"
+          echo "  - ARGOCD_SERVER (e.g. argocd.tukio.one)"
+          echo "  - ARGOCD_PRODUCTION_TOKEN"
+          echo "  - SLACK_WEBHOOK_DEPLOYS_PROD"
+      - name: Trigger ArgoCD sync
+        if: env.ARGOCD_PRODUCTION_TOKEN != ''
+        run: |
+          curl --fail-with-body -sS \
+            -H "Authorization: Bearer ${ARGOCD_PRODUCTION_TOKEN}" \
+            -X POST "https://${ARGOCD_SERVER}/api/v1/applications/tukio-production/sync"
+      - name: Smoke test
+        if: env.ARGOCD_PRODUCTION_TOKEN != ''
+        run: |
+          for _ in $(seq 1 30); do
+            curl -fsS https://tukio.one/health && exit 0
+            sleep 10
+          done
+          echo "::error::Production healthcheck did not become green within 5 min."
+          exit 1
+      - name: Rollback on failure (placeholder — Story 0.12 implements the body)
+        if: failure() && env.ARGOCD_PRODUCTION_TOKEN != ''
+        run: |
+          echo "::warning::Rollback placeholder — Story 0.12 implements the rollback request body."
+          # ArgoCD rollback requires a JSON body `{"id": <history-id>}`.
+          # Implementation deferred to Story 0.12 (needs ArgoCD application history lookup).
+          exit 0
+      - name: Notify Slack — success
+        if: success() && env.SLACK_WEBHOOK_DEPLOYS_PROD != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ env.SLACK_WEBHOOK_DEPLOYS_PROD }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":rocket: Production deploy succeeded — `${{ github.ref_name }}`"
+            }
+      - name: Notify Slack — failure
+        if: failure() && env.SLACK_WEBHOOK_DEPLOYS_PROD != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ env.SLACK_WEBHOOK_DEPLOYS_PROD }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":x: Production deploy FAILED — `${{ github.ref_name }}` — rollback placeholder triggered. See ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }

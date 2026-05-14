@@ -1,0 +1,54 @@
+# Source-control + dependency artefacts
+.git
+.gitignore
+.gitattributes
+.github
+**/node_modules
+**/.pnpm-store
+
+# Build outputs (rebuilt in image)
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/build
+**/out
+**/.cache
+
+# Editor / OS noise
+.DS_Store
+.idea
+.vscode
+*.swp
+*.swo
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+
+# Tests + tooling not needed at build time
+**/*.spec.ts
+**/*.test.ts
+**/__tests__
+**/test
+**/jest-e2e.json
+**/vitest.config.ts
+**/playwright.config.ts
+
+# Docs + BMad
+docs
+_bmad
+_bmad-output
+
+# CI-only files
+infra/docker-compose
+infra/k8s
+infra/helm
+infra/scripts
+
+# Logs
+**/*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*

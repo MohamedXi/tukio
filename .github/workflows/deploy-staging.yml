@@ -1,0 +1,81 @@
+name: Deploy — staging
+
+# Placeholder workflow (Story 0.11). Story 0.12 finalises ArgoCD integration
+# against the Hetzner staging cluster + real secrets.
+
+on:
+  workflow_run:
+    workflows: ['Build Images']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging-${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: write
+  id-token: write
+
+# Workflow-level env so `if:` conditions can reference populated values.
+# Without this, step-level `env:` is evaluated AFTER the step's `if:` runs
+# and the guard always falls through to skip.
+env:
+  ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+  ARGOCD_STAGING_TOKEN: ${{ secrets.ARGOCD_STAGING_TOKEN }}
+  SLACK_WEBHOOK_DEPLOYS: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+
+jobs:
+  argocd-sync:
+    name: ArgoCD sync — tukio-staging
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.tukio.one
+    timeout-minutes: 15
+    steps:
+      - name: Skip notice (Story 0.12 finalises)
+        run: |
+          echo "::notice::Placeholder mode — Story 0.12 wires the real ArgoCD sync."
+          echo "Required secrets (to be configured in Story 0.12):"
+          echo "  - ARGOCD_SERVER (e.g. argocd.staging.tukio.one)"
+          echo "  - ARGOCD_STAGING_TOKEN"
+          echo "  - SLACK_WEBHOOK_DEPLOYS"
+      - name: Trigger ArgoCD sync
+        if: env.ARGOCD_STAGING_TOKEN != ''
+        run: |
+          curl --fail-with-body -sS \
+            -H "Authorization: Bearer ${ARGOCD_STAGING_TOKEN}" \
+            -X POST "https://${ARGOCD_SERVER}/api/v1/applications/tukio-staging/sync"
+      - name: Smoke test
+        if: env.ARGOCD_STAGING_TOKEN != ''
+        run: |
+          for _ in $(seq 1 30); do
+            curl -fsS https://staging.tukio.one/health && exit 0
+            sleep 10
+          done
+          echo "::error::Staging healthcheck did not become green within 5 min."
+          exit 1
+      - name: Notify Slack — success
+        if: success() && env.SLACK_WEBHOOK_DEPLOYS != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ env.SLACK_WEBHOOK_DEPLOYS }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":rocket: Staging deploy succeeded — `${{ github.sha }}`"
+            }
+      - name: Notify Slack — failure
+        if: failure() && env.SLACK_WEBHOOK_DEPLOYS != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ env.SLACK_WEBHOOK_DEPLOYS }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":x: Staging deploy FAILED — `${{ github.sha }}` — see ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }

@@ -1,0 +1,83 @@
+name: Chaos tests (nightly)
+
+on:
+  schedule:
+    # 02:00 UTC — outside European peak hours, before EU on-call starts.
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: chaos-tests-${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+# Workflow-level env so `if:` conditions can reference the populated value
+# (step-level `env:` is evaluated AFTER the step's `if:`, causing the
+# legitimate-looking `env.X != ''` guard to always be empty).
+env:
+  SLACK_WEBHOOK_ALERTS: ${{ secrets.SLACK_WEBHOOK_ALERTS }}
+
+jobs:
+  chaos:
+    name: Chaos suite (NATS + outbox)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - name: Verify chaos:test script exists
+        run: |
+          if ! pnpm run | grep -q '^  chaos:test'; then
+            echo "::warning::pnpm chaos:test script not defined — skipping (Story 0.10 follow-up)."
+            exit 0
+          fi
+      - name: Start slow-profile test infra (--wait waits for compose healthchecks)
+        run: pnpm docker:test:up:slow
+      - name: Run chaos suite
+        id: chaos
+        run: pnpm chaos:test
+      - name: Capture container logs on failure
+        if: failure()
+        run: |
+          mkdir -p chaos-logs
+          docker compose -f infra/docker-compose/docker-compose.test.yml \
+            logs --no-color > chaos-logs/compose.log || true
+          docker compose -f infra/docker-compose/docker-compose.test.yml ps -a \
+            > chaos-logs/compose-ps.log || true
+      - name: Upload chaos logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-logs-${{ github.run_id }}
+          path: chaos-logs/
+          retention-days: 14
+      - name: Tear down infra
+        if: always()
+        run: pnpm docker:test:down
+      - name: Notify Slack on failure
+        if: failure() && env.SLACK_WEBHOOK_ALERTS != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ env.SLACK_WEBHOOK_ALERTS }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":fire: Nightly chaos suite FAILED — see ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
