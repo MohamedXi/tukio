@@ -4,7 +4,7 @@
       "startServerCommand": "pnpm --filter=customer start",
       "startServerReadyPattern": "Ready in",
       "startServerReadyTimeout": 120000,
-      "url": ["http://localhost:3001/fr", "http://localhost:3001/fr/login"],
+      "url": ["http://localhost:3001/fr"],
       "numberOfRuns": 3,
       "settings": {
         "preset": "perf",

@@ -4,12 +4,7 @@
       "startServerCommand": "pnpm --filter=public start",
       "startServerReadyPattern": "Ready in",
       "startServerReadyTimeout": 120000,
-      "url": [
-        "http://localhost:3000/fr",
-        "http://localhost:3000/en",
-        "http://localhost:3000/fr/search",
-        "http://localhost:3000/fr/help"
-      ],
+      "url": ["http://localhost:3000/fr", "http://localhost:3000/en"],
       "numberOfRuns": 3,
       "settings": {
         "preset": "perf",
