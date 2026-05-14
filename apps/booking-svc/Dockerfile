@@ -43,7 +43,11 @@ RUN pnpm --filter=booking-svc deploy --prod --legacy /deploy
 FROM node:${NODE_VERSION} AS runner
 
 WORKDIR /app
-RUN apk add --no-cache curl tini \
+# Patch base image vulnerabilities (e.g. OpenSSL CRITICAL CVEs in Alpine 3.22
+# that node:22.16.0-alpine ships unpatched). `apk upgrade` brings security
+# fixes from the current Alpine repo without changing the Node version.
+RUN apk upgrade --no-cache \
+ && apk add --no-cache curl tini \
  && addgroup -g 1001 -S nodejs \
  && adduser -u 1001 -S -G nodejs -s /bin/sh tukio
 

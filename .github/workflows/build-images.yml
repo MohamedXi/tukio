@@ -185,24 +185,27 @@ jobs:
             media-svc) PORT=4009 ;;
             *) echo "::error::Unknown service '$SERVICE'"; exit 1 ;;
           esac
-          CID=$(docker run -d --rm -p "$PORT:$PORT" tukio-smoke/"$SERVICE":smoke)
-          trap 'docker stop "$CID" >/dev/null 2>&1 || true' EXIT
-          # Story 0.11 scope: only verify the container BOOTSTRAPS without
-          # crashing. Per-service `/health` endpoints are deferred (DF2 — most
-          # services implement them in their own Epic 1+ story).
-          sleep 25
-          if ! docker inspect --format '{{.State.Running}}' "$CID" 2>/dev/null | grep -q true; then
-            echo "::error::$SERVICE container exited within 25s"
-            docker logs "$CID"
+          # No --rm: keep container around to extract logs on crash.
+          CID=$(docker run -d -p "$PORT:$PORT" tukio-smoke/"$SERVICE":smoke)
+          trap 'docker rm -f "$CID" >/dev/null 2>&1 || true' EXIT
+          # Story 0.11 scope: verify the container bootstraps without crashing.
+          # Per-service `/health` endpoints are deferred (DF2 — most services
+          # implement them in their own Epic 1+ story).
+          sleep 35
+          RUNNING=$(docker inspect --format '{{.State.Running}}' "$CID" 2>/dev/null || echo 'false')
+          EXIT_CODE=$(docker inspect --format '{{.State.ExitCode}}' "$CID" 2>/dev/null || echo '?')
+          STATUS=$(docker inspect --format '{{.State.Health.Status}}' "$CID" 2>/dev/null || echo 'none')
+          echo "──── $SERVICE container logs (last 60 lines) ────"
+          docker logs "$CID" 2>&1 | tail -60
+          echo "──── end logs ────"
+          if [ "$RUNNING" != "true" ]; then
+            echo "::error::$SERVICE container exited (exit code: $EXIT_CODE)"
             exit 1
           fi
-          STATUS=$(docker inspect --format '{{.State.Health.Status}}' "$CID" 2>/dev/null || echo 'none')
-          echo "::notice::$SERVICE container is running (healthcheck: $STATUS)"
+          echo "::notice::$SERVICE container running (healthcheck: $STATUS)"
           if [ "$STATUS" = "unhealthy" ]; then
-            echo "::warning::Healthcheck failed — likely /health endpoint not implemented yet (Story DF2 — re-enforced in Epic 1+)."
+            echo "::warning::Healthcheck failed — likely /health endpoint not implemented (DF2, Epic 1+)."
           fi
-          # Capture logs for the run summary
-          docker logs "$CID" 2>&1 | tail -20
       - name: Push image
         id: build
         uses: docker/build-push-action@v6
