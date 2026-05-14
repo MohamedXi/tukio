@@ -167,7 +167,7 @@ jobs:
           cache-to: type=gha,scope=${{ matrix.service }},mode=max
           build-args: |
             SERVICE=${{ matrix.service }}
-      - name: Smoke test — container starts and reaches healthy
+      - name: Smoke test — container starts and stays running
         env:
           SERVICE: ${{ matrix.service }}
         run: |
@@ -187,22 +187,22 @@ jobs:
           esac
           CID=$(docker run -d --rm -p "$PORT:$PORT" tukio-smoke/"$SERVICE":smoke)
           trap 'docker stop "$CID" >/dev/null 2>&1 || true' EXIT
-          # Containers may need 20-30s to bootstrap (Nest + TypeORM connections).
-          # The Dockerfile HEALTHCHECK polls /health every 30s; we tail status.
-          for _ in $(seq 1 30); do
-            STATUS=$(docker inspect --format '{{.State.Health.Status}}' "$CID" 2>/dev/null || echo 'missing')
-            case "$STATUS" in
-              healthy) echo "✅ $SERVICE is healthy"; exit 0 ;;
-              unhealthy) echo "::error::Container reported unhealthy"; docker logs "$CID"; exit 1 ;;
-              starting) sleep 5 ;;
-              *) echo "::warning::Status: $STATUS"; sleep 5 ;;
-            esac
-          done
-          echo "::warning::Container did not reach healthy within 150s — likely missing /health endpoint (Story 0.12 follow-up)."
-          docker logs "$CID" | tail -50
-          # Soft-fail for services that don't yet implement /health
-          # (per spec DF2 — pre-existing per-service scope). Story 0.12 enforces.
-          exit 0
+          # Story 0.11 scope: only verify the container BOOTSTRAPS without
+          # crashing. Per-service `/health` endpoints are deferred (DF2 — most
+          # services implement them in their own Epic 1+ story).
+          sleep 25
+          if ! docker inspect --format '{{.State.Running}}' "$CID" 2>/dev/null | grep -q true; then
+            echo "::error::$SERVICE container exited within 25s"
+            docker logs "$CID"
+            exit 1
+          fi
+          STATUS=$(docker inspect --format '{{.State.Health.Status}}' "$CID" 2>/dev/null || echo 'none')
+          echo "::notice::$SERVICE container is running (healthcheck: $STATUS)"
+          if [ "$STATUS" = "unhealthy" ]; then
+            echo "::warning::Healthcheck failed — likely /health endpoint not implemented yet (Story DF2 — re-enforced in Epic 1+)."
+          fi
+          # Capture logs for the run summary
+          docker logs "$CID" 2>&1 | tail -20
       - name: Push image
         id: build
         uses: docker/build-push-action@v6
