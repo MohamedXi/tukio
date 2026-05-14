@@ -34,8 +34,12 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 
 RUN pnpm --filter=catalog-svc build
 
-# Produce a self-contained deploy directory (resolves workspace deps).
-RUN pnpm --filter=catalog-svc deploy --prod --legacy /deploy
+# Produce a self-contained deploy directory.
+# Default pnpm 10 deploy walks workspace transitive deps (e.g. @tukio/auth
+# → prom-client) and includes them in /deploy/node_modules. The --legacy
+# flag forces v1 behavior which uses symlinks that don't survive Docker
+# COPY across stages — leading to runtime "Cannot find module 'prom-client'".
+RUN pnpm --filter=catalog-svc deploy --prod /deploy
 
 # ──────────────────────────────────────────────────────────────────────
 # Stage 2 — runner. Minimal Alpine + non-root user + healthcheck.
