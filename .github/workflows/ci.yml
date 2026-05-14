@@ -18,7 +18,9 @@ permissions:
 env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-  TURBO_REMOTE_ONLY: 'true'
+  # TURBO_REMOTE_ONLY was deprecated in Turborepo 2.x — TURBO_CACHE=remote:rw
+  # is the replacement (remote read-write only, no local cache fallback).
+  TURBO_CACHE: 'remote:rw'
 
 jobs:
   # ────────────────────────────────────────────────────────────────────────
