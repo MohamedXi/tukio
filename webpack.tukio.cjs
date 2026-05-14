@@ -27,9 +27,15 @@ const TUKIO_WORKSPACE_PACKAGE = /^@tukio\//;
 // @tukio/* package it pulls in.
 // Adding to this list: must be pure JS (no native bindings, no worker_threads
 // shenanigans). Verify with `pnpm why <pkg>` that it doesn't pull in C addons.
+// Each entry is added because a previous build hit
+// "Cannot find module 'X'" — webpack's externals function is called per
+// require() but doesn't recurse into bundled deps' requires by default.
+// When you add prom-client here, you must ALSO add its transitive deps that
+// it `require()`s at runtime: tdigest, bintrees (see `pnpm why <pkg>`).
 const ALWAYS_BUNDLE = new Set([
   'prom-client',
-  'tdigest', // transitive dep of prom-client (histogram quantiles)
+  'tdigest', // transitive of prom-client (histogram quantiles)
+  'bintrees', // transitive of tdigest (red-black tree)
   'jose',
   'nats',
 ]);
