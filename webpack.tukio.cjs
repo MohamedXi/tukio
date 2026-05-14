@@ -10,35 +10,57 @@
 //   2. `tsconfig.base.json` maps `@tukio/*` → `./packages/*/src` (TS sources),
 //      which inflates `rootDir` of any consumer and breaks `dist/main.js` layout.
 //
-// Bundling everything (workspace packages included) into a single dist/main.js
-// sidesteps both issues. When Story 0.2 D8 lands real package builds (each
-// package emits dist/, exports point to dist/), this file can be removed and
-// services can return to plain `nest start --watch`.
+// Bundling strategy (post Story 0.11 lessons learned):
 //
-// To switch to Rspack later, replace the import line in each service's
-// `webpack.config.cjs` from `webpack` to `@rspack/core` — the config syntax
-// is 95% compatible. No change needed in this file.
+//   Bundle by default. Externalize only a curated list (NEVER_BUNDLE).
+//
+// Rationale: an "allow-list to bundle" approach (the previous strategy) required
+// hunting down every transitive dep when a new one surfaced — prom-client →
+// tdigest → bintrees → @opentelemetry/api each crashed the smoke test in turn.
+// The current strategy bundles everything pure-JS by default and externalizes
+// only deps with native bindings, large size, or runtime resolution needs
+// (Nest decorator metadata, pino worker threads, pg native binding, …).
+//
+// When adding a new direct dep to apps/*/package.json:
+//   - If it has native bindings or pulls in tons of transitives → add to
+//     NEVER_BUNDLE (so pnpm deploy --legacy ships it in node_modules).
+//   - If it's pure JS → it'll be bundled automatically.
 
 const TUKIO_WORKSPACE_PACKAGE = /^@tukio\//;
 
-// Pure-JS deps used transitively by @tukio/* packages but NOT declared as
-// direct deps in apps/*/package.json. Bundling them keeps the final image
-// self-contained without forcing every service to mirror the deps of every
-// @tukio/* package it pulls in.
-// Adding to this list: must be pure JS (no native bindings, no worker_threads
-// shenanigans). Verify with `pnpm why <pkg>` that it doesn't pull in C addons.
-// Each entry is added because a previous build hit
-// "Cannot find module 'X'" — webpack's externals function is called per
-// require() but doesn't recurse into bundled deps' requires by default.
-// When you add prom-client here, you must ALSO add its transitive deps that
-// it `require()`s at runtime: tdigest, bintrees (see `pnpm why <pkg>`).
-const ALWAYS_BUNDLE = new Set([
-  'prom-client',
-  'tdigest', // transitive of prom-client (histogram quantiles)
-  'bintrees', // transitive of tdigest (red-black tree)
-  'jose',
-  'nats',
+// Curated externals — kept OUT of the webpack bundle. These ship in
+// /deploy/node_modules via `pnpm deploy --legacy`, which means each app's
+// package.json MUST list them (directly or transitively via direct deps).
+//
+// Adding here means: this dep has native bindings, worker threads, or is
+// otherwise unsafe to inline in a single webpack chunk.
+const NEVER_BUNDLE_EXACT = new Set([
+  'typeorm', // huge + uses dynamic require for drivers
+  'pg', // native binding
+  'pg-native', // native
+  'reflect-metadata', // Nest decorator runtime — must be unique global
+  'rxjs', // Nest internal observables — must be unique instance
+  'zod', // shared at type level with nestjs-zod
+  'nestjs-zod', // Nest pipe registration
+  'nestjs-pino', // worker threads + pino transport resolution
+  'pino', // worker threads transport resolution
+  'pino-pretty',
+  'pino-http',
+  'class-transformer', // Nest serialization
+  'class-validator', // forbidden by tukio/no-class-validator but listed for safety
 ]);
+
+// Prefix-based externals — anything under these namespaces stays external.
+const NEVER_BUNDLE_PREFIX = ['@nestjs/', '@fastify/', '@types/', 'pino-'];
+
+function shouldExternalize(request) {
+  if (!request) return false;
+  if (NEVER_BUNDLE_EXACT.has(request)) return true;
+  for (const prefix of NEVER_BUNDLE_PREFIX) {
+    if (request.startsWith(prefix)) return true;
+  }
+  return false;
+}
 
 module.exports = (options) => ({
   ...options,
@@ -57,22 +79,14 @@ module.exports = (options) => ({
       if (request && TUKIO_WORKSPACE_PACKAGE.test(request)) {
         return callback();
       }
-      // Bundle the transitive runtime deps coming from @tukio/* (so apps
-      // don't need to declare them — `pnpm deploy --legacy` would not
-      // include them in /deploy/node_modules otherwise).
-      if (request && ALWAYS_BUNDLE.has(request)) {
-        return callback();
-      }
-      // Externalize every other npm package (NestJS default — keeps the bundle
-      // small and lets Node resolve runtime deps from node_modules).
-      if (
-        request &&
-        /^[a-z@]/i.test(request) &&
-        !request.startsWith('.') &&
-        !request.startsWith('/')
-      ) {
+      // Externalize curated natives + large deps.
+      if (shouldExternalize(request)) {
         return callback(null, 'commonjs ' + request);
       }
+      // Everything else (pure JS npm deps, transitives of @tukio/*) gets
+      // bundled. This avoids the "Cannot find module 'X'" runtime errors
+      // that plagued earlier builds when webpack externalized transitive
+      // deps not declared in apps/*/package.json.
       return callback();
     },
   ],
