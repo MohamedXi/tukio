@@ -1,5 +1,14 @@
 # Turborepo Remote Cache — Configuration et setup
 
+> ⚠️ **STATUT : DEFERRED V1+** — Turborepo Remote Cache (Vercel) n'est **pas configuré** dans le MVP.
+> Le free tier Vercel Hobby est limité à **1 utilisateur** ; si tu invites un collaborateur, ça passe à $20/user/mois. Le **GitHub Actions cache** (`actions/cache@v4`) est suffisant pour MVP — chaque job restore le cache pnpm + Turborepo via `hashFiles('pnpm-lock.yaml')`.
+> Re-activer quand l'équipe grandit ou si tu veux **partager le cache entre runs locaux + CI** (gain de temps notable sur les builds locaux).
+> Pour V1+, ce guide reste à jour — il suffira de :
+> 1. Créer un compte/team Vercel + access token (cf. § « Étapes » ci-dessous).
+> 2. Ajouter les secrets `TURBO_TOKEN` + `TURBO_TEAM`.
+> 3. Réintroduire `env: TURBO_TOKEN/TURBO_TEAM/TURBO_CACHE: 'remote:rw'` dans `ci.yml`.
+> **Alternative self-host gratuite** : [`ducktors/turborepo-remote-cache`](https://github.com/ducktors/turborepo-remote-cache) sur un droplet DO ($4/mois) — voir section « Self-hosting » plus bas.
+
 **Outil** : [Turborepo Remote Cache](https://turborepo.com/docs/core-concepts/remote-caching) via [Vercel](https://vercel.com/) (provider par défaut, free tier).
 
 **Workflows consommateurs** : tous (`ci.yml`, `lighthouse-ci.yml`, `build-images.yml`, `chaos-tests.yml`).

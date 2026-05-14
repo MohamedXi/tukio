@@ -1,5 +1,13 @@
 # Codecov — Configuration et setup
 
+> ⚠️ **STATUT : DEFERRED V1+** — Codecov n'est **pas configuré** dans le MVP.
+> Le free tier privé est limité à **250 uploads/mois**, insuffisant pour une CI active. La coverage est actuellement stockée en **GHA artifact** (14 jours de rétention) via `ci.yml#test` step `Upload coverage artifact`.
+> Re-activer Codecov quand le projet atteint la rentabilité ou si le budget passe à €14+/user/mois.
+> Pour V1+, ce guide reste à jour — il suffira de :
+> 1. Réintroduire `codecov.yml` à la racine (cf. git history `8c230b5..cee91ab`).
+> 2. Réajouter la step `Upload coverage to Codecov` dans `ci.yml`.
+> 3. Ajouter le secret `CODECOV_TOKEN` (cf. § « Étapes » ci-dessous).
+
 **Outil** : [Codecov](https://about.codecov.io/) — agrégation de coverage de tests, status checks GitHub, commentaires automatiques sur les PR.
 
 **Workflow consommateur** : `.github/workflows/ci.yml#test` step `Upload coverage to Codecov`.

@@ -31,16 +31,19 @@ workflows skip their network steps), but the full pipeline needs:
 
 | Secret                       | Used by                            | Source                                 |
 | ---------------------------- | ---------------------------------- | -------------------------------------- |
-| `CODECOV_TOKEN`              | `ci.yml` (coverage upload)         | Codecov repo settings                  |
-| `TURBO_TOKEN` + `TURBO_TEAM` | All workflows (remote cache)       | Vercel Turborepo Remote Cache          |
 | `GITHUB_TOKEN`               | `build-images.yml` (ghcr.io login) | Native — no action required            |
 | `LHCI_GITHUB_APP_TOKEN`      | `lighthouse-ci.yml` (PR status)    | Lighthouse CI GitHub App install       |
-| `ARGOCD_SERVER`              | Deploy workflows                   | Provisioned in Story 0.12              |
-| `ARGOCD_STAGING_TOKEN`       | `deploy-staging.yml`               | Provisioned in Story 0.12              |
-| `ARGOCD_PRODUCTION_TOKEN`    | `deploy-production.yml`            | Provisioned in Story 0.12              |
+| `ARGOCD_SERVER`              | Deploy workflows                   | Provisioned in Story 0.12 (DO)         |
+| `ARGOCD_STAGING_TOKEN`       | `deploy-staging.yml`               | Provisioned in Story 0.12 (DO)         |
+| `ARGOCD_PRODUCTION_TOKEN`    | `deploy-production.yml`            | Provisioned in Story 0.12 (DO)         |
 | `SLACK_WEBHOOK_DEPLOYS`      | `deploy-staging.yml`               | `#tukio-deploys` incoming webhook      |
 | `SLACK_WEBHOOK_DEPLOYS_PROD` | `deploy-production.yml`            | `#tukio-deploys-prod` incoming webhook |
 | `SLACK_WEBHOOK_ALERTS`       | `chaos-tests.yml`                  | `#tukio-alerts` incoming webhook       |
+
+**Dropped for MVP** (cost optimization — < €50/mois budget cible) :
+
+- `CODECOV_TOKEN` (Codecov SaaS — 250 uploads/mois free tier insuffisant) → coverage stocké en GHA artifact (14j retention). Re-activable, voir `docs/ci-cd/codecov.md`.
+- `TURBO_TOKEN` + `TURBO_TEAM` (Vercel Remote Cache — 1 user free tier) → GHA cache local suffit pour MVP. Re-activable, voir `docs/ci-cd/turborepo-remote-cache.md`.
 
 ## Branch protection (`main`)
 
@@ -76,8 +79,7 @@ allow trusted bot merges.
    (`ALL` array in the `detect-services` job + the implicit matrix from
    the `detect-services.outputs.services` JSON list — the script already
    handles affected detection).
-4. Add a Codecov flag in `codecov.yml` (`flags.<svc>.paths`) if the
-   service needs its own coverage band.
+4. _(Codecov dropped — coverage stocké en GHA artifact. Voir `docs/ci-cd/codecov.md` pour re-activer plus tard.)_
 5. Update the table at the top of [`CI_PIPELINE.md`](./CI_PIPELINE.md).
 6. Open a PR — the CI will run lint/typecheck/test/build for the new
    service, and `build-images.yml` will push its image on merge.
@@ -87,9 +89,9 @@ allow trusted bot merges.
 End-to-end setup guides for each external dependency live in
 [`docs/ci-cd/`](../docs/ci-cd/index.md) (FR — operational documentation):
 
-- [`codecov.md`](../docs/ci-cd/codecov.md) — Codecov GitHub App + token
-- [`turborepo-remote-cache.md`](../docs/ci-cd/turborepo-remote-cache.md) — Vercel cache backend
 - [`lighthouse-ci.md`](../docs/ci-cd/lighthouse-ci.md) — Lighthouse CI GitHub App
+- [`codecov.md`](../docs/ci-cd/codecov.md) — Codecov **(DEFERRED V1+ — coût)**
+- [`turborepo-remote-cache.md`](../docs/ci-cd/turborepo-remote-cache.md) — Vercel Turbo Cache **(DEFERRED V1+ — coût)**
 - [`slack-webhooks.md`](../docs/ci-cd/slack-webhooks.md) — 3 Slack incoming webhooks
 - [`branch-protection.md`](../docs/ci-cd/branch-protection.md) — `main` + `develop` rules
 - [`trivy-cve-management.md`](../docs/ci-cd/trivy-cve-management.md) — CVE exceptions workflow
