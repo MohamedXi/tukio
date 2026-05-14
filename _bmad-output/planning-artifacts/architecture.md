@@ -1087,6 +1087,7 @@ Référence canonique des conventions Tukio préexistantes :
 **Nouvelles ADRs ajoutées dans cette session architecture (à formaliser au Step 7)** :
 - ADR-013 — Frontend multi-zones 4 apps + architecture feature-based stricte (Step 4)
 - ADR-014 — Enveloppe REST canonique sur toutes les responses gateway-api (cf. §Format Patterns ci-dessous)
+- **ADR-015 — MVP infra pivot 2026-05-14** : DigitalOcean Droplets + docker-compose remplacent Hetzner+K8s+ArgoCD. Drop Vercel Turbo Cache, Codecov SaaS, Neon Postgres serverless, Doppler, Grafana Cloud, OpenTelemetry SDK auto-instrumentation, Velero. Garde Cloudflare R2 (storage gratuit < 10 GB), Resend (3000 emails/mois free), Stripe Connect, GHCR, Trivy, Lighthouse CI App. DNS sur Squarespace (NS non délégables vers Cloudflare). Budget cible €15-35/mois total. Voir mémoire `mvp_infra_pivot_2026_05_14.md` pour la liste exhaustive des outils dropped/remplacés et le contexte. Story 0.12 (Helm+K8s+ArgoCD) **superseded** — nouvelle Story 0.12 = DO Droplets + docker-compose. Re-évaluation possible en V1+ quand le volume justifie K8s (croissance trafic > 100k req/jour, équipe > 3 devs, besoin rolling deploys avancés).
 
 ### Naming Patterns
 

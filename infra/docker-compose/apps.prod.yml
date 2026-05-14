@@ -1,0 +1,247 @@
+# Apps stack — deployed on droplet `tukio-apps` (Story 0.12, Option B).
+# Hosts: 4 frontends Next.js + 10 services NestJS + Caddy reverse-proxy.
+#
+# All apps connect to data services (Postgres, Keycloak, NATS, Meili, Redis)
+# via the DigitalOcean VPC private IP of `tukio-data` (`${DATA_PRIV_IP}` in
+# `/home/tukio/tukio/.env.production`).
+#
+# Caddy is the only container with public ports (80/443). Internal services
+# communicate via the `tukio-apps` Docker bridge network using container hostnames
+# (e.g. `gateway-api:4000`).
+#
+# Deploy:
+#   docker login ghcr.io -u MohamedXi -p $GHCR_PAT
+#   docker compose -f infra/docker-compose/apps.prod.yml pull
+#   docker compose -f infra/docker-compose/apps.prod.yml up -d --wait
+
+name: tukio-apps
+
+x-restart: &restart
+  restart: unless-stopped
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: '10m'
+      max-file: '3'
+
+# Common env for all backend services. Per-service overrides happen via
+# individual service `environment:` blocks.
+#
+# NOTE: NestJS @nestjs/config does NOT auto-resolve the `_FILE` env suffix
+# (unlike Postgres/Keycloak entrypoints). DB/Meili creds are exported by the
+# host from /home/tukio/tukio/secrets/* before `docker compose up` and
+# substituted here via ${VAR}. Other secrets (stripe, resend, r2) remain
+# bind-mounted as files in /run/secrets/ — services read them directly via fs.
+x-backend-env: &backend-env
+  NODE_ENV: production
+  LOG_LEVEL: info
+  DB_HOST: ${DATA_PRIV_IP}
+  DB_PORT: 5432
+  DB_USER: ${DB_USER}
+  DB_PASSWORD: ${DB_PASSWORD}
+  KEYCLOAK_URL: http://${DATA_PRIV_IP}:8080
+  KEYCLOAK_REALM: tukio
+  NATS_URL: nats://${DATA_PRIV_IP}:4222
+  REDIS_URL: redis://${DATA_PRIV_IP}:6379
+  MEILI_URL: http://${DATA_PRIV_IP}:7700
+  MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+
+x-backend-secrets: &backend-secrets
+  - pg_user
+  - pg_password
+  - meili_key
+  - stripe_secret
+  - resend_api_key
+  - r2_access_key
+  - r2_secret_key
+
+services:
+  # ───────────────────────────────────────────────────────────────
+  # Caddy reverse-proxy + Let's Encrypt TLS auto.
+  # Only container with public ports.
+  # ───────────────────────────────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    <<: [*restart, *logging]
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DATA_PRIV_IP: ${DATA_PRIV_IP}
+    networks: [tukio-apps]
+
+  # ───────────────────────────────────────────────────────────────
+  # Backend services (10). Each connects to data droplet via VPC.
+  # ───────────────────────────────────────────────────────────────
+  gateway-api:
+    image: ghcr.io/mohamedxi/tukio/gateway-api:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      <<: *backend-env
+      DB_NAME: tukio_identity # gateway-api proxies identity for auth checks
+    secrets: *backend-secrets
+    networks: [tukio-apps]
+
+  identity-svc:
+    image: ghcr.io/mohamedxi/tukio/identity-svc:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      <<: *backend-env
+      DB_NAME: tukio_identity
+    secrets: *backend-secrets
+    networks: [tukio-apps]
+
+  catalog-svc:
+    image: ghcr.io/mohamedxi/tukio/catalog-svc:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      <<: *backend-env
+      DB_NAME: tukio_catalog
+    secrets: *backend-secrets
+    networks: [tukio-apps]
+
+  booking-svc:
+    image: ghcr.io/mohamedxi/tukio/booking-svc:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      <<: *backend-env
+      DB_NAME: tukio_booking
+    secrets: *backend-secrets
+    networks: [tukio-apps]
+
+  order-svc:
+    image: ghcr.io/mohamedxi/tukio/order-svc:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      <<: *backend-env
+      DB_NAME: tukio_order
+    secrets: *backend-secrets
+    networks: [tukio-apps]
+
+  payment-svc:
+    image: ghcr.io/mohamedxi/tukio/payment-svc:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      <<: *backend-env
+      DB_NAME: tukio_payment
+      STRIPE_SECRET_KEY_FILE: /run/secrets/stripe_secret
+    secrets: *backend-secrets
+    networks: [tukio-apps]
+
+  messaging-svc:
+    image: ghcr.io/mohamedxi/tukio/messaging-svc:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      <<: *backend-env
+      DB_NAME: tukio_messaging
+    secrets: *backend-secrets
+    networks: [tukio-apps]
+
+  review-svc:
+    image: ghcr.io/mohamedxi/tukio/review-svc:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      <<: *backend-env
+      DB_NAME: tukio_review
+    secrets: *backend-secrets
+    networks: [tukio-apps]
+
+  notification-svc:
+    image: ghcr.io/mohamedxi/tukio/notification-svc:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      <<: *backend-env
+      DB_NAME: tukio_notification
+      RESEND_API_KEY_FILE: /run/secrets/resend_api_key
+    secrets: *backend-secrets
+    networks: [tukio-apps]
+
+  media-svc:
+    image: ghcr.io/mohamedxi/tukio/media-svc:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      <<: *backend-env
+      DB_NAME: tukio_media
+      R2_BUCKET: ${R2_BUCKET:-tukio-prod-media}
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_ACCESS_KEY_FILE: /run/secrets/r2_access_key
+      R2_SECRET_KEY_FILE: /run/secrets/r2_secret_key
+    secrets: *backend-secrets
+    networks: [tukio-apps]
+
+  # ───────────────────────────────────────────────────────────────
+  # Frontends Next.js (4). Server-rendered, proxy via Caddy.
+  # ───────────────────────────────────────────────────────────────
+  public:
+    image: ghcr.io/mohamedxi/tukio/public:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: https://api.tukio.one
+      NEXT_PUBLIC_KEYCLOAK_URL: https://auth.tukio.one
+      NEXT_PUBLIC_KEYCLOAK_REALM: tukio
+      PORT: '3000'
+    networks: [tukio-apps]
+
+  customer:
+    image: ghcr.io/mohamedxi/tukio/customer:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: https://api.tukio.one
+      NEXT_PUBLIC_KEYCLOAK_URL: https://auth.tukio.one
+      NEXT_PUBLIC_KEYCLOAK_REALM: tukio
+      PORT: '3001'
+    networks: [tukio-apps]
+
+  seller:
+    image: ghcr.io/mohamedxi/tukio/seller:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: https://api.tukio.one
+      NEXT_PUBLIC_KEYCLOAK_URL: https://auth.tukio.one
+      NEXT_PUBLIC_KEYCLOAK_REALM: tukio
+      PORT: '3002'
+    networks: [tukio-apps]
+
+  admin:
+    image: ghcr.io/mohamedxi/tukio/admin:${IMAGE_TAG:-develop}
+    <<: [*restart, *logging]
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: https://api.tukio.one
+      NEXT_PUBLIC_KEYCLOAK_URL: https://auth.tukio.one
+      NEXT_PUBLIC_KEYCLOAK_REALM: tukio
+      PORT: '3003'
+    networks: [tukio-apps]
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+secrets:
+  pg_user:
+    file: /home/tukio/tukio/secrets/pg_user
+  pg_password:
+    file: /home/tukio/tukio/secrets/pg_password
+  meili_key:
+    file: /home/tukio/tukio/secrets/meili_key
+  stripe_secret:
+    file: /home/tukio/tukio/secrets/stripe_secret
+  resend_api_key:
+    file: /home/tukio/tukio/secrets/resend_api_key
+  r2_access_key:
+    file: /home/tukio/tukio/secrets/r2_access_key
+  r2_secret_key:
+    file: /home/tukio/tukio/secrets/r2_secret_key
+
+networks:
+  tukio-apps:
+    driver: bridge

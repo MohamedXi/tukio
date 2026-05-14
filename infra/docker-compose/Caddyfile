@@ -1,0 +1,93 @@
+# Tukio reverse-proxy + Let's Encrypt TLS auto.
+# Deployed on droplet `tukio-apps`, only container with public ports 80/443.
+#
+# `{$DATA_PRIV_IP}` is sourced from .env.production (DO VPC private IP of tukio-data).
+
+{
+	email tech-lead@tukio.one
+	# Use HTTP-01 challenge by default; works without any DNS-01 plugin.
+}
+
+# ───────────────────────────────────────────────────────────────────
+# Frontend apps
+# ───────────────────────────────────────────────────────────────────
+
+app.tukio.one {
+	reverse_proxy public:3000
+	encode gzip zstd
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "interest-cohort=()"
+	}
+}
+
+customer.tukio.one {
+	reverse_proxy customer:3001
+	encode gzip zstd
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
+
+seller.tukio.one {
+	reverse_proxy seller:3002
+	encode gzip zstd
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
+
+admin.tukio.one {
+	reverse_proxy admin:3003
+	encode gzip zstd
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Admin app must never be cached or framed.
+		X-Frame-Options DENY
+		Cache-Control "no-store, no-cache, must-revalidate"
+	}
+}
+
+# ───────────────────────────────────────────────────────────────────
+# API gateway
+# ───────────────────────────────────────────────────────────────────
+
+api.tukio.one {
+	reverse_proxy gateway-api:4000
+	encode gzip zstd
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+	}
+	# CORS handled by gateway-api itself (Story 0.6 envelope filter) — Caddy
+	# stays out of the way here.
+}
+
+# ───────────────────────────────────────────────────────────────────
+# Keycloak (cross-droplet via VPC private IP)
+# ───────────────────────────────────────────────────────────────────
+
+auth.tukio.one {
+	reverse_proxy {$DATA_PRIV_IP}:8080 {
+		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Host {host}
+		header_up X-Real-IP {remote_host}
+	}
+	encode gzip zstd
+}
+
+# ───────────────────────────────────────────────────────────────────
+# Apex canonical redirect → app
+# ───────────────────────────────────────────────────────────────────
+
+tukio.one {
+	redir https://app.tukio.one{uri} permanent
+}

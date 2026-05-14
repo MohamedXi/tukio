@@ -1,0 +1,141 @@
+# Data stack — deployed on droplet `tukio-data` (Story 0.12, Option B).
+# Hosts: Postgres 16 + Keycloak 25 + NATS JetStream 2.10 + Meilisearch v1.10 + Redis 7.
+#
+# All services bind to the VPC private IP (10.114.0.<DATA_PRIV>) — never 0.0.0.0
+# at the public level. The DO Cloud Firewall (Task 2) additionally restricts
+# access to traffic originating from the `tukio-apps` droplet only.
+#
+# Volumes:
+#   - postgres → /var/lib/tukio/postgres bind mount (survives container/compose recreate)
+#   - others → named Docker volumes (compose-managed)
+#
+# Secrets are file-based (`/home/tukio/tukio/secrets/*`, mode 600 tukio:tukio).
+# Provision via `infra/scripts/provision-secrets.sh data`.
+#
+# Deploy:
+#   docker compose -f infra/docker-compose/data.prod.yml up -d --wait
+
+name: tukio-data
+
+x-restart: &restart
+  restart: unless-stopped
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: '10m'
+      max-file: '3'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    <<: [*restart, *logging]
+    environment:
+      POSTGRES_DB: tukio
+      POSTGRES_USER_FILE: /run/secrets/pg_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+      # Initial DBs created by init script for each microservice + Keycloak.
+      # See `infra/scripts/init-databases.sh` mounted below.
+    volumes:
+      - /var/lib/tukio/postgres:/var/lib/postgresql/data
+      - ./init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
+    secrets:
+      - pg_user
+      - pg_password
+    # Bind to the VPC private IP only — never 0.0.0.0.
+    # Use `${DATA_PRIV_IP}` env var sourced from /home/tukio/tukio/.env.production.
+    ports:
+      - '${DATA_PRIV_IP}:5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$(cat /run/secrets/pg_user) -d tukio']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks: [tukio-data]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    <<: [*restart, *logging]
+    command: ['start']
+    environment:
+      # NOTE: KC_DB_PASSWORD does NOT support the `_FILE` suffix in Keycloak 25
+      # (only KEYCLOAK_ADMIN_PASSWORD_FILE is honored). Pass DB creds as direct
+      # env vars, exported by the host before `docker compose up` from the
+      # secret files in /home/tukio/tukio/secrets/.
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_HOSTNAME: auth.tukio.one
+      KC_HOSTNAME_STRICT: 'false'
+      KC_PROXY: edge
+      KC_HEALTH_ENABLED: 'true'
+      KC_METRICS_ENABLED: 'true'
+      KC_HTTP_ENABLED: 'true'
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD_FILE: /run/secrets/kc_admin_password
+      JAVA_OPTS_APPEND: '-Xms256m -Xmx512m'
+    secrets:
+      - kc_admin_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '${DATA_PRIV_IP}:8080:8080'
+    networks: [tukio-data]
+
+  nats:
+    image: nats:2.10-alpine
+    <<: [*restart, *logging]
+    command: ['-js', '-sd', '/data', '-m', '8222']
+    volumes:
+      - nats_data:/data
+    ports:
+      - '${DATA_PRIV_IP}:4222:4222' # client
+      - '${DATA_PRIV_IP}:8222:8222' # monitoring (internal only)
+    networks: [tukio-data]
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.10
+    <<: [*restart, *logging]
+    environment:
+      # NOTE: Meilisearch does not support the `_FILE` env suffix pattern.
+      # MEILI_MASTER_KEY is exported by the host from /home/tukio/tukio/secrets/meili_key
+      # before `docker compose up`.
+      MEILI_NO_ANALYTICS: 'true'
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+    volumes:
+      - meili_data:/meili_data
+    ports:
+      - '${DATA_PRIV_IP}:7700:7700'
+    networks: [tukio-data]
+
+  redis:
+    image: redis:7-alpine
+    <<: [*restart, *logging]
+    command: ['redis-server', '--appendonly', 'yes', '--save', '60', '1', '--save', '600', '100']
+    volumes:
+      - redis_data:/data
+    ports:
+      - '${DATA_PRIV_IP}:6379:6379'
+    networks: [tukio-data]
+
+volumes:
+  nats_data:
+  meili_data:
+  redis_data:
+
+secrets:
+  pg_user:
+    file: /home/tukio/tukio/secrets/pg_user
+  pg_password:
+    file: /home/tukio/tukio/secrets/pg_password
+  kc_admin_password:
+    file: /home/tukio/tukio/secrets/kc_admin_password
+
+networks:
+  tukio-data:
+    driver: bridge

@@ -55,7 +55,7 @@ development_status:
   0-9-setup-tukio-api-client-i18n-client-testing: done
   0-10-docker-compose-dev-local-bootstrap-scripts: done
   0-11-ci-github-actions-pipeline: done
-  0-12-helm-charts-k8s-argocd-staging-observability: ready-for-dev
+  0-12-digitalocean-droplets-docker-compose: in-progress
   0-13-initialize-adrs-vercel-multi-zones-acquisition-schema: ready-for-dev
   epic-0-retrospective: optional
 
