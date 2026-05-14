@@ -16,17 +16,20 @@ export default defineConfig({
         '**/*.bak',
         'scripts/**',
         'dist/**',
+        // Type-only files (no runtime code — TS interfaces/types compile to
+        // empty JS modules). v8 reports them as 0% which artificially
+        // depresses the project coverage. Each is intentionally type-only:
+        // they describe the shape consumed by other packages and have no
+        // behavior to unit-test.
+        'src/envelope/**', // ErrorBody, ErrorEnvelope, Meta, Method, Pagination, SuccessEnvelope — all interfaces
+        'src/types/**', // Actor, Currency, DomainEvent, Locale, Money — all type aliases
+        'src/index.ts', // root barrel — `export type` re-exports + 1 runtime `export { DomainException }` covered via subpath import
+        'src/dtos/index.ts', // dtos barrel — `export type` re-exports only
       ],
-      // MVP thresholds — relaxed pending test additions for envelope/, types/,
-      // events/, exceptions/ modules (most contain Zod schemas which ARE
-      // runtime code, but no spec imports them yet). Current baseline on
-      // develop = 61.9% lines / 0% functions (mostly barrel index.ts files +
-      // un-imported schemas).
-      // Re-tighten to 95/95/90 in V1+ when each module ships a dedicated spec.
       thresholds: {
-        lines: 60,
-        functions: 0,
-        branches: 80,
+        lines: 95,
+        functions: 95,
+        branches: 90,
       },
     },
   },
