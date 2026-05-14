@@ -21,6 +21,14 @@
 
 const TUKIO_WORKSPACE_PACKAGE = /^@tukio\//;
 
+// Pure-JS deps used transitively by @tukio/* packages but NOT declared as
+// direct deps in apps/*/package.json. Bundling them keeps the final image
+// self-contained without forcing every service to mirror the deps of every
+// @tukio/* package it pulls in.
+// Adding to this list: must be pure JS (no native bindings, no worker_threads
+// shenanigans). Verify with `pnpm why <pkg>` that it doesn't pull in C addons.
+const ALWAYS_BUNDLE = new Set(['prom-client', 'jose', 'nats']);
+
 module.exports = (options) => ({
   ...options,
   resolve: {
@@ -36,6 +44,12 @@ module.exports = (options) => ({
     function externalize({ request }, callback) {
       // Always bundle workspace packages — they ship TS sources only.
       if (request && TUKIO_WORKSPACE_PACKAGE.test(request)) {
+        return callback();
+      }
+      // Bundle the transitive runtime deps coming from @tukio/* (so apps
+      // don't need to declare them — `pnpm deploy --legacy` would not
+      // include them in /deploy/node_modules otherwise).
+      if (request && ALWAYS_BUNDLE.has(request)) {
         return callback();
       }
       // Externalize every other npm package (NestJS default — keeps the bundle
