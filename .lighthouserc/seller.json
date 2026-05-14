@@ -7,8 +7,19 @@
       "url": ["http://localhost:3002/fr"],
       "numberOfRuns": 3,
       "settings": {
-        "preset": "perf",
         "formFactor": "mobile",
+        "screenEmulation": {
+          "mobile": true,
+          "width": 412,
+          "height": 823,
+          "deviceScaleFactor": 1.75,
+          "disabled": false
+        },
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "cpuSlowdownMultiplier": 4
+        },
         "chromeFlags": "--no-sandbox --headless=new"
       }
     },
