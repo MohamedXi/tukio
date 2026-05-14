@@ -20,8 +20,7 @@
         "categories:best-practices": ["warn", { "minScore": 0.9 }],
         "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
         "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
-        "interaction-to-next-paint": ["error", { "maxNumericValue": 200 }],
-        "total-blocking-time": ["warn", { "maxNumericValue": 300 }]
+        "total-blocking-time": ["error", { "maxNumericValue": 300 }]
       }
     },
     "upload": {
