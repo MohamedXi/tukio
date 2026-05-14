@@ -27,7 +27,12 @@ const TUKIO_WORKSPACE_PACKAGE = /^@tukio\//;
 // @tukio/* package it pulls in.
 // Adding to this list: must be pure JS (no native bindings, no worker_threads
 // shenanigans). Verify with `pnpm why <pkg>` that it doesn't pull in C addons.
-const ALWAYS_BUNDLE = new Set(['prom-client', 'jose', 'nats']);
+const ALWAYS_BUNDLE = new Set([
+  'prom-client',
+  'tdigest', // transitive dep of prom-client (histogram quantiles)
+  'jose',
+  'nats',
+]);
 
 module.exports = (options) => ({
   ...options,
