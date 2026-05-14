@@ -1,17 +1,13 @@
 name: Lighthouse CI
 
 on:
+  # Run on every PR + push so branch protection always gets a status report
+  # (Lighthouse checks are `required` — paths filter at workflow-level would
+  # make them "expected, missing" on non-frontend PRs and block merge).
+  # Internal `affected detection` step inside the job skips the actual run
+  # (~30 s per matrix entry) when the change doesn't touch a frontend.
   pull_request:
     branches: [main, develop]
-    paths:
-      - 'apps/public/**'
-      - 'apps/customer/**'
-      - 'apps/seller/**'
-      - 'apps/admin/**'
-      - 'packages/ui/**'
-      - 'packages/i18n-client/**'
-      - '.lighthouserc/**'
-      - '.github/workflows/lighthouse-ci.yml'
   workflow_dispatch:
 
 concurrency:
