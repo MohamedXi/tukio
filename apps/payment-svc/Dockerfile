@@ -25,8 +25,12 @@ COPY tools ./tools
 # Service-specific source.
 COPY apps/payment-svc ./apps/payment-svc
 
+# --ignore-scripts blocks postinstall hooks in transitive deps (supply-chain
+# safety). `pnpm rebuild` is then executed for the workspace's allow-listed
+# native binaries (declared in root package.json#pnpm.onlyBuiltDependencies).
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile --prefer-offline
+    pnpm install --frozen-lockfile --prefer-offline --ignore-scripts \
+ && pnpm rebuild
 
 RUN pnpm --filter=payment-svc build
 
@@ -39,7 +43,11 @@ RUN pnpm --filter=payment-svc deploy --prod --legacy /deploy
 FROM node:${NODE_VERSION} AS runner
 
 WORKDIR /app
-RUN apk add --no-cache curl tini \
+# Patch base image vulnerabilities (e.g. OpenSSL CRITICAL CVEs in Alpine 3.22
+# that node:22.16.0-alpine ships unpatched). `apk upgrade` brings security
+# fixes from the current Alpine repo without changing the Node version.
+RUN apk upgrade --no-cache \
+ && apk add --no-cache curl tini \
  && addgroup -g 1001 -S nodejs \
  && adduser -u 1001 -S -G nodejs -s /bin/sh tukio
 
