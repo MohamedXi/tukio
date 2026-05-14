@@ -35,11 +35,14 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 RUN pnpm --filter=identity-svc build
 
 # Produce a self-contained deploy directory.
-# Default pnpm 10 deploy walks workspace transitive deps (e.g. @tukio/auth
-# → prom-client) and includes them in /deploy/node_modules. The --legacy
-# flag forces v1 behavior which uses symlinks that don't survive Docker
-# COPY across stages — leading to runtime "Cannot find module 'prom-client'".
-RUN pnpm --filter=identity-svc deploy --prod /deploy
+# --legacy is required: pnpm 10 default deploy errors with
+# ERR_PNPM_DEPLOY_NONINJECTED_WORKSPACE unless inject-workspace-packages=true
+# is set globally (which changes the dev install experience). The deps that
+# legacy mode misses (prom-client, jose, nats — declared in @tukio/auth +
+# @tukio/messaging but not in apps/*/package.json) are bundled by webpack
+# (see webpack.tukio.cjs#ALWAYS_BUNDLE), so /deploy/node_modules doesn't
+# need them at runtime.
+RUN pnpm --filter=identity-svc deploy --prod --legacy /deploy
 
 # ──────────────────────────────────────────────────────────────────────
 # Stage 2 — runner. Minimal Alpine + non-root user + healthcheck.
