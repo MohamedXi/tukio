@@ -9,7 +9,7 @@
 | Docker + Docker Compose | Oui | `pnpm docker:up:wait` doit passer |
 | `bash` + `curl` + `jq` + `python3` + `envsubst` | Oui | Disponibles sur macOS et Ubuntu |
 | `shellcheck` | CI uniquement | `brew install shellcheck` |
-| Doppler CLI | Staging uniquement | `brew install dopplerhq/cli/doppler` |
+| Accès SSH au droplet `tukio-data` | Staging uniquement | clé `~/.ssh/id_ed25519` autorisée + `DO_HOST_DATA` exporté |
 
 ## Provisionnement local
 
@@ -32,21 +32,21 @@ Sur la machine locale :
 
 ```sh
 # Snapshot Postgres avant migration KC25 → KC26+Phasetwo (mitigation rollback)
-ssh tukio@$DO_HOST_DATA 'bash ~/tukio-data/infra/scripts/backup-postgres.sh'
+ssh tukio@$DO_HOST_DATA 'bash ~/tukio/infra/scripts/backup-postgres.sh'
 
 # Copier les fichiers de config (themes + realm-config + scripts) sur le droplet
 rsync -av --delete \
   infra/keycloak/ \
-  tukio@$DO_HOST_DATA:~/tukio-data/keycloak/
+  tukio@$DO_HOST_DATA:~/tukio/keycloak/
 
 rsync -av \
   infra/scripts/bootstrap-keycloak-realm.sh \
   infra/scripts/smoke-test-keycloak-realm.sh \
   infra/scripts/provision-secrets.sh \
-  tukio@$DO_HOST_DATA:~/tukio-data/infra/scripts/
+  tukio@$DO_HOST_DATA:~/tukio/infra/scripts/
 
 # Copier le data.prod.yml mis à jour (Phasetwo image + ports + volumes)
-scp infra/docker-compose/data.prod.yml tukio@$DO_HOST_DATA:~/tukio-data/
+scp infra/docker-compose/data.prod.yml tukio@$DO_HOST_DATA:~/tukio/
 ```
 
 ### 1. Provisionner les nouveaux secrets Story 1.1
@@ -55,7 +55,7 @@ Sur le droplet :
 
 ```sh
 ssh tukio@$DO_HOST_DATA
-cd ~/tukio-data
+cd ~/tukio
 bash infra/scripts/provision-secrets.sh data
 # Saisir : kc_client_secret_tukio_api, kc_client_secret_smoke_test, kc_webhook_secret
 # Les autres secrets existants sont skippés.
@@ -64,7 +64,7 @@ bash infra/scripts/provision-secrets.sh data
 ### 2. Restart Keycloak avec l'image Phasetwo
 
 ```sh
-cd ~/tukio-data
+cd ~/tukio
 export KC_DB_USERNAME=$(cat /home/tukio/tukio/secrets/kc_db_username)
 export KC_DB_PASSWORD=$(cat /home/tukio/tukio/secrets/kc_db_password)
 export KC_ADMIN_USERNAME=admin
@@ -85,7 +85,7 @@ docker exec tukio_keycloak /opt/keycloak/bin/kc.sh --version
 ### 3. Bootstrap le realm `tukio`
 
 ```sh
-cd ~/tukio-data
+cd ~/tukio
 bash infra/scripts/bootstrap-keycloak-realm.sh --env=staging
 # 5 rôles + 5 clients + MFA flow + custom claims + Phasetwo webhook + realm export
 # ~30-60s. Idempotent — réexécuter ne crée pas de doublons.
@@ -109,7 +109,7 @@ curl -fsS https://auth.tukio.one/realms/tukio/.well-known/openid-configuration |
 
 ```sh
 # Sur le droplet
-cd ~/tukio-data
+cd ~/tukio
 git checkout HEAD~1 -- data.prod.yml   # ou édite l'image vers quay.io/keycloak/keycloak:25.0
 docker compose -f data.prod.yml up -d keycloak
 
@@ -166,7 +166,7 @@ Les secrets client (`tukio-api`, `tukio-smoke-test`) sont préservés par le scr
 FORCE_CLIENT_SECRET=1 pnpm keycloak:bootstrap
 ```
 
-En staging, mettre à jour le secret Doppler **avant** de relancer le bootstrap.
+En staging, rotate via `bash infra/scripts/provision-secrets.sh data --rotate kc_client_secret_tukio_api` puis relancer le bootstrap.
 
 ## Troubleshooting
 
@@ -176,7 +176,7 @@ En staging, mettre à jour le secret Doppler **avant** de relancer le bootstrap.
 | `invalid_grant` sur login | Realm pas bootstrappé | `pnpm keycloak:bootstrap` |
 | Theme not applied | Volume mount manquant | Vérifier `docker-compose.dev.yml` volumes keycloak |
 | Phasetwo Webhooks 404 | Image non-Phasetwo | Vérifier image `quay.io/phasetwo/phasetwo-keycloak` |
-| `Doppler CLI required` | Doppler non installé | `brew install dopplerhq/cli/doppler && doppler login` |
+| `Secrets dir not found` | Script lancé en local au lieu du droplet | SSH vers `tukio@$DO_HOST_DATA` puis `cd ~/tukio` |
 | TOTP non enforcé sur admin | Flow binding raté | Re-exécuter bootstrap + vérifier `authenticationFlowBindingOverrides` |
 
 ## Plan B — Event Listener SPI Java (si Phasetwo Webhooks insuffisant)

@@ -92,9 +92,11 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      # Story 1.1b — Tukio themes mounted read-only. The themes directory is
-      # transferred to the droplet via SCP (see runbook/keycloak-realm-bootstrap.md).
-      - /home/tukio/tukio-data/keycloak/themes:/opt/keycloak/themes:ro
+      # Story 1.1b — Tukio themes mounted read-only. Path is RELATIVE to this
+      # compose file's directory: on the droplet the compose lives at
+      # /home/tukio/tukio/data.prod.yml so this resolves to
+      # /home/tukio/tukio/keycloak/themes (rsync'd by the runbook).
+      - ./keycloak/themes:/opt/keycloak/themes:ro
     healthcheck:
       test: ['CMD-SHELL', 'curl -fs http://localhost:9000/health/ready | grep -q "UP" || exit 1']
       interval: 15s
