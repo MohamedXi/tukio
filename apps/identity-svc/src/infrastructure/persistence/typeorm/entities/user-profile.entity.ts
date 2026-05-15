@@ -50,7 +50,7 @@ export class UserProfileEntity {
   acquisitionReferralId!: string | null;
 
   @Index('idx_user_profiles_acquisition_first_touch')
-  @CreateDateColumn({ name: 'acquisition_first_touch', type: 'timestamptz' })
+  @Column({ name: 'acquisition_first_touch', type: 'timestamptz' })
   acquisitionFirstTouch!: Date;
 
   @Column({ name: 'acquisition_last_touch', type: 'timestamptz' })

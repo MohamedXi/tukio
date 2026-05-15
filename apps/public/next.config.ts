@@ -8,18 +8,19 @@ const config: NextConfig = {
     const customerHost = process.env.NEXT_PUBLIC_CUSTOMER_HOST ?? 'https://customer.tukio.one';
     const sellerHost = process.env.NEXT_PUBLIC_SELLER_HOST ?? 'https://seller.tukio.one';
     return [
-      // /{locale}/account/* and /{locale}/cart/* → customer app (ADR-0013)
+      // /{locale}/account/* → customer app (ADR-0013).
+      // {/:path*} is optional so /fr/account (bare, no sub-path) also matches.
       {
-        source: '/:locale/account/:path*',
+        source: '/:locale/account{/:path*}',
         destination: `${customerHost}/:locale/account/:path*`,
       },
       {
-        source: '/:locale/cart/:path*',
+        source: '/:locale/cart{/:path*}',
         destination: `${customerHost}/:locale/cart/:path*`,
       },
       // /{locale}/seller/* → seller app
       {
-        source: '/:locale/seller/:path*',
+        source: '/:locale/seller{/:path*}',
         destination: `${sellerHost}/:locale/seller/:path*`,
       },
     ];

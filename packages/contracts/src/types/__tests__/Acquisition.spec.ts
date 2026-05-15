@@ -90,6 +90,20 @@ describe('parseUtmParams', () => {
     expect(result.source).toBe('google_ads');
     expect(result.campaign).toBe('tent-campaign');
   });
+
+  it('truncates utm_campaign at 200 chars to prevent oversized cookies', () => {
+    const longCampaign = 'a'.repeat(300);
+    const params = new URLSearchParams(`utm_source=google&utm_campaign=${longCampaign}`);
+    const result = parseUtmParams(params);
+    expect(result.campaign).toHaveLength(200);
+  });
+
+  it('truncates utm_medium at 200 chars', () => {
+    const longMedium = 'b'.repeat(300);
+    const params = new URLSearchParams(`utm_source=google&utm_medium=${longMedium}`);
+    const result = parseUtmParams(params);
+    expect(result.medium).toHaveLength(200);
+  });
 });
 
 describe('isAcquisitionSource', () => {

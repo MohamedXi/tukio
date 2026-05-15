@@ -38,23 +38,24 @@ export class AddAcquisitionColumns1715220000000 implements MigrationInterface {
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
+    // No IF EXISTS — rollback failures must be explicit (not silently swallowed).
     await queryRunner.query(
-      `DROP INDEX IF EXISTS "idx_user_profiles_acquisition_first_touch"`,
+      `DROP INDEX "idx_user_profiles_acquisition_first_touch"`,
     );
     await queryRunner.query(
-      `DROP INDEX IF EXISTS "idx_user_profiles_acquisition_campaign"`,
+      `DROP INDEX "idx_user_profiles_acquisition_campaign"`,
     );
     await queryRunner.query(
-      `DROP INDEX IF EXISTS "idx_user_profiles_acquisition_source"`,
+      `DROP INDEX "idx_user_profiles_acquisition_source"`,
     );
     await queryRunner.query(`
       ALTER TABLE "user_profiles"
-        DROP COLUMN IF EXISTS "acquisition_last_touch",
-        DROP COLUMN IF EXISTS "acquisition_first_touch",
-        DROP COLUMN IF EXISTS "acquisition_referral_id",
-        DROP COLUMN IF EXISTS "acquisition_campaign",
-        DROP COLUMN IF EXISTS "acquisition_medium",
-        DROP COLUMN IF EXISTS "acquisition_source"
+        DROP COLUMN "acquisition_last_touch",
+        DROP COLUMN "acquisition_first_touch",
+        DROP COLUMN "acquisition_referral_id",
+        DROP COLUMN "acquisition_campaign",
+        DROP COLUMN "acquisition_medium",
+        DROP COLUMN "acquisition_source"
     `);
   }
 }

@@ -65,8 +65,9 @@ export class UserProfileMapper {
     entity.acquisitionMedium = aggregate.acquisition.medium ?? null;
     entity.acquisitionCampaign = aggregate.acquisition.campaign ?? null;
     entity.acquisitionReferralId = aggregate.acquisition.referralId ?? null;
+    entity.acquisitionFirstTouch = new Date(aggregate.acquisition.firstTouch);
     entity.acquisitionLastTouch = new Date(aggregate.acquisition.lastTouch);
-    // createdAt, updatedAt, acquisitionFirstTouch managed by @CreateDateColumn — do not override.
+    // createdAt, updatedAt managed by @CreateDateColumn / @UpdateDateColumn — do not override.
     entity.deletedAt = aggregate.deletedAt;
     return entity;
   }

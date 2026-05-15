@@ -94,7 +94,7 @@ describe('acquisitionCookieMiddleware', () => {
     expect(value.source).toBe('direct');
   });
 
-  it('sets organic source when referer is present but no UTM', () => {
+  it('sets unknown source when referer is present but no UTM', () => {
     const req = buildRequest('https://tukio.one/fr/', undefined, 'https://google.com');
     const res = acquisitionCookieMiddleware(req as never);
 
@@ -103,7 +103,7 @@ describe('acquisitionCookieMiddleware', () => {
     )._jar.get('tukio-acquisition');
     expect(cookieSet).toBeDefined();
     const value = JSON.parse(decodeURIComponent(cookieSet!['value'] as string));
-    expect(value.source).toBe('organic');
+    expect(value.source).toBe('unknown');
   });
 
   it('does not modify cookie when existing cookie and no UTM params', () => {
@@ -125,7 +125,7 @@ describe('acquisitionCookieMiddleware', () => {
   it('preserves firstTouch and updates lastTouch on new UTM (multi-touch)', () => {
     const firstTouch = '2026-01-01T00:00:00.000Z';
     const existing = JSON.stringify({
-      source: 'organic',
+      source: 'unknown',
       firstTouch,
       lastTouch: firstTouch,
     });

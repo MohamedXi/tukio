@@ -761,6 +761,31 @@ claude-sonnet-4-6 (2026-05-15)
 - `packages/contracts/package.json` (+./types/Acquisition export)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` (Story 4.1 annotation)
 
+## Review Findings
+
+> Code review — 2026-05-15. Sources : Blind Hunter + Edge Case Hunter + Acceptance Auditor (3 layers).
+> Résultat : 0 decision_needed · 10 patch · 4 defer · 4 dismiss
+
+### Patches
+
+- [x] [Review][Patch] **F-01 : `src/proxy.ts` n'est PAS un filename middleware Next.js** (AC10 FAIL) — Next.js 16 ne charge que `src/middleware.ts`. Le middleware d'acquisition + i18n ne s'exécute JAMAIS. Renommer `proxy.ts` → `middleware.ts` dans les 4 apps. [`apps/*/src/proxy.ts`]
+- [x] [Review][Patch] **F-02 : `DEFAULT_ACQUISITION` timestamps gelés au chargement du module** — `new Date().toISOString()` évalué une seule fois (boot server). Tous les users sans cookie reçoivent `firstTouch = boot time`. Remplacer la constante par une factory `static defaultAcquisition(): AcquisitionContext { const now = new Date().toISOString(); return { source: 'unknown', firstTouch: now, lastTouch: now }; }`. [`apps/identity-svc/src/domain/model/user-profile.aggregate.ts`]
+- [x] [Review][Patch] **F-03 : `@CreateDateColumn` sur `acquisitionFirstTouch` → firstTouch jamais persisté** — TypeORM écrit la date d'INSERT serveur, pas la valeur du cookie. Remplacer `@CreateDateColumn` par `@Column({ type: 'timestamptz' })` et définir explicitement dans le mapper `entity.acquisitionFirstTouch = new Date(aggregate.acquisition.firstTouch)`. [`apps/identity-svc/src/infrastructure/persistence/typeorm/entities/user-profile.entity.ts` + mapper]
+- [x] [Review][Patch] **F-04 : `inferSourceFromReferer` retourne `'organic'` pour TOUT referer non-vide** — Facebook/Instagram sans UTM → classifié `organic` par erreur. Remplacer le retour par `'unknown'`. [`apps/*/src/middleware/acquisition-cookie.ts`]
+- [x] [Review][Patch] **F-05 : `COOKIE_DOMAIN = '.tukio.one'` hardcodé → cookie ignoré en dev (localhost)** — RFC 6265 : domaine `.tukio.one` ne matche pas `localhost`. Utiliser `process.env.NEXT_PUBLIC_COOKIE_DOMAIN ?? '.tukio.one'` et omettre le `domain` si non défini. [`apps/*/src/middleware/acquisition-cookie.ts`]
+- [x] [Review][Patch] **F-06 : Matcher inconsistant dans customer/seller/admin** — les 3 apps utilisent l'ancien pattern `.*\\..*` (exclut tout chemin avec un point, pas seulement les extensions). `apps/public` utilise le pattern corrigé `.*\\.\\w{2,4}$`. Aligner customer/seller/admin sur le pattern public. [`apps/customer/src/proxy.ts:16`, `apps/seller/src/proxy.ts:16`, `apps/admin/src/proxy.ts:16`]
+- [x] [Review][Patch] **F-07 : `parseExistingCookie` cast `as AcquisitionContext` sans validation** — cookie user-controlled parsé comme type de confiance. Ajouter au minimum un guard sur les champs critiques (source, firstTouch, lastTouch) ou un parse Zod. [`apps/*/src/middleware/acquisition-cookie.ts:parseExistingCookie`]
+- [x] [Review][Patch] **F-08 : Rewrite `/:locale/account/:path*` ne matche pas `/fr/account` (sans sous-chemin)** — `:path*` requiert au moins un segment. `/fr/account` → 404. Changer en `'/:locale/account{/:path*}'` (optional catch-all Next.js). [`apps/public/next.config.ts:13,17`]
+- [x] [Review][Patch] **F-09 : Pas de limite de taille sur UTM params** — `utm_campaign` de >4096 bytes → cookie silencieusement rejeté par le navigateur. Tronquer `medium` et `campaign` à 200 chars dans `parseUtmParams`. [`packages/contracts/src/types/Acquisition.ts:parseUtmParams`]
+- [x] [Review][Patch] **F-11 : Migration `down()` utilise `IF EXISTS`** — masque les échecs partiels de rollback. Retirer `IF EXISTS` pour que les erreurs soient explicites. [`apps/identity-svc/src/infrastructure/persistence/typeorm/migrations/1715220000000-AddAcquisitionColumns.ts:down()`]
+
+### Defer
+
+- [x] [Review][Defer] **F-12 : `referralId` jamais alimenté** — champ toujours null. Feature complète prévue Story 7.6 (referral codes). Colonne DB en place, ready for V1+.
+- [x] [Review][Defer] **F-13 : Cookie écrit sur chaque requête sans cookie existant** — CDN concern (Set-Cookie inhibe le cache). Acceptable MVP (trafic faible). Ajouter un TTL serveur-side V1+.
+- [x] [Review][Defer] **F-14 : Sources UTM inconnues silencieusement → `'unknown'`** — indiscernable de "pas d'UTM". Ajouter log/metric pour UTM non reconnus V1+.
+- [x] [Review][Defer] **F-10 : `httpOnly: false` — risque XSS lecture/forge attribution** — décision MVP : risque XSS accepté (cookie non-sensible, pas de token auth). À réviser V1+ avec CSP strict.
+
 ---
 
 ## Story Completion Status

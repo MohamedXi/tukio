@@ -30,15 +30,24 @@ export interface AcquisitionContext {
   lastTouch: string; // ISO 8601
 }
 
+const UTM_FIELD_MAX_LENGTH = 200;
+
+function truncateUtm(value: string | null): string | undefined {
+  if (value === null) return undefined;
+  // Guard against adversarial large UTM values that would exceed browser cookie limit (4096 bytes).
+  return value.slice(0, UTM_FIELD_MAX_LENGTH);
+}
+
 /**
  * Parse UTM search parameters into a partial AcquisitionContext.
  * Only extracts fields present in the URLSearchParams — does not set firstTouch/lastTouch.
+ * Fields are truncated at 200 chars to prevent oversized cookies.
  */
 export function parseUtmParams(searchParams: URLSearchParams): Partial<AcquisitionContext> {
   const utmSource = searchParams.get('utm_source');
   const source = utmSource ? mapUtmSourceToAcquisitionSource(utmSource) : undefined;
-  const medium = searchParams.get('utm_medium') ?? undefined;
-  const campaign = searchParams.get('utm_campaign') ?? undefined;
+  const medium = truncateUtm(searchParams.get('utm_medium'));
+  const campaign = truncateUtm(searchParams.get('utm_campaign'));
 
   return {
     ...(source !== undefined && { source }),

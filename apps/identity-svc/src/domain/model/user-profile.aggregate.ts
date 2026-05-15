@@ -24,12 +24,6 @@ export interface UserProfileProps {
 const NAME_MIN = 1;
 const NAME_MAX = 80;
 
-const DEFAULT_ACQUISITION: AcquisitionContext = {
-  source: 'unknown' satisfies AcquisitionSource,
-  firstTouch: new Date().toISOString(),
-  lastTouch: new Date().toISOString(),
-};
-
 export class UserProfile {
   readonly id: string;
   readonly keycloakUserId: string;
@@ -57,8 +51,15 @@ export class UserProfile {
     this.deletedAt = props.deletedAt;
   }
 
+  // Factory evaluated at call time (not at module load) so firstTouch/lastTouch
+  // reflect the actual registration timestamp, not the server boot timestamp.
   static defaultAcquisition(): AcquisitionContext {
-    return { ...DEFAULT_ACQUISITION };
+    const now = new Date().toISOString();
+    return {
+      source: 'unknown' satisfies AcquisitionSource,
+      firstTouch: now,
+      lastTouch: now,
+    };
   }
 
   static create(props: UserProfileProps): UserProfile {
@@ -71,9 +72,8 @@ export class UserProfile {
       typeof props.lastName === 'string'
         ? props.lastName.trim()
         : props.lastName;
-    const acquisition: typeof props.acquisition = props.acquisition ?? {
-      ...DEFAULT_ACQUISITION,
-    };
+    const acquisition: typeof props.acquisition =
+      props.acquisition ?? UserProfile.defaultAcquisition();
     const normalized: UserProfileProps = {
       ...props,
       firstName,
