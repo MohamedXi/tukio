@@ -92,11 +92,11 @@ jobs:
             export DB_PASSWORD=\$(cat /home/tukio/tukio/secrets/pg_password)
             export MEILI_MASTER_KEY=\$(cat /home/tukio/tukio/secrets/meili_key)
             export IMAGE_TAG="${IMAGE_TAG}"
-            # 11 services (10 backends + caddy). Frontends pending Story 0.12
-            # follow-up to extend build-images.yml with the 4 Next.js apps.
+            # 15 services : caddy + 10 NestJS backends + 4 Next.js frontends.
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
-                      notification-svc media-svc"
+                      notification-svc media-svc \\
+                      public customer seller admin"
             echo "── pulling images at tag \${IMAGE_TAG}..."
             docker compose -f apps.prod.yml --env-file .env.production pull \$BACKENDS
             echo "── restarting stack..."

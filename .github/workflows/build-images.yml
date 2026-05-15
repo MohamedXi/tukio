@@ -2,10 +2,14 @@ name: Build Images
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'apps/gateway-api/**'
       - 'apps/*-svc/**'
+      - 'apps/public/**'
+      - 'apps/customer/**'
+      - 'apps/seller/**'
+      - 'apps/admin/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/build-images.yml'
@@ -64,11 +68,11 @@ jobs:
         env:
           DISPATCH_SERVICE: ${{ inputs.service }}
         run: |
-          ALL='["gateway-api","identity-svc","catalog-svc","booking-svc","order-svc","payment-svc","messaging-svc","review-svc","notification-svc","media-svc"]'
+          ALL='["gateway-api","identity-svc","catalog-svc","booking-svc","order-svc","payment-svc","messaging-svc","review-svc","notification-svc","media-svc","public","customer","seller","admin"]'
           # Validate workflow_dispatch input against the allow-list.
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "$DISPATCH_SERVICE" ]; then
             case "$DISPATCH_SERVICE" in
-              gateway-api|identity-svc|catalog-svc|booking-svc|order-svc|payment-svc|messaging-svc|review-svc|notification-svc|media-svc)
+              gateway-api|identity-svc|catalog-svc|booking-svc|order-svc|payment-svc|messaging-svc|review-svc|notification-svc|media-svc|public|customer|seller|admin)
                 SVCS="[\"$DISPATCH_SERVICE\"]"
                 ;;
               *)
@@ -87,7 +91,7 @@ jobs:
               SVCS=$(printf '%s' "$DRY_RUN" \
                 | node -e '
                   let j; try { j = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch { j = { tasks: [] }; }
-                  const all = new Set(["gateway-api","identity-svc","catalog-svc","booking-svc","order-svc","payment-svc","messaging-svc","review-svc","notification-svc","media-svc"]);
+                  const all = new Set(["gateway-api","identity-svc","catalog-svc","booking-svc","order-svc","payment-svc","messaging-svc","review-svc","notification-svc","media-svc","public","customer","seller","admin"]);
                   const affected = [...new Set((j.tasks || []).map(t => t.package))].filter(p => all.has(p));
                   console.log(JSON.stringify(affected));
                 ')
@@ -183,6 +187,10 @@ jobs:
             review-svc) PORT=4007 ;;
             notification-svc) PORT=4008 ;;
             media-svc) PORT=4009 ;;
+            public) PORT=3000 ;;
+            customer) PORT=3001 ;;
+            seller) PORT=3002 ;;
+            admin) PORT=3003 ;;
             *) echo "::error::Unknown service '$SERVICE'"; exit 1 ;;
           esac
           # No --rm: keep container around to extract logs on crash.
@@ -217,7 +225,12 @@ jobs:
             echo "::notice::$SERVICE bundle loaded + Nest reached module init (exit $EXIT_CODE expected — no real env in CI smoke)"
             exit 0
           fi
-          echo "::error::$SERVICE container exited (exit $EXIT_CODE) before Nest could initialise — likely a webpack bundle issue (missing module, etc.)"
+          # Next.js frontends: success = server logs the Ready/Starting banner.
+          if echo "$LOGS" | grep -qE "▲ Next\.js|Starting Next\.js|Ready in|- Local:"; then
+            echo "::notice::$SERVICE Next.js boot reached Ready (exit $EXIT_CODE)"
+            exit 0
+          fi
+          echo "::error::$SERVICE container exited (exit $EXIT_CODE) before bootstrap — likely a webpack/build issue (missing module, etc.)"
           exit 1
           echo "::notice::$SERVICE container running (healthcheck: $STATUS)"
           if [ "$STATUS" = "unhealthy" ]; then
