@@ -107,13 +107,18 @@ jobs:
             export IMAGE_TAG="${IMAGE_TAG}"
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
-                      notification-svc media-svc"
+                      notification-svc media-svc \\
+                      public customer seller admin"
             docker compose -f apps.prod.yml --env-file .env.production pull \$BACKENDS
             # Don't --wait : backend healthchecks need migrated DB schema (Epic 1).
             # Smoke test against PRODUCTION_HEALTH_URL is the real check + triggers rollback on fail.
             docker compose -f apps.prod.yml --env-file .env.production up -d \\
               --remove-orphans \$BACKENDS
             docker compose -f apps.prod.yml --env-file .env.production ps
+            # Caddy doesn't auto-reload on Caddyfile changes; trigger explicitly.
+            echo "── reload Caddy config..."
+            docker exec tukio-apps-caddy-1 caddy reload --config /etc/caddy/Caddyfile || \\
+              echo "WARN: caddy reload failed (was it running?)"
           EOF
 
       - name: Smoke test (production health URL)
@@ -144,7 +149,8 @@ jobs:
             export IMAGE_TAG="${PREV_TAG}"
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
-                      notification-svc media-svc"
+                      notification-svc media-svc \\
+                      public customer seller admin"
             docker compose -f apps.prod.yml --env-file .env.production pull \$BACKENDS
             docker compose -f apps.prod.yml --env-file .env.production up -d \\
               --remove-orphans \$BACKENDS
