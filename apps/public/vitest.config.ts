@@ -7,6 +7,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // Resolve @tukio/contracts subpath exports for Vitest (Vite doesn't follow
+      // package.json `exports` field subpaths automatically in all cases).
+      '@tukio/contracts/types/Acquisition': fileURLToPath(
+        new URL('../../packages/contracts/src/types/Acquisition.ts', import.meta.url),
+      ),
     },
   },
   test: {

@@ -24,6 +24,7 @@ const sampleProfile = UserProfile.create({
   lastName: 'Doe',
   role: UserRole.CLIENT,
   locale: 'fr',
+  acquisition: UserProfile.defaultAcquisition(),
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
   deletedAt: null,

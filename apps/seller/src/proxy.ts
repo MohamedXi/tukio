@@ -1,14 +1,15 @@
-import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { acquisitionCookieMiddleware } from './middleware/acquisition-cookie.js';
 
-// Story 0.8 placeholder — wired for real in Stories Epic 1+ when Keycloak is provisioned (Story 1.1)
-// Replace with:
+// Story 0.13 — acquisition cookie middleware runs on all requests.
+// Story 0.8 placeholder — replace with Keycloak auth middleware in Story Epic 1+:
 //   import { createKeycloakAuthMiddleware } from '@tukio/auth-client/middleware';
 //   export default createKeycloakAuthMiddleware({
 //     protectedPaths: ['/seller'],
 //     loginRedirectUri: 'https://auth.tukio.one/realms/tukio/protocol/openid-connect/auth',
 //   });
-export function proxy() {
-  return NextResponse.next();
+export default function middleware(request: NextRequest) {
+  return acquisitionCookieMiddleware(request);
 }
 
 export const config = {

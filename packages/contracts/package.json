@@ -16,6 +16,7 @@
     "./types/Currency": "./src/types/Currency.ts",
     "./types/Money": "./src/types/Money.ts",
     "./types/DomainEvent": "./src/types/DomainEvent.ts",
+    "./types/Acquisition": "./src/types/Acquisition.ts",
     "./events/catalog/listing-published.v1": "./src/events/catalog/listing-published.v1.ts",
     "./events/booking/booking-requested.v1": "./src/events/booking/booking-requested.v1.ts",
     "./events/booking/booking-accepted.v1": "./src/events/booking/booking-accepted.v1.ts",
