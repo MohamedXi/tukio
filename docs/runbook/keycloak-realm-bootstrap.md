@@ -22,18 +22,100 @@ pnpm keycloak:smoke            # vérifie les 8 ACs smoke
 
 Le script est **idempotent** : le relancer ne crée pas de doublons.
 
-## Provisionnement staging
+## Provisionnement staging (Story 1.1b — DO droplet `tukio-data`)
+
+Le bootstrap s'exécute **directement sur le droplet `tukio-data`**, jamais depuis ta machine. Les secrets sont lus depuis `/home/tukio/tukio/secrets/` (provisionnés via `provision-secrets.sh data`).
+
+### 0. Prérequis sur le droplet (one-time setup)
+
+Sur la machine locale :
 
 ```sh
-doppler login                  # s'authentifier une fois
-DOPPLER_TOKEN=<token> pnpm keycloak:bootstrap:staging
+# Snapshot Postgres avant migration KC25 → KC26+Phasetwo (mitigation rollback)
+ssh tukio@$DO_HOST_DATA 'bash ~/tukio-data/infra/scripts/backup-postgres.sh'
+
+# Copier les fichiers de config (themes + realm-config + scripts) sur le droplet
+rsync -av --delete \
+  infra/keycloak/ \
+  tukio@$DO_HOST_DATA:~/tukio-data/keycloak/
+
+rsync -av \
+  infra/scripts/bootstrap-keycloak-realm.sh \
+  infra/scripts/smoke-test-keycloak-realm.sh \
+  infra/scripts/provision-secrets.sh \
+  tukio@$DO_HOST_DATA:~/tukio-data/infra/scripts/
+
+# Copier le data.prod.yml mis à jour (Phasetwo image + ports + volumes)
+scp infra/docker-compose/data.prod.yml tukio@$DO_HOST_DATA:~/tukio-data/
 ```
 
-Les secrets Keycloak staging sont lus depuis Doppler projet `tukio` config `staging` :
-- `KEYCLOAK_ADMIN_USERNAME`, `KEYCLOAK_ADMIN_PASSWORD`
-- `KEYCLOAK_CLIENT_SECRET_TUKIO_API`
-- `KEYCLOAK_WEBHOOK_SECRET`
-- `KEYCLOAK_URL` → `https://auth.staging.tukio.one`
+### 1. Provisionner les nouveaux secrets Story 1.1
+
+Sur le droplet :
+
+```sh
+ssh tukio@$DO_HOST_DATA
+cd ~/tukio-data
+bash infra/scripts/provision-secrets.sh data
+# Saisir : kc_client_secret_tukio_api, kc_client_secret_smoke_test, kc_webhook_secret
+# Les autres secrets existants sont skippés.
+```
+
+### 2. Restart Keycloak avec l'image Phasetwo
+
+```sh
+cd ~/tukio-data
+export KC_DB_USERNAME=$(cat /home/tukio/tukio/secrets/kc_db_username)
+export KC_DB_PASSWORD=$(cat /home/tukio/tukio/secrets/kc_db_password)
+export KC_ADMIN_USERNAME=admin
+export KC_ADMIN_PASSWORD=$(cat /home/tukio/tukio/secrets/kc_admin_password)
+
+# Pull la nouvelle image Phasetwo (~150 MB)
+docker compose -f data.prod.yml pull keycloak
+
+# Stop + recreate Keycloak — Liquibase auto-migre la DB master au 1er boot
+docker compose -f data.prod.yml up -d --wait keycloak
+# ⏳ start_period: 90s, durée totale ~2-3 min selon CPU
+
+# Vérifier que Keycloak est UP avec la nouvelle version
+docker exec tukio_keycloak /opt/keycloak/bin/kc.sh --version
+# Doit afficher Keycloak 26.x
+```
+
+### 3. Bootstrap le realm `tukio`
+
+```sh
+cd ~/tukio-data
+bash infra/scripts/bootstrap-keycloak-realm.sh --env=staging
+# 5 rôles + 5 clients + MFA flow + custom claims + Phasetwo webhook + realm export
+# ~30-60s. Idempotent — réexécuter ne crée pas de doublons.
+```
+
+### 4. Smoke tests
+
+```sh
+bash infra/scripts/smoke-test-keycloak-realm.sh --env=staging
+# 7/7 (T8 Phasetwo Orgs skipped si endpoint inaccessible publiquement)
+```
+
+### 5. Vérification finale (depuis ta machine)
+
+```sh
+curl -fsS https://auth.tukio.one/realms/tukio/.well-known/openid-configuration | jq .issuer
+# → "https://auth.tukio.one/realms/tukio"
+```
+
+### Rollback en cas de problème
+
+```sh
+# Sur le droplet
+cd ~/tukio-data
+git checkout HEAD~1 -- data.prod.yml   # ou édite l'image vers quay.io/keycloak/keycloak:25.0
+docker compose -f data.prod.yml up -d keycloak
+
+# Restore Postgres si nécessaire
+bash infra/scripts/restore-postgres.sh /home/tukio/backups/pg_latest.dump
+```
 
 ## Déploiement production
 

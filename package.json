@@ -25,7 +25,6 @@
     "docker:reset": "pnpm docker:down:volumes && pnpm docker:up:wait && pnpm docker:bootstrap",
     "docker:bootstrap": "bash infra/scripts/bootstrap-databases.sh && pnpm keycloak:themes:build && bash infra/scripts/bootstrap-keycloak-realm.sh --env=local --skip-phasetwo-webhook && bash infra/scripts/smoke-test-keycloak-realm.sh --env=local --skip-phasetwo-tests && pnpm seed:categories",
     "keycloak:bootstrap": "bash infra/scripts/bootstrap-keycloak-realm.sh --env=local",
-    "keycloak:bootstrap:staging": "bash infra/scripts/bootstrap-keycloak-realm.sh --env=staging",
     "keycloak:export": "bash infra/scripts/bootstrap-keycloak-realm.sh --env=local --export-only",
     "keycloak:smoke": "bash infra/scripts/smoke-test-keycloak-realm.sh --env=local",
     "keycloak:themes:build": "bash infra/scripts/build-keycloak-themes.sh",

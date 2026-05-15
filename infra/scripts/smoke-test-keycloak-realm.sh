@@ -38,23 +38,39 @@ case $ENV in
     KEYCLOAK_CLIENT_SECRET_SMOKE_TEST="${KEYCLOAK_CLIENT_SECRET_SMOKE_TEST:-tukio_smoke_dev_secret}"
     ;;
   staging)
-    command -v doppler >/dev/null 2>&1 || { echo "Doppler CLI required for staging" >&2; exit 1; }
-    eval "$(doppler secrets download --no-file --format env --project tukio --config staging)"
+    # Story 1.1b — run on the tukio-data droplet; secrets are file-based.
+    SECRETS_DIR="${SECRETS_DIR:-/home/tukio/tukio/secrets}"
+    if [ ! -d "$SECRETS_DIR" ]; then
+      echo "❌ Secrets dir not found: $SECRETS_DIR" >&2
+      echo "   This script must run on the tukio-data droplet." >&2
+      exit 1
+    fi
+    read_secret() {
+      local file="${SECRETS_DIR}/$1"
+      [ -r "$file" ] && tr -d '\r\n' < "$file" || echo ""
+    }
+    KEYCLOAK_URL="${KEYCLOAK_URL:-https://auth.tukio.one}"
+    KEYCLOAK_ADMIN_USERNAME="${KEYCLOAK_ADMIN_USERNAME:-$(read_secret kc_admin_username)}"
+    [ -z "$KEYCLOAK_ADMIN_USERNAME" ] && KEYCLOAK_ADMIN_USERNAME="admin"
+    KEYCLOAK_ADMIN_PASSWORD="$(read_secret kc_admin_password)"
+    KEYCLOAK_CLIENT_SECRET_SMOKE_TEST="$(read_secret kc_client_secret_smoke_test)"
+    if [ -z "$KEYCLOAK_ADMIN_PASSWORD" ] || [ -z "$KEYCLOAK_CLIENT_SECRET_SMOKE_TEST" ]; then
+      echo "❌ Missing required secrets in $SECRETS_DIR (kc_admin_password, kc_client_secret_smoke_test)" >&2
+      exit 1
+    fi
     ;;
   *) echo "Unknown env: $ENV" >&2; exit 1 ;;
 esac
 
 KC="${KEYCLOAK_URL}"
 COMPOSE_FILE="${REPO_ROOT}/infra/docker-compose/docker-compose.dev.yml"
+KEYCLOAK_CONTAINER="${KEYCLOAK_CONTAINER:-tukio_keycloak}"
 
 kcadm() {
   if [[ "$ENV" == "local" ]]; then
     docker compose -f "$COMPOSE_FILE" exec -T keycloak /opt/keycloak/bin/kcadm.sh "$@"
   else
-    docker run --rm --network host \
-      -v /tmp/kcadm-config:/opt/keycloak/.keycloak \
-      quay.io/keycloak/keycloak:latest \
-      /opt/keycloak/bin/kcadm.sh "$@"
+    docker exec -i "${KEYCLOAK_CONTAINER}" /opt/keycloak/bin/kcadm.sh "$@"
   fi
 }
 
