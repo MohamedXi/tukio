@@ -224,15 +224,17 @@ if [[ "$EXPORT_ONLY" == "true" ]]; then
 else
   # ─── Realm create/update ──────────────────────────────────────────────────
   log_step "Realm tukio"
+  # NOTE: kcadm runs inside the container via docker exec — pipe payloads via
+  # stdin (-f -), never -f <host-path> (file would be resolved in-container).
   TMP_REALM=$(mktemp)
   export KC_CONFIG_DIR
   build_realm_payload "$TMP_REALM"
   if kcadm get "realms/tukio" >/dev/null 2>&1; then
     log_info "Realm tukio exists — updating config"
-    kcadm update "realms/tukio" -f "$TMP_REALM" >/dev/null
+    kcadm update "realms/tukio" -f - < "$TMP_REALM" >/dev/null
   else
     log_info "Creating realm tukio"
-    kcadm create realms -f "$TMP_REALM" >/dev/null
+    kcadm create realms -f - < "$TMP_REALM" >/dev/null
   fi
   rm "$TMP_REALM"
 
@@ -365,10 +367,10 @@ json.dump(d, open('$stripped', 'w'), indent=2)
         update_payload="$stripped"
       fi
       log_info "Client '${client_id}' exists (${uuid}) — updating (secret preserved unless FORCE_CLIENT_SECRET=1)"
-      kcadm update "clients/${uuid}" -r tukio -f "$update_payload" >/dev/null
+      kcadm update "clients/${uuid}" -r tukio -f - < "$update_payload" >/dev/null
     else
       log_info "Creating client '${client_id}'"
-      kcadm create clients -r tukio -f "$tmp_payload" >/dev/null
+      kcadm create clients -r tukio -f - < "$tmp_payload" >/dev/null
     fi
     rm -f "$tmp_payload"
     [ -n "$stripped" ] && rm -f "$stripped"
@@ -404,18 +406,16 @@ json.dump(d, open('$stripped', 'w'), indent=2)
   else
     log_info "Creating client scope 'tukio-locale-scope'"
     # Try creation with full mapper set (including acr); if acr-mapper rejected, retry without it
-    if ! kcadm create "client-scopes" -r tukio \
-        -f "${KC_CONFIG_DIR}/client-scopes/tukio-locale-scope.json" >/dev/null 2>&1; then
+    if ! kcadm create "client-scopes" -r tukio -f - \
+        < "${KC_CONFIG_DIR}/client-scopes/tukio-locale-scope.json" >/dev/null 2>&1; then
       log_warn "Full scope creation failed — retrying without oidc-acr-mapper (amr remains primary)"
-      python3 - <<PYEOF > /tmp/tukio-locale-scope-fallback.json
+      python3 - <<PYEOF | kcadm create "client-scopes" -r tukio -f - >/dev/null
 import json, os
 with open(os.path.join(os.environ['KC_CONFIG_DIR'], 'client-scopes/tukio-locale-scope.json')) as f:
     scope = json.load(f)
 scope['protocolMappers'] = [m for m in scope.get('protocolMappers', []) if m.get('name') != 'acr-mapper']
 print(json.dumps(scope))
 PYEOF
-      kcadm create "client-scopes" -r tukio -f /tmp/tukio-locale-scope-fallback.json >/dev/null
-      rm -f /tmp/tukio-locale-scope-fallback.json
     fi
   fi
   SCOPE_ID="$(kcadm get "client-scopes" -r tukio --format csv --noquotes --fields id,name 2>/dev/null \
