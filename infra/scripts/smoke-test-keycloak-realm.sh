@@ -86,7 +86,9 @@ run_test() {
   local status="PASS"
   local err_log
   err_log="$(mktemp)"
-  if ! eval "$2" >/dev/null 2>"$err_log"; then
+  # Subshell isolation — `exit 1` inside the eval'd heredoc would otherwise
+  # terminate the whole script. The subshell scopes the exit to the test only.
+  if ! ( eval "$2" ) >/dev/null 2>"$err_log"; then
     status="FAIL"
   fi
   local elapsed_ms="$(( $(date +%s%N) / 1000000 - start_ms ))"
