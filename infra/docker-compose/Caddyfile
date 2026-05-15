@@ -27,6 +27,12 @@ tukio.one {
 		# correct absolute URLs.
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Host {host}
+		# Next.js middleware (next-intl) builds redirects using the server's
+		# internal URL — including port 3000. Strip the port from any Location
+		# header on the way back to the client so `/` → `/fr` redirects to
+		# `https://tukio.one/fr` not `https://tukio.one:3000/fr`.
+		header_down Location ":3000" ""
 	}
 	encode gzip zstd
 	header {
@@ -54,6 +60,8 @@ seller.tukio.one {
 	reverse_proxy seller:3002 {
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Host {host}
+		header_down Location ":3002" ""
 	}
 	encode gzip zstd
 	header {
@@ -67,6 +75,8 @@ admin.tukio.one {
 	reverse_proxy admin:3003 {
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Host {host}
+		header_down Location ":3003" ""
 	}
 	encode gzip zstd
 	header {
