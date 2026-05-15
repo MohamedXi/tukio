@@ -15,10 +15,13 @@
 app.tukio.one {
 	reverse_proxy public:3000 {
 		# Preserve the public Host header so Next.js / next-intl build
-		# correct absolute URLs (otherwise redirects leak the internal
-		# `public:3000` host:port — see Story 0.13 follow-up).
+		# correct absolute URLs.
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
+		# Next.js 16 + next-intl middleware leak the upstream listening
+		# port into Location headers (e.g. https://app.tukio.one:3000/fr).
+		# Strip it so the client follows the canonical public URL.
+		header_down Location "://app.tukio.one:3000" "://app.tukio.one"
 	}
 	encode gzip zstd
 	header {
@@ -33,6 +36,7 @@ customer.tukio.one {
 	reverse_proxy customer:3001 {
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
+		header_down Location "://customer.tukio.one:3001" "://customer.tukio.one"
 	}
 	encode gzip zstd
 	header {
@@ -46,6 +50,7 @@ seller.tukio.one {
 	reverse_proxy seller:3002 {
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
+		header_down Location "://seller.tukio.one:3002" "://seller.tukio.one"
 	}
 	encode gzip zstd
 	header {
@@ -59,6 +64,7 @@ admin.tukio.one {
 	reverse_proxy admin:3003 {
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
+		header_down Location "://admin.tukio.one:3003" "://admin.tukio.one"
 	}
 	encode gzip zstd
 	header {
