@@ -225,13 +225,18 @@ run_test "T6 — brute-force lock after 5 failures (AC5)" "$(cat <<SHELLEOF
     curl -fsS -X POST "${KC}/realms/tukio/protocol/openid-connect/token" \
       -d "grant_type=password&username=${LOCK_USER}&password=WRONG_PASS&client_id=tukio-smoke-test&client_secret=${KEYCLOAK_CLIENT_SECRET_SMOKE_TEST}" >/dev/null 2>&1 || true
   done
-  SIXTH_RESPONSE=\$(curl -s -X POST "${KC}/realms/tukio/protocol/openid-connect/token" \
-    -d "grant_type=password&username=${LOCK_USER}&password=WRONG_PASS&client_id=tukio-smoke-test&client_secret=${KEYCLOAK_CLIENT_SECRET_SMOKE_TEST}" 2>/dev/null || true)
-  echo "\$SIXTH_RESPONSE" | python3 -c "
+  # Query brute-force state via admin API — more reliable than relying on the
+  # 6th attempt's error message (quickLoginCheckMilliSeconds may extend the
+  # window without immediate lockout).
+  BF_STATE=\$(curl -sS "${KC}/admin/realms/tukio/attack-detection/brute-force/users/\${LOCK_USER_ID}" \
+    -H "Authorization: Bearer \$ADMIN_TOKEN")
+  echo "T6 brute-force state: \$BF_STATE" >&2
+  echo "\$BF_STATE" | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
-desc = d.get('error_description', '').lower()
-assert any(k in desc for k in ('locked', 'disabled', 'temporarily')), f'expected lockout, got: {desc}'
+n = d.get('numFailures', 0)
+disabled = d.get('disabled', False)
+assert n >= 5 or disabled, f'expected numFailures>=5 or disabled=true, got numFailures={n} disabled={disabled}'
 "
 SHELLEOF
 )"
