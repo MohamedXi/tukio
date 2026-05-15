@@ -1,6 +1,6 @@
 # Story 0.13: Initialize 15 ADRs in docs/adr/ + Next.js multi-zones rewrites + schema acquisition_*
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
