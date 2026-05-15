@@ -109,8 +109,10 @@ jobs:
                       order-svc payment-svc messaging-svc review-svc \\
                       notification-svc media-svc"
             docker compose -f apps.prod.yml --env-file .env.production pull \$BACKENDS
+            # Don't --wait : backend healthchecks need migrated DB schema (Epic 1).
+            # Smoke test against PRODUCTION_HEALTH_URL is the real check + triggers rollback on fail.
             docker compose -f apps.prod.yml --env-file .env.production up -d \\
-              --remove-orphans --wait \$BACKENDS
+              --remove-orphans \$BACKENDS
             docker compose -f apps.prod.yml --env-file .env.production ps
           EOF
 

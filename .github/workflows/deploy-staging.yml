@@ -100,8 +100,10 @@ jobs:
             echo "── pulling images at tag \${IMAGE_TAG}..."
             docker compose -f apps.prod.yml --env-file .env.production pull \$BACKENDS
             echo "── restarting stack..."
+            # Don't --wait : backend healthchecks need migrated DB schema (Epic 1).
+            # The downstream smoke test against STAGING_HEALTH_URL is the real check.
             docker compose -f apps.prod.yml --env-file .env.production up -d \\
-              --remove-orphans --wait \$BACKENDS
+              --remove-orphans \$BACKENDS
             echo "── compose ps..."
             docker compose -f apps.prod.yml --env-file .env.production ps
           EOF
