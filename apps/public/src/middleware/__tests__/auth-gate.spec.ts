@@ -87,8 +87,8 @@ describe('authGateMiddleware', () => {
     });
 
     it('preserves query string in the callback parameter', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = authGateMiddleware(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         buildRequest('/fr/account', undefined, '?from=cart') as any,
       ) as { status: number; url: URL } | undefined;
       expect(result).toBeDefined();

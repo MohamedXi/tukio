@@ -1,7 +1,7 @@
 import { createTukioI18nMiddleware } from '@tukio/i18n-client/middleware';
 import type { NextRequest } from 'next/server';
-import { acquisitionCookieMiddleware } from './middleware/acquisition-cookie.js';
-import { authGateMiddleware } from './middleware/auth-gate.js';
+import { acquisitionCookieMiddleware } from './middleware/acquisition-cookie';
+import { authGateMiddleware } from './middleware/auth-gate';
 
 const i18nMiddleware = createTukioI18nMiddleware();
 
