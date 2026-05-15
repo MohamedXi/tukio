@@ -1,17 +1,19 @@
 # Skill: add a new Next.js page
 
 Use this when introducing a new route in a frontend app (`public`,
-`customer`, `seller`, `admin`). Covers App Router file layout, i18n
-wiring, Server / Client Component split, auth gating, and tests.
+`seller`, `admin`). Covers App Router file layout, i18n wiring, Server /
+Client Component split, auth gating, and tests.
 
 ## Prerequisites
 
 - Story file with the route + audience clarified.
-- Identify which app:
-  - `public` (3000) — marketing / SEO / search (no auth)
-  - `customer` (3001) — authenticated B2C / B2B
-  - `seller` (3002) — pro dashboard
-  - `admin` (3003) — moderation console (MFA TOTP)
+- Identify which app (Story 0.14 / ADR-016 — `apps/customer` was merged
+  into `apps/public`; auth-gated routes live under
+  `apps/public/src/app/[locale]/(authenticated)/`):
+  - `public` (3000, `tukio.one` apex) — visitors + authenticated B2C
+    customers (use `(authenticated)` route group for gated routes)
+  - `seller` (3002, `seller.tukio.one`) — pro dashboard
+  - `admin` (3003, `admin.tukio.one`) — moderation console (MFA TOTP)
 - Identify the URL shape: `/{locale}/<path>`. EN-canonical
   (`/services/wedding-marquees`) — per-locale slug is read from the
   request and resolved against `category_translations.slug` at the DB
@@ -129,9 +131,13 @@ apps/<app>/src/app/
    See `.agents/skills/add-i18n-key.md` for the full convention.
 
 6. **Wire auth (if needed).** For routes that require login:
-   - On `customer` / `seller` / `admin`, the `[locale]/layout.tsx` wraps
-     children with `<RequireAuth>` from `@tukio/auth-client`. Verify
-     yours inherits.
+   - On `public`, place the route under
+     `[locale]/(authenticated)/...` — the middleware
+     `apps/public/src/middleware.ts` redirects unauthenticated requests
+     to `/login?callback=...` (Story 0.14 / ADR-016).
+   - On `seller` / `admin`, the `[locale]/layout.tsx` wraps children
+     with `<RequireAuth>` from `@tukio/auth-client`. Verify yours
+     inherits.
    - For routes that need a specific role, wrap with
      `<RequireRole roles={['admin-super']}>` or check `actor.roles` in
      the page Server Component (Story 1.x patterns).
@@ -220,5 +226,5 @@ apps/<app>/src/app/
 - Putting business logic in the page — extract a `use<X>` hook.
 - Forgetting to add the matching keys to **both** `fr.json` and
   `en.json` (CI will catch in Story 7.7, but don't ship broken).
-- Importing from another app (`apps/customer/src/...` from
+- Importing from another app (`apps/seller/src/...` from
   `apps/admin/`) — frontends are isolated.

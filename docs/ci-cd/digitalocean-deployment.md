@@ -266,15 +266,18 @@ doctl compute firewall create \
 3. **DNS Settings** (ou **Advanced DNS**)
 4. **Custom Records** → ajoute chaque ligne ci-dessous
 
-| Type    | Host (Subdomain) | Value (Data)     | TTL  |
-| ------- | ---------------- | ---------------- | ---- |
-| A       | `app`            | `<droplet-ip>`   | 3600 |
-| A       | `api`            | `<droplet-ip>`   | 3600 |
-| A       | `customer`       | `<droplet-ip>`   | 3600 |
-| A       | `seller`         | `<droplet-ip>`   | 3600 |
-| A       | `admin`          | `<droplet-ip>`   | 3600 |
-| A       | `auth`           | `<droplet-ip>`   | 3600 |
-| A       | `@` (apex)       | `<droplet-ip>`   | 3600 |
+Topology Story 0.14 (ADR-016) : 3 frontends + 1 API + 1 auth + apex unifié.
+
+| Type    | Host (Subdomain) | Value (Data)     | TTL  | Notes                                        |
+| ------- | ---------------- | ---------------- | ---- | -------------------------------------------- |
+| A       | `@` (apex)       | `<droplet-ip>`   | 3600 | tukio.one — visiteurs + customers B2C        |
+| A       | `seller`         | `<droplet-ip>`   | 3600 | seller.tukio.one — pros B2B                  |
+| A       | `admin`          | `<droplet-ip>`   | 3600 | admin.tukio.one — staff console              |
+| A       | `api`            | `<droplet-ip>`   | 3600 | api.tukio.one — gateway-api                  |
+| A       | `auth`           | `<droplet-ip>`   | 3600 | auth.tukio.one — Keycloak                    |
+| A       | `app`            | `<droplet-ip>`   | 3600 | (legacy ADR-013) → 301 redirect vers apex via Caddy. Garder ~6 mois pour rétro-compat. |
+
+> 🗑️ **Records retirés Story 0.14** : `customer.tukio.one` (apex tunnel B2C unifié — plus de subdomain customer). À supprimer manuellement dans Squarespace DNS panel post-deploy. Le record `app.tukio.one` est conservé pour rétro-compat 6 mois (redirect 301 → apex via Caddy).
 
 Pour Option B (staging séparé) :
 
@@ -294,7 +297,7 @@ Pour Option B (staging séparé) :
 ⚠️ **Propagation DNS** : 1-4 heures typiquement, jusqu'à 48 h dans le pire cas. Tester avec :
 
 ```sh
-dig +short app.tukio.one
+dig +short tukio.one
 # attendu : <droplet-ip>
 ```
 
@@ -471,17 +474,19 @@ networks:
 
 ### 7. Caddyfile (reverse-proxy + TLS auto)
 
+Topology Story 0.14 (ADR-016) : apex unifié + 2 subdomains B2B/admin + API + auth + redirect legacy.
+
 ```caddy
-app.tukio.one {
+tukio.one {
   reverse_proxy public:3000
+}
+
+app.tukio.one {
+  redir https://tukio.one{uri} permanent  # legacy ADR-013 → 6 mois rétro-compat
 }
 
 api.tukio.one {
   reverse_proxy gateway-api:4000
-}
-
-customer.tukio.one {
-  reverse_proxy customer:3001
 }
 
 seller.tukio.one {
@@ -519,7 +524,7 @@ docker compose -f infra/docker-compose/apps.prod.yml ps
 
 # 8.3 — Vérifier la TLS auto Caddy
 curl -I https://api.tukio.one/health
-curl -I https://app.tukio.one
+curl -I https://tukio.one
 curl -I https://auth.tukio.one
 ```
 
@@ -641,7 +646,7 @@ doctl auth init --access-token "$DO_TOKEN"
 
 ### Uptime monitoring — UptimeRobot
 
-50 monitors gratuits, alertes Slack/email. À configurer Phase B (URLs `app.tukio.one`, `api.tukio.one/health`, `auth.tukio.one`).
+50 monitors gratuits, alertes Slack/email. À configurer Phase B (URLs `tukio.one`, `api.tukio.one/health`, `auth.tukio.one`).
 
 ### Logs
 

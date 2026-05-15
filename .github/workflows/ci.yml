@@ -217,12 +217,11 @@ jobs:
           path: .turbo
           key: turbo-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
           restore-keys: turbo-${{ runner.os }}-${{ github.ref_name }}-
-      - name: Restore Next.js build cache (4 apps)
+      - name: Restore Next.js build cache (3 apps)
         uses: actions/cache@v4
         with:
           path: |
             apps/public/.next/cache
-            apps/customer/.next/cache
             apps/seller/.next/cache
             apps/admin/.next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('apps/**/next.config.*', 'pnpm-lock.yaml') }}

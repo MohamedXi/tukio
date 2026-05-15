@@ -1,9 +1,16 @@
 # ADR-0013: 4 Next.js apps multi-zones, feature-based decomposition
 
-- **Status**: ✅ Accepted
+- **Status**: ⛔ **Superseded by [ADR-016](./0016-frontend-topology-pivot-apex-unified.md) (Story 0.14, 2026-05-15)**
 - **Date**: 2026-05-09
 - **Deciders**: Ismael (founder), tech lead
 - **Tags**: `architecture`, `frontend`
+
+> **Superseded** : `apps/customer` a été mergé dans `apps/public` et la
+> topologie multi-zones 4 apps a été ramenée à 3 apps avec un tunnel B2C
+> unifié sur l'apex `tukio.one`. Les rationales originaux (bundle size,
+> isolation deploy) sont résolus par Next.js code-splitting automatique
+> + healthcheck + auto-rollback dans `deploy-production.yml`. Voir
+> ADR-016 et Story 0.14 pour les détails du refactor.
 
 ## Context
 

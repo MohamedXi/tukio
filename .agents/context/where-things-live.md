@@ -49,7 +49,7 @@ Fast lookup table — "I need to touch X, where is it?".
 | Atom convention reference    | `packages/ui/src/components/Button/`                                       |
 | Pattern convention reference | `packages/ui/src/patterns/TopBar/`                                         |
 | Stripe Elements theme        | `packages/ui/src/themes/stripe-elements.ts`                                |
-| Frontends                    | `apps/{public,customer,seller,admin}/`                                     |
+| Frontends                    | `apps/{public,seller,admin}/` (ADR-016 — public sert l'apex unifié)        |
 | App-local per-frontend rules | `apps/<frontend>/AGENTS.md` (override file)                                |
 | Frontend i18n messages       | `apps/<frontend>/messages/{fr,en}.json` (Story 7.1 wires the actual files) |
 

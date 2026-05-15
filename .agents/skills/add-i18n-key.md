@@ -52,7 +52,7 @@ string a user sees must go through `next-intl`. Keys are added to
 3. **Add the FR key first**, then add the EN key with the same path:
 
    ```diff
-   // apps/customer/messages/fr.json
+   // apps/public/messages/fr.json
    {
      "booking": {
        "confirmation": {
@@ -65,7 +65,7 @@ string a user sees must go through `next-intl`. Keys are added to
    ```
 
    ```diff
-   // apps/customer/messages/en.json
+   // apps/public/messages/en.json
    {
      "booking": {
        "confirmation": {

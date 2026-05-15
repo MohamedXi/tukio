@@ -177,7 +177,9 @@ services:
     networks: [tukio-apps]
 
   # ───────────────────────────────────────────────────────────────
-  # Frontends Next.js (4). Server-rendered, proxy via Caddy.
+  # Frontends Next.js (3). Server-rendered, proxy via Caddy.
+  # Topology Story 0.14 / ADR-016: public sert l'apex tukio.one
+  # (visiteurs + customers B2C unifiés). `customer` dropped.
   # ───────────────────────────────────────────────────────────────
   public:
     image: ghcr.io/mohamedxi/tukio/public:${IMAGE_TAG:-develop}
@@ -188,17 +190,6 @@ services:
       NEXT_PUBLIC_KEYCLOAK_URL: https://auth.tukio.one
       NEXT_PUBLIC_KEYCLOAK_REALM: tukio
       PORT: '3000'
-    networks: [tukio-apps]
-
-  customer:
-    image: ghcr.io/mohamedxi/tukio/customer:${IMAGE_TAG:-develop}
-    <<: [*restart, *logging]
-    environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_URL: https://api.tukio.one
-      NEXT_PUBLIC_KEYCLOAK_URL: https://auth.tukio.one
-      NEXT_PUBLIC_KEYCLOAK_REALM: tukio
-      PORT: '3001'
     networks: [tukio-apps]
 
   seller:

@@ -2,6 +2,12 @@
 
 Status: ready-for-dev
 
+> ⚠️ **ADR-016 / Story 0.14 (2026-05-15) — frontend topology pivot**
+> `apps/customer` a été mergé dans `apps/public`. Toute référence ci-dessous à
+> `apps/customer/[locale]/<route>/` se traduit par `apps/public/[locale]/(authenticated)/<route>/`.
+> Hostname: `customer.tukio.one` → `tukio.one` (apex). Voir
+> `docs/adr/0016-frontend-topology-pivot-apex-unified.md` et Story 0.14.
+
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
 ## Story

@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: staging
-      url: https://app.tukio.one
+      url: https://tukio.one
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -110,7 +110,7 @@ jobs:
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
                       notification-svc media-svc \\
-                      public customer seller admin"
+                      public seller admin"
             echo "── pulling images at tag \${IMAGE_TAG}..."
             docker compose -f apps.prod.yml --env-file .env.staging pull \$BACKENDS
             echo "── restarting stack..."
@@ -152,7 +152,7 @@ jobs:
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
                       notification-svc media-svc \\
-                      public customer seller admin"
+                      public seller admin"
             docker compose -f apps.prod.yml --env-file .env.staging pull \$BACKENDS
             docker compose -f apps.prod.yml --env-file .env.staging up -d \\
               --remove-orphans \$BACKENDS

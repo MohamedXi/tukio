@@ -13,7 +13,7 @@ project:
     KYC. Bookings use escrowed Stripe payments + a saga state machine.
     Bilingual FR/EN from day one.
 
-    Monorepo: 4 Next.js 16 frontends + 10 NestJS 11 microservices + 8 shared
+    Monorepo: 3 Next.js 16 frontends + 10 NestJS 11 microservices + 8 shared
     `@tukio/*` packages, orchestrated by Turborepo + pnpm. Backend follows
     Pattern Pretre (Clean Architecture). Frontend uses an atomic design
     system (`@tukio/ui` components vs patterns) on Tailwind v4 tokens.
@@ -30,14 +30,27 @@ project:
   architecture_reference: _bmad-output/planning-artifacts/architecture.md
   ux_reference: _bmad-output/planning-artifacts/ux-spec.md
 
-# Codebases. The first 4 are Next.js apps (3000–3003), the last 10 are
-# NestJS services (4000–4009). Each lives in `apps/<name>/`.
+# Codebases. The first 3 are Next.js apps (3000/3002/3003), the last 10 are
+# NestJS services (4000–4009). Each lives in `apps/<name>/`. Story 0.14
+# (ADR-016) merged `apps/customer` into `apps/public` — apex `tukio.one`
+# now serves both visitors and authenticated B2C customers.
 codebases:
   frontends:
-    - { name: public, port: 3000, audience: 'Marketing, search, listing detail' }
-    - { name: customer, port: 3001, audience: 'Authenticated B2C / B2B customer area' }
-    - { name: seller, port: 3002, audience: 'Pro dashboard (KYC, listings, bookings)' }
-    - { name: admin, port: 3003, audience: 'Moderation console (2FA TOTP required)' }
+    - {
+        name: public,
+        port: 3000,
+        audience: 'tukio.one apex — visitors + authenticated B2C customers (unified tunnel, ADR-016)',
+      }
+    - {
+        name: seller,
+        port: 3002,
+        audience: 'seller.tukio.one — pro dashboard (KYC, listings, bookings)',
+      }
+    - {
+        name: admin,
+        port: 3003,
+        audience: 'admin.tukio.one — moderation console (2FA TOTP required)',
+      }
   services:
     - { name: gateway-api, port: 4000, role: 'Public REST gateway, validates Keycloak JWT' }
     - {

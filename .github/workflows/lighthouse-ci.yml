@@ -36,8 +36,6 @@ jobs:
             app: public
           - config: public-mobile
             app: public
-          - config: customer
-            app: customer
           - config: seller
             app: seller
           - config: admin

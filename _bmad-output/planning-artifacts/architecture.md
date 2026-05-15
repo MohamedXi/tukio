@@ -408,21 +408,20 @@ Chaque app produit Next.js 15 App Router avec Tailwind, TypeScript strict, Turbo
 
 | App | Path mounted | Audience | Rationale |
 |-----|--------------|----------|-----------|
-| `public` | `/{locale}/` (homepage, search, category, service, pro, blog, legal) | Visitor anonymous | Bundle mince, SEO-optimized, max edge cache, RA1 acquisition demande = CWV impeccables |
-| `customer` | `/{locale}/account/*` + `/{locale}/cart/*` (auth role `client`) | Customer | Pas de code seller chargé, rôle isolé |
-| `seller` | `/{locale}/seller/*` (auth role `pro`) | Pro | Pas de code customer chargé, libs lourdes (calendar, analytics) chargeables |
+| `public` | `tukio.one` apex — visiteurs (homepage, search, category, service, pro) **+** customers B2C authentifiés (`(authenticated)/account`, `/bookings`, `/favorites`, `/messages`, …) | Visiteur anonyme + Customer authentifié (mêmes domain, route group `(authenticated)`) | Bundle mince côté visiteur (Next.js code-splitting par route), SEO-optimized, max edge cache, route-level auth gate via middleware Next.js |
+| `seller` | `seller.tukio.one/{locale}/seller/*` (auth role `pro`) | Pro | Pas de code customer chargé, libs lourdes (calendar, analytics) chargeables |
 | `admin` | `admin.tukio.one/*` (auth role `admin-*`, MFA obligatoire) | Admin | Sous-domaine séparé, sécurité accrue, isolation cookies, IP allowlist possible |
 
-**Composition** : `apps/public/` est l'app parent qui héberge `next.config.ts` avec rewrites Vercel multi-zones :
+> **ADR-016 (2026-05-15) supersedes ADR-013** : `apps/public` + `apps/customer` ont été mergés dans une seule app servie sur l'apex `tukio.one`. Voir Story 0.14 pour les détails du refactor.
+
+**Composition** : `apps/public/` est servie sur l'apex `tukio.one`. Le seul rewrite cross-app restant est vers `seller.tukio.one` :
 ```typescript
 rewrites: [
-  { source: '/:locale/account/:path*', destination: 'https://customer.tukio.one/:locale/account/:path*' },
-  { source: '/:locale/cart/:path*', destination: 'https://customer.tukio.one/:locale/cart/:path*' },
   { source: '/:locale/seller/:path*', destination: 'https://seller.tukio.one/:locale/seller/:path*' },
 ]
 ```
 
-Cookies de session Keycloak partagés via domaine parent `.tukio.one` (`Domain=.tukio.one; SameSite=Lax`).
+Auth-gating : un middleware Next.js (`apps/public/src/middleware.ts`) protège les routes `(authenticated)` (`/account`, `/bookings`, `/favorites`, `/messages`) et redirige les requêtes non authentifiées vers `/login?callback=...`. Le marqueur de session HttpOnly:false `tukio-session-active` est posé par le flow login (Story 1.4) avec `Domain=.tukio.one; SameSite=Lax` pour rester partagé avec `seller.tukio.one`.
 
 #### 4. Services backend : `@nestjs/cli` dans `apps/<service>-svc/` (×10)
 
@@ -705,7 +704,7 @@ Relais outbox → NATS via PG LISTEN/NOTIFY dans le worker `@tukio/messaging`, f
   - Authentifié : 600 req/min/user
   - Admin : illimité (mais audit trail)
   - Endpoints sensibles (login, register, payment) : 10 req/min/IP
-- **CORS** : whitelist origines (`tukio.one`, `customer.tukio.one`, `seller.tukio.one`, `admin.tukio.one`, `*.vercel.app` previews)
+- **CORS** : whitelist origines (`tukio.one`, `seller.tukio.one`, `admin.tukio.one`) — ADR-016 a supprimé `customer.tukio.one` (apex unifié) et `*.vercel.app` n'a plus lieu d'être (infra DigitalOcean Droplets, pas Vercel)
 
 ### API & Communication Patterns
 
@@ -1060,13 +1059,13 @@ middleware.ts                                # next-intl + KeycloakAuthMiddlewar
 
 #### Cross-Component Dependencies
 
-- **Cloud provider K8s** ↔ **Postgres hosting** : Hetzner → Neon
-- **`@tukio/contracts`** est dépendance partagée par les 10 services + 4 frontends → versioning rigoureux
+- **Cloud provider K8s** ↔ **Postgres hosting** : Hetzner → Neon (ADR-015 a depuis pivoté vers DigitalOcean Droplets + Postgres in-droplet)
+- **`@tukio/contracts`** est dépendance partagée par les 10 services + 3 frontends → versioning rigoureux
 - **`@tukio/messaging`** dépend de NATS JetStream → tous les services le consomment
 - **`@tukio/auth`** (backend) + **`@tukio/auth-client`** (frontend) → cohérence cookies session via `Domain=.tukio.one`
-- **`@tukio/ui`** consommé par les 4 apps → toute modification UI déclenche rebuild des 4 apps (Turborepo affected-builds gère)
+- **`@tukio/ui`** consommé par les 3 apps → toute modification UI déclenche rebuild des 3 apps (Turborepo affected-builds gère)
 - **`@tukio/api-client`** dépend de `@tukio/contracts` → types end-to-end frontend ↔ backend
-- **Vercel multi-zones** : `apps/public/` est zone parent, configure rewrites vers `customer.tukio.one`, `seller.tukio.one`. `apps/admin/` reste isolée sur `admin.tukio.one`.
+- **Topology frontend (ADR-016)** : `apps/public/` est servie sur l'apex `tukio.one` avec un rewrite résiduel vers `seller.tukio.one` pour les routes `/seller/*`. `apps/admin/` reste isolée sur `admin.tukio.one`.
 - **Stripe webhooks** → `payment-svc` uniquement → events NATS dérivés consommés par `booking-svc`, `order-svc`, `notification-svc`, `identity-svc`
 - **Keycloak webhooks** → `identity-svc` uniquement → events NATS dérivés consommés par les autres services
 
@@ -1085,7 +1084,7 @@ Référence canonique des conventions Tukio préexistantes :
 - `tukio_product_tech_alignment.md` §C (Naming alignment)
 
 **Nouvelles ADRs ajoutées dans cette session architecture (à formaliser au Step 7)** :
-- ADR-013 — Frontend multi-zones 4 apps + architecture feature-based stricte (Step 4)
+- ADR-013 — Frontend multi-zones 4 apps + architecture feature-based stricte (Step 4) — **superseded by ADR-016 (2026-05-15)**
 - ADR-014 — Enveloppe REST canonique sur toutes les responses gateway-api (cf. §Format Patterns ci-dessous)
 - **ADR-015 — MVP infra pivot 2026-05-14** : DigitalOcean Droplets + docker-compose remplacent Hetzner+K8s+ArgoCD. Drop Vercel Turbo Cache, Codecov SaaS, Neon Postgres serverless, Doppler, Grafana Cloud, OpenTelemetry SDK auto-instrumentation, Velero. Garde Cloudflare R2 (storage gratuit < 10 GB), Resend (3000 emails/mois free), Stripe Connect, GHCR, Trivy, Lighthouse CI App. DNS sur Squarespace (NS non délégables vers Cloudflare). Budget cible €15-35/mois total. Voir mémoire `mvp_infra_pivot_2026_05_14.md` pour la liste exhaustive des outils dropped/remplacés et le contexte. Story 0.12 (Helm+K8s+ArgoCD) **superseded** — nouvelle Story 0.12 = DO Droplets + docker-compose. Re-évaluation possible en V1+ quand le volume justifie K8s (croissance trafic > 100k req/jour, équipe > 3 devs, besoin rolling deploys avancés).
 - **ADR-016 — Frontend topology pivot 2026-05-15** : 4 Next.js apps → **3 apps** + tunnel B2C unifié sur l'apex `tukio.one`. **Supersedes ADR-013** (multi-zones 4 apps). Décision : merger `apps/public` + `apps/customer` en une seule app servie sur `tukio.one` (apex), avec routes auth-gated via middleware Next.js (`/account`, `/bookings`, `/favorites`, etc.). Topology finale : `tukio.one` = public+customer B2C (visiteur → customer authentifié, **même domain**), `seller.tukio.one` = pros B2B, `admin.tukio.one` = staff. Subdomain `app.tukio.one` + `customer.tukio.one` retirés. **Rationale** : (a) UX cohérente (pas de jarring cross-subdomain visiteur → customer, classique des marketplaces matures Airbnb / Booking / Vinted), (b) SEO meilleur (apex > subdomain pour ranking + canonical URLs simples), (c) -1 app à maintenir (3 codebases Next.js au lieu de 4) → -1 image Docker GHCR, -200-300 MB RAM sur tukio-apps, -1 cert LE, -1 route Caddy, (d) cart/state/cookies trivialement préservés cross-page (même domain). **Coût** : refactor 1-2 jours pour merger les routes `apps/customer/*` dans `apps/public` sous structure App Router + middleware auth-gate (Story 0.14). **Conséquences sur PRD** : section "Applications" passe de 4 à 3 apps (mettre à jour avant Epic 1 dev). **Conséquences sur stories existantes** : toute story Epic 1+ qui référençait `customer.tukio.one` doit pointer vers `tukio.one/<route>` à la place (rares — surtout Epic 1 stories 1.4, 1.5, 1.6 callbacks login / verification). **Re-évaluation V1+** : si volume B2C justifie séparation app/customer (peu probable < 100k MAU), revenir au 4-apps + cookie cross-subdomain `.tukio.one`.
@@ -2295,13 +2294,13 @@ packages/auth-client/src/                                                       
 - Keycloak → `identity-svc/webhooks/keycloak` (NFR76)
 - Aucun autre service ne consomme directement les webhooks externes.
 
-**Sub-domaines & isolation** :
-- `tukio.one` (apex) → `apps/public/` (zone parent multi-zones)
-- `customer.tukio.one` → `apps/customer/` (rewrite depuis public)
-- `seller.tukio.one` → `apps/seller/` (rewrite depuis public)
+**Sub-domaines & isolation** (ADR-016 supersedes ADR-013) :
+- `tukio.one` (apex) → `apps/public/` (visiteurs + customers B2C unifié, route group `(authenticated)`)
+- `seller.tukio.one` → `apps/seller/` (rewrite depuis public via `next.config.ts`)
 - `admin.tukio.one` → `apps/admin/` (sous-domaine séparé, sécurité accrue, MFA TOTP)
 - `auth.tukio.one` → Keycloak (Phasetwo managé)
-- `api.tukio.one` (V3+ optionnel) → API publique exposée
+- `api.tukio.one` → gateway-api (REST publique exposée)
+- `app.tukio.one` (legacy ADR-013) → 301 redirect vers apex via Caddy, garder ~6 mois
 
 #### Component Boundaries (Frontend)
 

@@ -55,7 +55,7 @@ curl https://api.tukio.one/health
 
 ## Scénario 2 — Droplet `tukio-apps` mort
 
-**Symptôme** : `app.tukio.one` / `api.tukio.one` injoignables, doctl `droplet get tukio-apps` retourne off/destroyed/inaccessible.
+**Symptôme** : `tukio.one` / `api.tukio.one` injoignables, doctl `droplet get tukio-apps` retourne off/destroyed/inaccessible.
 
 **Diagnostic** : `doctl compute droplet get tukio-apps`, console DO web UI, ping VPC depuis `tukio-data`.
 
@@ -134,7 +134,7 @@ doctl compute droplet-action rename $NEW_DROPLET_ID --droplet-name tukio-apps
 doctl compute droplet delete tukio-apps --force  # ATTENTION : double-vérifier l'ID
 ```
 
-**Validation** : `curl https://api.tukio.one/health` retourne 200 ; `curl https://app.tukio.one` charge la home.
+**Validation** : `curl https://api.tukio.one/health` retourne 200 ; `curl https://tukio.one` charge la home.
 
 ---
 
@@ -286,7 +286,7 @@ docker compose -f infra/docker-compose/apps.prod.yml up -d --force-recreate
 
 ## Scénario 6 — DNS Squarespace inaccessible / domaine expiré
 
-**Symptôme** : `dig app.tukio.one` ne résout plus ; courriel Squarespace de fin d'abonnement.
+**Symptôme** : `dig tukio.one` ne résout plus ; courriel Squarespace de fin d'abonnement.
 
 ### Procédure
 

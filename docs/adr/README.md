@@ -51,6 +51,7 @@ Never reuse a number. Never edit an Accepted ADR — create a new one with
 | [0010](0010-typeorm-default-raw-sql-readheavy.md) | TypeORM default + raw SQL for read-heavy | `architecture`, `data` | 2026-05-09 |
 | [0011](0011-tukio-contracts-package.md) | @tukio/contracts shared package | `architecture`, `backend`, `frontend` | 2026-05-09 |
 | [0012](0012-i18n-fr-en-sprint-zero.md) | i18n FR+EN from Sprint 0 | `architecture`, `frontend` | 2026-05-09 |
-| [0013](0013-frontend-multi-zones-feature-based.md) | 4 Next.js apps multi-zones | `architecture`, `frontend` | 2026-05-09 |
+| [0013](0013-frontend-multi-zones-feature-based.md) | 4 Next.js apps multi-zones — **superseded by 0016** | `architecture`, `frontend` | 2026-05-09 |
 | [0014](0014-api-response-envelope.md) | Canonical REST response envelope | `architecture`, `backend` | 2026-05-09 |
 | [0015](0015-mvp-infra-pivot-do-droplets.md) | MVP infra pivot: DO Droplets + docker-compose | `architecture`, `ops` | 2026-05-14 |
+| [0016](0016-frontend-topology-pivot-apex-unified.md) | Frontend topology pivot — apex `tukio.one` unified B2C tunnel (supersedes 0013) | `architecture`, `frontend`, `ops` | 2026-05-15 |

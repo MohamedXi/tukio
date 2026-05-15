@@ -4,21 +4,17 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const config: NextConfig = {
+  // Standalone server (server.js + pruned node_modules) — Story 0.14.
+  // Root-cause fix for the Next.js 16 + next-intl port leak in Location
+  // headers (Story 0.13b). Bonus: ~50-80 MB image vs ~250 MB.
+  output: 'standalone',
+
   async rewrites() {
-    const customerHost = process.env.NEXT_PUBLIC_CUSTOMER_HOST ?? 'https://customer.tukio.one';
     const sellerHost = process.env.NEXT_PUBLIC_SELLER_HOST ?? 'https://seller.tukio.one';
     return [
-      // /{locale}/account/* → customer app (ADR-0013).
-      // {/:path*} is optional so /fr/account (bare, no sub-path) also matches.
-      {
-        source: '/:locale/account{/:path*}',
-        destination: `${customerHost}/:locale/account/:path*`,
-      },
-      {
-        source: '/:locale/cart{/:path*}',
-        destination: `${customerHost}/:locale/cart/:path*`,
-      },
-      // /{locale}/seller/* → seller app
+      // /{locale}/seller/* → seller app. Customer-area routes (`/account`,
+      // `/cart`, …) are served locally by the (authenticated) route group
+      // since Story 0.14 (ADR-016 supersedes ADR-013 multi-zones).
       {
         source: '/:locale/seller{/:path*}',
         destination: `${sellerHost}/:locale/seller/:path*`,
