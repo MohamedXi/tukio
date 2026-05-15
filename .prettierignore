@@ -19,3 +19,12 @@ docs
 **/AGENTS.md
 **/CLAUDE.md
 **/next-env.d.ts
+
+# Keycloak realm config — JSON templates with ${VAR} placeholders (Story 1.1)
+infra/keycloak/realm-config/clients/tukio-web.json
+infra/keycloak/realm-config/clients/tukio-admin.json
+infra/keycloak/realm-config/clients/tukio-api.json
+infra/keycloak/realm-config/clients/tukio-smoke-test.json
+infra/keycloak/realm-config/realm-base.json
+infra/keycloak/themes/tukio/**/*.ftl
+infra/keycloak/themes/tukio/**/*.properties

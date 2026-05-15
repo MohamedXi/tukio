@@ -1,0 +1,15 @@
+{
+  "clientId": "tukio-smoke-test",
+  "name": "Tukio Smoke Test (confidential, CI only — disabled in production)",
+  "enabled": true,
+  "publicClient": false,
+  "protocol": "openid-connect",
+  "standardFlowEnabled": false,
+  "directAccessGrantsEnabled": true,
+  "serviceAccountsEnabled": false,
+  "implicitFlowEnabled": false,
+  "secret": "${KEYCLOAK_CLIENT_SECRET_SMOKE_TEST}",
+  "attributes": {
+    "access.token.lifespan": "60"
+  }
+}

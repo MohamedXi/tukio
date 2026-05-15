@@ -50,13 +50,15 @@ services:
       - tukio_dev_network
 
   keycloak:
-    image: quay.io/keycloak/keycloak:25.0
+    # Story 1.1: Phasetwo open-source bundle (Keycloak 26 + Orgs + Webhooks + Magic Links extensions)
+    # Verify bundled KC version: docker inspect quay.io/phasetwo/phasetwo-keycloak:latest | jq '.[].Config.Labels'
+    image: quay.io/phasetwo/phasetwo-keycloak:latest
     container_name: tukio_keycloak
-    command: ['start-dev']
+    command:
+      - 'start-dev'
+      - '--spi-theme-cache-themes=false'
+      - '--spi-theme-cache-templates=false'
     environment:
-      # Keycloak 25 uses KEYCLOAK_ADMIN/KEYCLOAK_ADMIN_PASSWORD; the
-      # KC_BOOTSTRAP_ADMIN_* names land in Keycloak 26+. Set both for
-      # forward compat.
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
@@ -69,14 +71,19 @@ services:
       KC_HTTP_ENABLED: 'true'
       KC_HEALTH_ENABLED: 'true'
       KC_METRICS_ENABLED: 'true'
+      KC_PROXY_HEADERS: xforwarded
+      # KC_FEATURES owns enablement; --features on CLI removed to avoid CLI/ENV mismatch (Story 1.1 P-L7).
+      KC_FEATURES: preview,token-exchange
     ports:
       - '8080:8080'
+      # P-H10: expose management port for bootstrap healthcheck on /health/ready
+      - '9000:9000'
+    volumes:
+      - ../keycloak/themes:/opt/keycloak/themes:ro
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      # Keycloak 25 exposes /health on the management port (9000); the image
-      # ships RHEL UBI without curl/wget, so we probe via bash /dev/tcp.
       test:
         - 'CMD'
         - '/bin/bash'
@@ -84,8 +91,8 @@ services:
         - 'response=$$(exec 3<>/dev/tcp/localhost/9000; printf "GET /health/ready HTTP/1.0\r\nHost: localhost\r\n\r\n" >&3; cat <&3); echo "$$response" | grep -q "\"status\": \"UP\""'
       interval: 10s
       timeout: 10s
-      retries: 18
-      start_period: 30s
+      retries: 24
+      start_period: 60s
     networks:
       - tukio_dev_network
 

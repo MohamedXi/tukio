@@ -1,0 +1,24 @@
+{
+  "clientId": "tukio-web",
+  "name": "Tukio Web (public, customer + seller + public)",
+  "enabled": true,
+  "publicClient": true,
+  "protocol": "openid-connect",
+  "standardFlowEnabled": true,
+  "directAccessGrantsEnabled": false,
+  "serviceAccountsEnabled": false,
+  "implicitFlowEnabled": false,
+  "redirectUris": ${REDIRECT_URIS_TUKIO_WEB},
+  "webOrigins": ${REDIRECT_URIS_TUKIO_WEB},
+  "defaultClientScopes": ["openid", "profile", "email", "roles", "tukio-locale-scope"],
+  "optionalClientScopes": ["address", "phone", "offline_access"],
+  "attributes": {
+    "pkce.code.challenge.method": "S256",
+    "access.token.lifespan": "300",
+    "client.session.idle.timeout": "1800",
+    "use.refresh.tokens": "true",
+    "refresh.token.max.reuse": "0",
+    "client_session_max_lifespan": "36000",
+    "post.logout.redirect.uris": "+"
+  }
+}

@@ -123,6 +123,33 @@ Build OIDC + JWT issuance in `identity-svc` from scratch. **Rejected**:
   `@Index({ unique: true })` on this column.
 - `identity-svc` webhook endpoint: `POST /internal/keycloak-events` (not public — only reachable
   within the `tukio-apps` Docker bridge network from Keycloak via VPC).
-- Keycloak `tukio` realm configured with: `tukio-public` (frontends PKCE), `tukio-admin` (admin
-  panel with MFA), `tukio-gateway` (gateway-api service account), `tukio-internal` (service-to-service).
-- In dev, `docker-compose.dev.yml` includes Keycloak with the `tukio-realm.json` import.
+
+### Story 1.1 — Realm provisioned (2026-05-16)
+
+**Keycloak version**: 26.x latest stable via `quay.io/phasetwo/phasetwo-keycloak:latest`
+(overrides this ADR's original "Keycloak 25" — see memory `feedback_latest_versions.md`).
+
+**Clients provisioned** (4 production + 1 CI smoke test):
+
+| Client | Type | Usage |
+|---|---|---|
+| `tukio-web` | Public PKCE S256 | apps/public + apps/seller |
+| `tukio-admin` | Public PKCE S256 + MFA required | apps/admin |
+| `tukio-api` | Confidential service account | M2M, JWT validation audience |
+| `tukio-mobile` | Public PKCE S256 | React Native V2 (provisioned only) |
+| `tukio-smoke-test` | Confidential direct-grants | CI smoke tests (disabled in prod) |
+
+**Custom JWT claims** (via `tukio-locale-scope` default client scope):
+- `tukio:locale` — user attribute `locale`, default `fr`
+- `tukio:status` — user attribute `status`, default `active`
+- `aud: ["tukio-api"]` — audience for `KeycloakJwtGuard` validation
+- `amr` + `acr` — MFA method references consumed by `@RequireMfa()`
+
+**Webhook bridge** (AC5): Phasetwo Webhooks Extension POSTs `LOGIN_ERROR` events to
+`identity-svc POST /internal/keycloak-events` with HMAC-SHA256 signature header
+`X-Phasetwo-Signature`. Consumer implemented in Story 1.10.
+
+**Idempotent bootstrap**: `infra/scripts/bootstrap-keycloak-realm.sh --env=local|staging`
+(see `docs/runbook/keycloak-realm-bootstrap.md`).
+
+**Realm export**: `infra/keycloak/realm-export/tukio.realm.json` (committed, sensitive fields stripped).

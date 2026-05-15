@@ -1,3 +1,7 @@
+// TODO Story 1.10: replace nock JWKS mock with a real call to the local Keycloak realm
+// (boot via pnpm docker:up:wait + pnpm keycloak:bootstrap, then generate JWT via
+// tukio-smoke-test client direct-grants). Story 1.1 provisions the realm; Story 1.10
+// finalises the integration by wiring identity-svc as the Phasetwo webhook consumer.
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import nock from 'nock';
 import {

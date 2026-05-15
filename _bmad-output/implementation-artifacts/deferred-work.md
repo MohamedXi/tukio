@@ -1,5 +1,9 @@
 # Deferred Work
 
+## Deferred from: code review of 1-1-provision-keycloak-realm-tukio-roles-clients-phasetwo (2026-05-16)
+
+- **D-1** — Account theme PF5 vs login PF4 CSS pipeline mismatch [`themes/tukio/account/theme.properties`]. Account theme inherits `keycloak.v3` (PatternFly v5 selectors `.pf-v5-c-*`), but the CSS copied from login targets v2/PF4 (`.pf-c-*`). Account console will render partially unstyled. Will be revisited in Story 1.8 (Profile management UI).
+
 ## Deferred from: code review of 0-1-bootstrap-monorepo-turborepo-scaffold-nextjs-apps-nestjs-services (2026-05-09)
 
 - **W1** — `@tukio/*` path mapping dans `tsconfig.base.json` ne résout pas correctement depuis les sous-dossiers des workspaces NestJS. Sera résolu dès le 1er import réel dans Story 0.2 (contracts).

@@ -1,0 +1,122 @@
+/* Tukio Keycloak Login Theme — mirrors packages/ui/src/styles/theme.css brand tokens */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@300..700&display=swap');
+
+/* ── Brand tokens ──────────────────────────────────────────────────────────── */
+:root {
+  --color-brand-500: #c2410c;
+  --color-brand-600: #9a340a;
+  --color-cream-50: #faf7f2;
+  --color-cream-100: #f5f1ea;
+  --color-charcoal-200: #cdc9bc;
+  --color-charcoal-700: #1f1d18;
+  --color-charcoal-800: #14130f;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+body {
+  background-color: var(--color-cream-50);
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  color: var(--color-charcoal-700);
+}
+
+/* ── Card ──────────────────────────────────────────────────────────────────── */
+.login-pf-page .card-pf {
+  background: #ffffff;
+  border: 1px solid var(--color-charcoal-200);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(31, 29, 24, 0.08);
+}
+
+/* ── Logo ──────────────────────────────────────────────────────────────────── */
+#kc-header-wrapper {
+  text-align: center;
+  padding: 24px 0 16px;
+}
+
+#kc-header-wrapper .kc-logo-text {
+  display: none;
+}
+
+.login-pf-brand {
+  max-height: 48px;
+  width: auto;
+}
+
+/* ── Headings ──────────────────────────────────────────────────────────────── */
+#kc-page-title,
+.login-pf-page h1,
+.login-pf-page h2 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  color: var(--color-charcoal-800);
+  letter-spacing: -0.02em;
+}
+
+/* ── Form inputs ───────────────────────────────────────────────────────────── */
+.pf-c-form-control,
+input[type='text'],
+input[type='password'],
+input[type='email'] {
+  border-color: var(--color-charcoal-200);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  color: var(--color-charcoal-700);
+  transition: border-color 0.15s ease;
+}
+
+.pf-c-form-control:focus,
+input:focus {
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.15);
+  outline: none;
+}
+
+/* ── Primary button ────────────────────────────────────────────────────────── */
+.pf-c-button.pf-m-primary,
+#kc-login,
+input[type='submit'] {
+  background-color: var(--color-brand-500);
+  border-color: var(--color-brand-500);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: background-color 0.15s ease;
+}
+
+.pf-c-button.pf-m-primary:hover,
+#kc-login:hover,
+input[type='submit']:hover {
+  background-color: var(--color-brand-600);
+  border-color: var(--color-brand-600);
+}
+
+/* ── Links ─────────────────────────────────────────────────────────────────── */
+a {
+  color: var(--color-brand-500);
+}
+
+a:hover {
+  color: var(--color-brand-600);
+  text-decoration: underline;
+}
+
+/* ── Alerts ────────────────────────────────────────────────────────────────── */
+.pf-c-alert.pf-m-danger {
+  border-left-color: #dc2626;
+}
+
+.pf-c-alert.pf-m-warning {
+  border-left-color: #d97706;
+}
+
+/* ── Footer ────────────────────────────────────────────────────────────────── */
+#kc-registration-container,
+#kc-info-message {
+  font-size: 0.875rem;
+  color: var(--color-charcoal-700);
+}
