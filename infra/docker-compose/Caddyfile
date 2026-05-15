@@ -13,7 +13,13 @@
 # ───────────────────────────────────────────────────────────────────
 
 app.tukio.one {
-	reverse_proxy public:3000
+	reverse_proxy public:3000 {
+		# Preserve the public Host header so Next.js / next-intl build
+		# correct absolute URLs (otherwise redirects leak the internal
+		# `public:3000` host:port — see Story 0.13 follow-up).
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+	}
 	encode gzip zstd
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
@@ -24,7 +30,10 @@ app.tukio.one {
 }
 
 customer.tukio.one {
-	reverse_proxy customer:3001
+	reverse_proxy customer:3001 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+	}
 	encode gzip zstd
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -34,7 +43,10 @@ customer.tukio.one {
 }
 
 seller.tukio.one {
-	reverse_proxy seller:3002
+	reverse_proxy seller:3002 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+	}
 	encode gzip zstd
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -44,7 +56,10 @@ seller.tukio.one {
 }
 
 admin.tukio.one {
-	reverse_proxy admin:3003
+	reverse_proxy admin:3003 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+	}
 	encode gzip zstd
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
