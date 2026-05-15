@@ -23,8 +23,9 @@ x-logging: &logging
   logging:
     driver: json-file
     options:
-      max-size: '10m'
-      max-file: '3'
+      # 5m × 2 = 10 MB max per service; 15 services = 150 MB ceiling (safe on 2 GB droplet).
+      max-size: '5m'
+      max-file: '2'
 
 # Common env for all backend services. Per-service overrides happen via
 # individual service `environment:` blocks.

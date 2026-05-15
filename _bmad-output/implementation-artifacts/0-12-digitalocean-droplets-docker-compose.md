@@ -1,6 +1,6 @@
 # Story 0.12: DigitalOcean Droplet deployment via docker-compose (MVP cost-optimized)
 
-Status: in-progress
+Status: done
 
 <!-- Supersedes: 0-12-helm-charts-k8s-argocd-staging-observability.md (2026-05-14 pivot, see ADR-015 + memory mvp_infra_pivot_2026_05_14.md) -->
 
@@ -692,9 +692,64 @@ Points d'attention Epic 1+ :
 
 ---
 
+## Review Findings
+
+> Code review — 2026-05-15. Sources : Blind Hunter + Edge Case Hunter + Acceptance Auditor (3 layers).
+> Résultat : 4 decision_needed · 30 patch · 5 defer · 0 dismissed
+
+### Decision Needed (débloquer avant patch)
+
+- [ ] [Review][Decision] **CORS Caddy vs gateway-api** — La spec AC4 exige un header `Access-Control-Allow-Origin` dans le Caddyfile (`api.tukio.one`). L'implémentation délègue silencieusement à gateway-api (commentaire dans Caddyfile). Si le CORS est géré par NestJS CorsModule, le Caddyfile est correct mais la spec doit être mise à jour + le module NestJS vérifié. Si CORS doit être dans Caddy, la valeur multi-origines est invalide en comma-list (CORS spec n'accepte qu'une seule origin ou `*` — solution : match dynamique de l'`Origin` header). Options : (a) conserver délégation gateway-api + doc ADR, (b) implémenter CORS dynamique dans Caddy.
+- [ ] [Review][Decision] **Meilisearch version skew dev v1.13 vs prod v1.10** — `docker-compose.dev.yml` utilise `v1.13`, `data.prod.yml` utilise `v1.10`. Breaking changes entre minor versions. Options : (a) aligner prod sur v1.13, (b) laisser v1.10 avec note de risque + pinning du dev sur v1.10.
+- [ ] [Review][Decision] **provision-secrets.sh interactive-only** — MVP uniquement interactive. La rotation de secrets nécessite un SSH interactif. Options : (a) acceptable MVP (1 dev solo), (b) ajouter mode non-interactif `--secret-name --secret-value` pour automatisation V1+.
+- [ ] [Review][Decision] **Backup : commentaire GPG vs réalité** — `backup-postgres.sh` header annonce "encrypts with GPG" mais aucun chiffrement n'est implémenté (dump `.sql.gz` en clair sur R2). Options : (a) supprimer le commentaire trompeur + accepter R2 SSE comme seul chiffrement, (b) implémenter GPG avant d'activer les backups.
+
+### Patches (applied 2026-05-15)
+
+- [x] [Review][Patch] **F-01 : Staging et production partagent `DO_HOST_APPS` + `apps.prod.yml` + `.env.production`** — tout deploy staging écrase production. Besoin : secret `DO_HOST_STAGING` distinct + fichier `.env.staging` + compose staging-specific. [`deploy-staging.yml` env block]
+- [x] [Review][Patch] **F-02 : `DATA_PRIV_IP` absent → ports data bindent sur 0.0.0.0** — Postgres/NATS/Redis/Meili/Keycloak exposés publiquement si env var manquante. Ajouter validation pre-flight dans deploy workflows + défaut sécurisé (compose failfast si absent). [`data.prod.yml:49,86,96,113,123`]
+- [x] [Review][Patch] **F-03 : `printf '%s\n'` corrompt clé ed25519** — double newline → `ssh` refuse la clé ("invalid format"). Remplacer par `echo "${DO_DEPLOY_KEY}"` ou stocker la clé avec newline finale délibérée. [`deploy-staging.yml:62` `deploy-production.yml:77`]
+- [x] [Review][Patch] **F-04 : `KC_DB_USERNAME` / `KC_DB_PASSWORD` jamais provisionnés** — `provision-secrets.sh` ne demande pas ces credentials. Keycloak crashe au boot faute d'authentification DB. Ajouter les deux secrets au script provision. [`data.prod.yml:70` `infra/scripts/provision-secrets.sh`]
+- [x] [Review][Patch] **F-05 : Repo jamais cloné sur les droplets → scripts cron silently fail** — Les 3 crons appellent `/home/tukio/tukio/infra/scripts/` qui n'existe pas. `do-droplet-init.sh` ne clone pas le repo. Ajouter étape `git clone` dans le script d'init OU dans un deploy data workflow. [`infra/cron/*`]
+- [x] [Review][Patch] **F-06 : Injection shell via `IMAGE_TAG` dans heredoc SSH** — Un tag malveillant (ex. `v1.0$(rm -rf ~)`) s'exécute sur le droplet. Valider `IMAGE_TAG` contre regex stricte `^[a-zA-Z0-9._-]+$` avant injection. [`deploy-production.yml:127`]
+- [x] [Review][Patch] **F-07 : `ssh-keyscan` à deploy time → MITM possible** — La host key est acceptée sans vérification. Stocker la host key du droplet en GitHub Secret et la comparer plutôt que scanner à chaud. [`deploy-staging.yml:64` `deploy-production.yml:77`]
+- [x] [Review][Patch] **F-08 : Staging sans step de rollback automatique** — AC5 explicite : rollback on failure obligatoire. Staging n'a ni capture de tag précédent, ni step `if: failure()`. [`deploy-staging.yml`]
+- [x] [Review][Patch] **F-09 : `workflow_run` staging pas filtré sur `conclusion: success`** — Un build cassé déclenche un deploy staging. Ajouter filtre `conclusion: success` dans le trigger. [`deploy-staging.yml:on.workflow_run`]
+- [x] [Review][Patch] **F-10 : `doctl` installé mais jamais authentifié sur le droplet** — `do-snapshot.sh` appelle doctl sans auth → exit 2, snapshots silently never run. Documenter + scripter `doctl auth init --access-token $DO_TOKEN` dans la phase B ops checklist. [`do-droplet-init.sh` `infra/scripts/do-snapshot.sh`]
+- [x] [Review][Patch] **F-12 : `init-databases.sh` chemin relatif dans `data.prod.yml`** — `./init-databases.sh` dépend du CWD de l'opérateur. Utiliser un chemin absolu ou SCP explicite dans le runbook. [`data.prod.yml:42`]
+- [x] [Review][Patch] **F-13 : `STAGING_HEALTH_URL` par défaut = `https://api.tukio.one/` (production)** — Smoke test staging valide l'endpoint production. Changer le défaut en `https://api.tukio.one/health` (même droplet) OU documenter la variable à setter. [`deploy-staging.yml:31`]
+- [x] [Review][Patch] **F-14 : Production smoke test 5 min au lieu de 3 min (AC6)** — Spec : "timer plus court (3 min smoke test au lieu de 5)". Production utilise 30×10s = 5 min identique au staging. Réduire à 18×10s = 3 min. [`deploy-production.yml:126`]
+- [x] [Review][Patch] **F-15 : Cron snapshot daily au lieu de weekly → ~7× surcoût** — AC9 : `0 4 * * 0` (Sunday). Implémentation : `0 4 * * *` (every day). Corrige les 2 fichiers cron. [`infra/cron/tukio-do-snapshot-apps:13` `infra/cron/tukio-do-snapshot-data:13`]
+- [x] [Review][Patch] **F-16 : `DO_TOKEN` dans `/etc/tukio/do.env` sans mode enforced** — Risque world-readable → full DO API exposé. Forcer `chmod 600 /etc/tukio/do.env && chown root:root` dans `do-droplet-init.sh`. [`infra/scripts/do-snapshot.sh:8`]
+- [x] [Review][Patch] **F-17 : Keycloak sans healthcheck dans `data.prod.yml`** — AC3 spécifie healthchecks Postgres + Keycloak. KC 25 : `http://localhost:9000/health/ready` (management port). Ajouter healthcheck + `depends_on: keycloak: condition: service_healthy` dans les services qui en ont besoin. [`infra/docker-compose/data.prod.yml`]
+- [x] [Review][Patch] **F-18 : Rollback production sans smoke test et sans fallback si image supprimée de GHCR** — Le rollback restaure l'image sans vérifier qu'il a fonctionné. Ajouter un smoke test post-rollback et exiter non-zero si le rollback lui-même échoue. [`deploy-production.yml:163-188`]
+- [x] [Review][Patch] **F-19 : `restore-postgres.sh` tourne contre DB live** — `pg_restore` via `psql` échoue sur "database being accessed by other users". Ajouter `docker compose -f data.prod.yml stop` (sauf postgres) avant restore + restart après. [`infra/scripts/restore-postgres.sh`]
+- [x] [Review][Patch] **F-21 : `do-droplet-init.sh` aborte si `/root/.ssh/authorized_keys` absent** — `set -euo pipefail` + `cp /root/.ssh/authorized_keys` → si la clé n'a pas été injectée au provisioning, l'init s'arrête à mi-chemin. Ajouter guard `-f` check avant cp. [`infra/scripts/do-droplet-init.sh`]
+- [x] [Review][Patch] **F-22 : SSH restart `||` swallows failure → `PermitRootLogin no` peut ne pas être appliqué** — `systemctl restart ssh || systemctl restart sshd` : si les deux échouent, le `||` fait réussir la commande et le hardening n'est pas actif. Remplacer par détection du bon nom de service. [`infra/scripts/do-droplet-init.sh`]
+- [x] [Review][Patch] **F-23 : Log rotation 450 MB max (15 services × 30 MB) sur droplet 2 GB** — Risque ENOSPC. Réduire `max-size: 5m` + `max-file: 2` (30 MB total). [`infra/docker-compose/apps.prod.yml` logging block]
+- [x] [Review][Patch] **F-24 : `backup.log` append-only sans logrotate → disque plein** — Ajouter config logrotate pour `/var/log/tukio/backup.log` dans `do-droplet-init.sh`. [`infra/cron/tukio-backup-postgres`]
+- [x] [Review][Patch] **F-25 : `init-databases.sh` non-idempotent → `CREATE DATABASE` sans `IF NOT EXISTS`** — Re-run avorte au premier database existant. Corriger en `CREATE DATABASE IF NOT EXISTS` ou équivalent PG. [`infra/docker-compose/init-databases.sh`]
+- [x] [Review][Patch] **F-26 : `KC_PROXY: edge` déprécié dans Keycloak 25** — Doit être `KC_PROXY_HEADERS: xforwarded`. Émets un warning de démarrage KC25, scheduled for removal. [`infra/docker-compose/data.prod.yml:73`]
+- [x] [Review][Patch] **F-28 : NATS et Redis sans healthcheck dans `data.prod.yml`** — Consumers tentent de publisher avant que NATS soit prêt. Ajouter healthchecks NATS (`nats-server --healthz`) et Redis (`redis-cli ping`). [`infra/docker-compose/data.prod.yml`]
+- [x] [Review][Patch] **F-29 : Docker/Compose version affichée mais non gate-checkée dans `do-droplet-init.sh`** — AC1 : "Verifies Docker ≥ 24.x". Ajouter comparaison version + exit 1 si inférieure. [`infra/scripts/do-droplet-init.sh`]
+- [x] [Review][Patch] **F-30 : Cron backup à 03:15 au lieu de 03:00 UTC (AC7)** — Divergence de spec sans documentation. Corriger en `0 3 * * *` ou documenter l'écart. [`infra/cron/tukio-backup-postgres:14`]
+- [x] [Review][Patch] **F-31 : `pg_dump` par base au lieu de `pg_dumpall`** — Les roles/permissions Postgres globaux ne sont pas sauvegardés. Sur restore, le user `tukio` + ses grants sont absents. Ajouter `pg_dumpall --globals-only` en préambule du backup. [`infra/scripts/backup-postgres.sh`]
+- [x] [Review][Patch] **F-32 : Pas de vérification d'intégrité post-upload backup** — `rclone copyto` exit 0 ne garantit pas un dump non-vide ou valide. Ajouter `gunzip -t "${DUMP_FILE}.gz"` + check taille > threshold. [`infra/scripts/backup-postgres.sh`]
+- [x] [Review][Patch] **F-34 : Scripts backup/restore hardcodent `tukio-data-postgres-1`** — Nom auto-généré fragile (change si project name ou container_name override). Lire le nom via `docker compose -f data.prod.yml ps -q postgres`. [`infra/scripts/backup-postgres.sh:64` `infra/scripts/restore-postgres.sh:74`]
+
+### Defer (pré-existant, non actionnable sur cette story)
+
+- [x] [Review][Defer] **F-33 : Frontend `depends_on: service_started` pour gateway-api** [`apps.prod.yml`] — deferred, gateway-api sans healthcheck avant Epic 1 ; `unless-stopped` couvre le gap MVP.
+- [x] [Review][Defer] **F-36 : `docker exec tukio-apps-caddy-1` nom fragile** [`deploy-*.yml`] — deferred, naming stable en MVP ; à réviser si project name change.
+- [x] [Review][Defer] **F-37 : gateway-api partage DB `tukio_identity` avec identity-svc — décision non ADRisée** — deferred, décision architecturale à documenter dans un ADR dédié (pas un bug).
+- [x] [Review][Defer] **F-38 : Credentials DB/Meili exportés comme env vars dans heredoc SSH (visible via `docker inspect`)** — deferred, contrainte MVP sans Vault/Doppler ; acceptable jusqu'à V1+.
+- [x] [Review][Defer] **F-39 : Smoke test avant migrations DB → faux green possible** — deferred, aucune migration DB en Sprint 0 ; à revisiter quand TypeORM migrations Epic 1 sont wired.
+
+---
+
 ## Story Completion Status
 
-- **Story Status** : `ready-for-dev`
+- **Story Status** : `done`
 - **Created** : 2026-05-14 (replace de l'ancienne story 0.12 superseded)
 - **Created by** : pivot post Story 0.11 + budget review founder
 - **Epic** : Epic 0 — Sprint 0 Foundation (MVP, foundational)

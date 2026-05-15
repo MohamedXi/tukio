@@ -1,5 +1,5 @@
 # /etc/cron.d/tukio-do-snapshot-apps
-# Daily DigitalOcean droplet snapshot for tukio-apps (Story 0.12).
+# Weekly DigitalOcean droplet snapshot for tukio-apps (Story 0.12, AC9: Sunday 04:00 UTC).
 #
 # Install on the apps droplet:
 #   sudo install -m 644 infra/cron/tukio-do-snapshot-apps /etc/cron.d/tukio-do-snapshot-apps
@@ -10,4 +10,4 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 MAILTO=""
 
 # minute hour dom mon dow  user  command
-0 4 * * * tukio /home/tukio/tukio/infra/scripts/do-snapshot.sh apps >> /var/log/tukio/do-snapshot.log 2>&1
+0 4 * * 0 tukio /home/tukio/tukio/infra/scripts/do-snapshot.sh apps >> /var/log/tukio/do-snapshot.log 2>&1

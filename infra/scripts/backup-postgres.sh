@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Daily Postgres backup — dumps every Tukio DB + Keycloak, encrypts with GPG,
+# Daily Postgres backup — dumps every Tukio DB + Keycloak (plain SQL + gzip),
 # uploads to Cloudflare R2 via rclone, then prunes old objects.
+# Storage is protected by Cloudflare R2 SSE. GPG encryption is V1+ scope.
 #
 # Runs on the `tukio-data` droplet under user `tukio` via systemd cron.
 # Schedule: 03:15 UTC daily (see infra/cron/tukio-backup-postgres).
@@ -39,6 +40,15 @@ fi
 PG_USER="$(cat "${SECRETS_DIR}/pg_user")"
 export PGPASSWORD="$(cat "${SECRETS_DIR}/pg_password")"
 
+# Discover the running postgres container name dynamically (avoid hardcoded name).
+PG_CONTAINER="$(docker compose -f /home/tukio/tukio/infra/docker-compose/data.prod.yml \
+  ps -q postgres 2>/dev/null | head -1)"
+if [[ -z "${PG_CONTAINER}" ]]; then
+  # Fallback to well-known name; log a warning so the operator is alerted.
+  PG_CONTAINER="tukio-data-postgres-1"
+  log "WARN: could not resolve postgres container via compose — falling back to '${PG_CONTAINER}'"
+fi
+
 DATABASES=(
   tukio_identity
   tukio_catalog
@@ -52,7 +62,20 @@ DATABASES=(
   keycloak
 )
 
-log "── starting backup run ${DATE}T${TIME}Z"
+log "── starting backup run ${DATE}T${TIME}Z (container: ${PG_CONTAINER})"
+
+# Dump global Postgres objects (roles, tablespaces) first — pg_dump per-DB misses these.
+globals_archive="${BACKUP_DIR}/globals_${DATE}_${TIME}.sql.gz"
+log "── dumping global objects (roles, tablespaces)"
+if docker exec -e PGPASSWORD -i "${PG_CONTAINER}" \
+    pg_dumpall -U "${PG_USER}" --globals-only \
+    | gzip -9 > "${globals_archive}"; then
+  log "   globals dump OK"
+  rclone copyto "${globals_archive}" "${R2_REMOTE}/postgres/daily/${DATE}/globals.sql.gz" --quiet \
+    || log "WARN: globals upload failed (non-fatal)"
+else
+  log "WARN: globals dump failed (non-fatal — per-DB dumps continue)"
+fi
 
 EXIT_CODE=0
 UPLOADED=()
@@ -61,11 +84,19 @@ FAILED=()
 for db in "${DATABASES[@]}"; do
   archive="${BACKUP_DIR}/${db}_${DATE}_${TIME}.sql.gz"
   log "── dumping ${db} → ${archive}"
-  if docker exec -e PGPASSWORD -i tukio-data-postgres-1 \
+  if docker exec -e PGPASSWORD -i "${PG_CONTAINER}" \
       pg_dump -U "${PG_USER}" -d "${db}" --no-owner --clean --if-exists \
       | gzip -9 > "${archive}"; then
     size_kb=$(du -k "${archive}" | cut -f1)
     log "   dump OK (${size_kb} KB)"
+
+    # Integrity check: gunzip -t verifies the archive is a valid gzip and non-empty.
+    if ! gunzip -t "${archive}" 2>/dev/null || [[ "${size_kb}" -lt 1 ]]; then
+      log "   ERROR: dump for ${db} failed integrity check (corrupt or empty gzip)"
+      FAILED+=("${db}")
+      EXIT_CODE=1
+      continue
+    fi
 
     remote_path="${R2_REMOTE}/postgres/daily/${DATE}/${db}.sql.gz"
     if rclone copyto "${archive}" "${remote_path}" --quiet; then

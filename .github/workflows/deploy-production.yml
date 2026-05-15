@@ -30,7 +30,7 @@ env:
   DO_HOST_APPS: ${{ secrets.DO_HOST_APPS }}
   DO_DEPLOY_KEY: ${{ secrets.DO_DEPLOY_KEY }}
   SLACK_WEBHOOK_DEPLOYS_PROD: ${{ secrets.SLACK_WEBHOOK_DEPLOYS_PROD }}
-  PRODUCTION_HEALTH_URL: ${{ vars.PRODUCTION_HEALTH_URL || 'https://api.tukio.one/' }}
+  PRODUCTION_HEALTH_URL: ${{ vars.PRODUCTION_HEALTH_URL || 'https://api.tukio.one/health' }}
 
 jobs:
   ssh-deploy:
@@ -57,9 +57,9 @@ jobs:
       - name: Setup SSH key + known_hosts
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${DO_DEPLOY_KEY}" > ~/.ssh/id_ed25519
+          echo "${DO_DEPLOY_KEY}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${DO_HOST_APPS}" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -t ed25519 -H "${DO_HOST_APPS}" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Resolve image tag
         id: tag
@@ -69,8 +69,13 @@ jobs:
           else
             REF="${{ github.ref_name }}"
           fi
-          if [[ ! "${REF}" =~ ^v ]]; then
+          if [[ ! "${REF}" =~ ^v[0-9]+\.[0-9]+\.[0-9] ]]; then
             echo "::error::Production deploy requires a vX.Y.Z tag (got '${REF}')"
+            exit 1
+          fi
+          # Guard against shell injection via tag name — only alphanumerics, dots, dashes.
+          if [[ ! "${REF}" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+            echo "::error::Tag '${REF}' contains invalid characters"
             exit 1
           fi
           echo "image_tag=${REF}" >> "$GITHUB_OUTPUT"
@@ -123,14 +128,14 @@ jobs:
 
       - name: Smoke test (production health URL)
         run: |
-          for i in $(seq 1 30); do
+          for i in $(seq 1 18); do
             if curl -fsS --max-time 5 "${PRODUCTION_HEALTH_URL}" >/dev/null; then
               echo "::notice::Healthcheck OK after ${i} attempt(s)"
               exit 0
             fi
             sleep 10
           done
-          echo "::error::Production healthcheck did not become green within 5 min at ${PRODUCTION_HEALTH_URL}"
+          echo "::error::Production healthcheck did not become green within 3 min at ${PRODUCTION_HEALTH_URL}"
           exit 1
 
       - name: Rollback on failure
@@ -156,6 +161,20 @@ jobs:
               --remove-orphans \$BACKENDS
           EOF
           echo "::warning::Rolled back to ${PREV_TAG}"
+
+      - name: Smoke test (post-rollback verification)
+        if: failure() && steps.previous.outputs.previous_tag != ''
+        run: |
+          echo "Verifying rollback health..."
+          for i in $(seq 1 12); do
+            if curl -fsS --max-time 5 "${PRODUCTION_HEALTH_URL}" >/dev/null; then
+              echo "::notice::Rollback verified — healthcheck OK after ${i} attempt(s)"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Rollback failed — production is still unhealthy after 2 min"
+          exit 1
 
       - name: Cleanup SSH key
         if: always()

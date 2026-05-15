@@ -55,6 +55,12 @@ declare -A SECRETS_DATA=(
   [pg_user]="Postgres app user (e.g. 'tukio')"
   [pg_password]="Postgres app password"
   [kc_admin_password]="Keycloak admin user password"
+  # Keycloak KC_DB_USERNAME/KC_DB_PASSWORD do not support the _FILE env suffix.
+  # These are provisioned as secret files and exported manually before docker compose up:
+  #   export KC_DB_USERNAME=$(cat secrets/kc_db_username)
+  #   export KC_DB_PASSWORD=$(cat secrets/kc_db_password)
+  [kc_db_username]="Keycloak DB username (usually same value as pg_user)"
+  [kc_db_password]="Keycloak DB password (usually same value as pg_password)"
   [meili_key]="Meilisearch master key (32+ chars hex)"
   [r2_access_key]="Cloudflare R2 access key ID (for backups)"
   [r2_secret_key]="Cloudflare R2 secret access key (for backups)"

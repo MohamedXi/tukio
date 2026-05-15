@@ -115,3 +115,11 @@
 - **DF3** — `lighthouse-ci.yml` does not yet emit a PR comment when LCP/CLS regresses > 10 % vs `main` (AC2 last sub-bullet). Dev Notes mark this as V1+ extension; reopen as a follow-up story when historical Lighthouse baselines stabilise (LHCI Server self-hosted, post-MVP).
 - **DF4** — `tukio/no-hardcoded-text` has no autofix (AC3 said "best-effort"). Add `suggest` for `useTranslations()` wrapping in a future iteration when typed `t()` patterns are settled.
 - **DF5** — `deploy-staging.yml` + `deploy-production.yml` are placeholders per Story 0.11 scope; Story 0.12 finalises ArgoCD wiring. The `workflow_run` chain from Build Images means frontend-only merges currently skip the staging trigger — to be revisited in 0.12 with separate frontend deploy paths or unified `push: main` trigger.
+
+## Deferred from: code review of 0-12-digitalocean-droplets-docker-compose (2026-05-15)
+
+- **D-12-1** — Frontend `depends_on: service_started` (pas `service_healthy`) pour gateway-api dans `apps.prod.yml`. Pre-existing : gateway-api n'a pas de healthcheck avant Epic 1. `unless-stopped` couvre le gap MVP.
+- **D-12-2** — `docker exec tukio-apps-caddy-1` nom de container auto-généré, fragile si project name change. MVP stable ; à réviser si renommage.
+- **D-12-3** — gateway-api partage la DB `tukio_identity` avec identity-svc (non documenté en ADR). Décision architecturale à formaliser dans un ADR dédié avant Epic 1.
+- **D-12-4** — Credentials DB/Meili exportés comme env vars dans le heredoc SSH (visible via `docker inspect`). Contrainte MVP sans Vault/Doppler. À traiter V1+ avec secret manager.
+- **D-12-5** — Smoke test fires avant que les migrations DB soient appliquées → faux green possible. Aucune migration TypeORM en Sprint 0 ; à revisiter quand les migrations Epic 1 seront wired dans le deploy workflow.

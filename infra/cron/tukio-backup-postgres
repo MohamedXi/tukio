@@ -11,4 +11,4 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 MAILTO=""
 
 # minute hour dom mon dow  user  command
-15 3 * * * tukio /home/tukio/tukio/infra/scripts/backup-postgres.sh >> /var/log/tukio/backup-postgres.log 2>&1
+0 3 * * * tukio /home/tukio/tukio/infra/scripts/backup-postgres.sh >> /var/log/tukio/backup-postgres.log 2>&1

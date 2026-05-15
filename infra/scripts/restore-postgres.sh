@@ -70,8 +70,31 @@ fi
 PG_USER="$(cat "${SECRETS_DIR}/pg_user")"
 export PGPASSWORD="$(cat "${SECRETS_DIR}/pg_password")"
 
-echo "── restoring ${DB}..."
-gunzip -c "${archive}" | docker exec -e PGPASSWORD -i tukio-data-postgres-1 \
+# Discover the running postgres container name dynamically.
+PG_CONTAINER="$(docker compose -f /home/tukio/tukio/infra/docker-compose/data.prod.yml \
+  ps -q postgres 2>/dev/null | head -1)"
+if [[ -z "${PG_CONTAINER}" ]]; then
+  PG_CONTAINER="tukio-data-postgres-1"
+  echo "WARN: could not resolve postgres container via compose — falling back to '${PG_CONTAINER}'"
+fi
+
+echo ""
+echo "⚠️  IMPORTANT: Stop consumer services BEFORE restoring to avoid 'database being accessed"
+echo "    by other users' errors. Recommended:"
+echo "      cd ~/tukio-apps && docker compose -f apps.prod.yml stop"
+echo "    Then restore, then restart:"
+echo "      docker compose -f apps.prod.yml up -d"
+echo ""
+if [[ -z "${FORCE}" ]]; then
+  read -rp "    Have you stopped consumer services? (yes/no): " svc_confirm
+  if [[ "${svc_confirm}" != "yes" ]]; then
+    echo "ERROR: stop consumer services first, then re-run" >&2
+    exit 3
+  fi
+fi
+
+echo "── restoring ${DB} (container: ${PG_CONTAINER})..."
+gunzip -c "${archive}" | docker exec -e PGPASSWORD -i "${PG_CONTAINER}" \
   psql -U "${PG_USER}" -d "${DB}" --quiet --set ON_ERROR_STOP=1
 
 unset PGPASSWORD

@@ -1,5 +1,5 @@
 # Data stack — deployed on droplet `tukio-data` (Story 0.12, Option B).
-# Hosts: Postgres 16 + Keycloak 25 + NATS JetStream 2.10 + Meilisearch v1.10 + Redis 7.
+# Hosts: Postgres 16 + Keycloak 25 + NATS JetStream 2.10 + Meilisearch v1.13 + Redis 7.
 #
 # All services bind to the VPC private IP (10.114.0.<DATA_PRIV>) — never 0.0.0.0
 # at the public level. The DO Cloud Firewall (Task 2) additionally restricts
@@ -60,17 +60,18 @@ services:
     <<: [*restart, *logging]
     command: ['start']
     environment:
-      # NOTE: KC_DB_PASSWORD does NOT support the `_FILE` suffix in Keycloak 25
-      # (only KEYCLOAK_ADMIN_PASSWORD_FILE is honored). Pass DB creds as direct
-      # env vars, exported by the host before `docker compose up` from the
-      # secret files in /home/tukio/tukio/secrets/.
+      # KC_DB_USERNAME/KC_DB_PASSWORD do not support the _FILE suffix in KC 25.
+      # Export these from the secrets files before running docker compose up:
+      #   export KC_DB_USERNAME=$(cat /home/tukio/tukio/secrets/kc_db_username)
+      #   export KC_DB_PASSWORD=$(cat /home/tukio/tukio/secrets/kc_db_password)
+      # Provision via: ./infra/scripts/provision-secrets.sh data
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: ${KC_DB_USERNAME}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
       KC_HOSTNAME: auth.tukio.one
       KC_HOSTNAME_STRICT: 'false'
-      KC_PROXY: edge
+      KC_PROXY_HEADERS: xforwarded
       KC_HEALTH_ENABLED: 'true'
       KC_METRICS_ENABLED: 'true'
       KC_HTTP_ENABLED: 'true'
@@ -82,6 +83,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fs http://localhost:9000/health/ready | grep -q "UP" || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     ports:
       - '${DATA_PRIV_IP}:8080:8080'
     networks: [tukio-data]
@@ -95,10 +102,16 @@ services:
     ports:
       - '${DATA_PRIV_IP}:4222:4222' # client
       - '${DATA_PRIV_IP}:8222:8222' # monitoring (internal only)
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:8222/healthz | grep -q ok || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks: [tukio-data]
 
   meilisearch:
-    image: getmeili/meilisearch:v1.10
+    image: getmeili/meilisearch:v1.13
     <<: [*restart, *logging]
     environment:
       # NOTE: Meilisearch does not support the `_FILE` env suffix pattern.
@@ -121,6 +134,12 @@ services:
       - redis_data:/data
     ports:
       - '${DATA_PRIV_IP}:6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     networks: [tukio-data]
 
 volumes:

@@ -34,8 +34,15 @@ log() {
 }
 
 if ! command -v doctl >/dev/null 2>&1; then
-  log "ERROR: doctl not installed"
+  log "ERROR: doctl not installed — run do-droplet-init.sh first"
   exit 1
+fi
+
+# Enforce 600 permissions on the DO token file if present (prevents world-read of DO API key).
+DO_ENV_FILE="/etc/tukio/do.env"
+if [[ -f "${DO_ENV_FILE}" ]]; then
+  chmod 600 "${DO_ENV_FILE}"
+  chown root:root "${DO_ENV_FILE}" 2>/dev/null || true
 fi
 
 DROPLET_ID="$(doctl compute droplet list --format ID,Name --no-header \

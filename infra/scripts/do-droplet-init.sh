@@ -49,7 +49,16 @@ fi
 if [[ ! -f /home/tukio/.ssh/authorized_keys ]]; then
   echo "      Copying SSH authorized_keys from root → tukio..."
   mkdir -p /home/tukio/.ssh
-  cp /root/.ssh/authorized_keys /home/tukio/.ssh/authorized_keys
+  if [[ -f /root/.ssh/authorized_keys ]]; then
+    cp /root/.ssh/authorized_keys /home/tukio/.ssh/authorized_keys
+  else
+    # No root authorized_keys (e.g. password-only provisioning).
+    # Create empty file — operator must add their public key manually.
+    touch /home/tukio/.ssh/authorized_keys
+    echo "WARN: /root/.ssh/authorized_keys not found — created empty file." >&2
+    echo "      Add your SSH public key to /home/tukio/.ssh/authorized_keys before" >&2
+    echo "      running step 2 (PermitRootLogin no will lock you out otherwise)." >&2
+  fi
   chmod 700 /home/tukio/.ssh
   chmod 600 /home/tukio/.ssh/authorized_keys
   chown -R tukio:tukio /home/tukio/.ssh
@@ -103,20 +112,38 @@ systemctl restart fail2ban
 # ─── 5. Verify Docker + compose plugin versions ──────────────────────
 echo "[5/8] Verifying Docker..."
 DOCKER_VERSION=$(docker --version | grep -oE '[0-9]+\.[0-9]+' | head -1)
+DOCKER_MAJOR=$(echo "${DOCKER_VERSION}" | cut -d. -f1)
 COMPOSE_VERSION=$(docker compose version --short 2>/dev/null || echo "0")
 if [[ -z "$DOCKER_VERSION" ]]; then
   echo "FATAL: Docker missing after install attempt (step 0)." >&2
   exit 1
 fi
-echo "      Docker $DOCKER_VERSION, Compose $COMPOSE_VERSION"
+if [[ "${DOCKER_MAJOR:-0}" -lt 24 ]]; then
+  echo "FATAL: Docker ${DOCKER_VERSION} < 24 — upgrade required (get.docker.com)." >&2
+  exit 1
+fi
+echo "      Docker $DOCKER_VERSION ✓, Compose $COMPOSE_VERSION"
 
-# ─── 6. Create Tukio dirs ─────────────────────────────────────────────
+# ─── 6. Create Tukio dirs + logrotate ────────────────────────────────
 echo "[6/8] Creating Tukio dirs..."
 mkdir -p /var/log/tukio
 chown tukio:tukio /var/log/tukio
 mkdir -p /home/tukio/tukio/secrets
 chmod 700 /home/tukio/tukio/secrets
 chown -R tukio:tukio /home/tukio/tukio
+
+# logrotate config for Tukio application logs (backup.log, snapshot.log, etc.)
+cat > /etc/logrotate.d/tukio <<'EOF'
+/var/log/tukio/*.log {
+  daily
+  missingok
+  rotate 14
+  compress
+  delaycompress
+  notifempty
+  create 640 tukio tukio
+}
+EOF
 
 # Data droplet: prepare PG bind-mount dir + backup-postgres.sh working dir.
 if [[ "$ROLE" == "data" ]]; then
@@ -153,14 +180,28 @@ fi
 echo "──────────────────────────────────────────────────────────────"
 echo "  ✅ Droplet ready (role: $ROLE)"
 echo ""
-echo "  Next steps:"
+echo "  Next steps (run as tukio user):"
 echo "    1. SSH as tukio: ssh tukio@<this-ip>"
-echo "    2. Provision secrets: ./infra/scripts/provision-secrets.sh"
+echo "    2. Clone the repo:"
+echo "         git clone https://github.com/MohamedXi/tukio ~/tukio"
+echo "         (or use deploy key: eval \"\$(ssh-agent)\" && ssh-add ~/.ssh/id_ed25519)"
+echo "    3. Provision secrets:"
+echo "         ~/tukio/infra/scripts/provision-secrets.sh $ROLE"
+echo "    4. Authenticate doctl (for DO snapshots):"
+echo "         doctl auth init --access-token \$DO_TOKEN"
 if [[ "$ROLE" == "data" ]]; then
-  echo "    3. Configure rclone for R2: rclone config (provider: Cloudflare)"
-  echo "    4. Start data stack: docker compose -f data.prod.yml up -d"
+  echo "    5. Configure rclone for R2:"
+  echo "         rclone config  (provider: Cloudflare R2)"
+  echo "    6. Export Keycloak DB credentials before compose up:"
+  echo "         export KC_DB_USERNAME=\$(cat ~/tukio/secrets/kc_db_username)"
+  echo "         export KC_DB_PASSWORD=\$(cat ~/tukio/secrets/kc_db_password)"
+  echo "    7. Start data stack:"
+  echo "         cd ~/tukio && docker compose -f infra/docker-compose/data.prod.yml up -d --wait"
 else
-  echo "    3. Login GHCR: docker login ghcr.io -u MohamedXi"
-  echo "    4. Start apps stack: docker compose -f apps.prod.yml up -d"
+  echo "    5. Login GHCR: docker login ghcr.io -u MohamedXi"
+  echo "    6. Create .env.staging (copy from .env.production template, set IMAGE_TAG=develop):"
+  echo "         cp ~/tukio/infra/docker-compose/.env.production.example ~/tukio-apps/.env.staging"
+  echo "    7. Start apps stack:"
+  echo "         cd ~/tukio && docker compose -f infra/docker-compose/apps.prod.yml up -d"
 fi
 echo "──────────────────────────────────────────────────────────────"
