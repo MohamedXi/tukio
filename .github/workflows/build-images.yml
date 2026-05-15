@@ -223,17 +223,16 @@ jobs:
             echo "::notice::$SERVICE bundle loaded + Nest reached module init (exit $EXIT_CODE expected — no real env in CI smoke)"
             exit 0
           fi
-          # Next.js frontends: success = server logs the Ready/Starting banner.
-          if echo "$LOGS" | grep -qE "▲ Next\.js|Starting Next\.js|Ready in|- Local:"; then
-            echo "::notice::$SERVICE Next.js boot reached Ready (exit $EXIT_CODE)"
+          # Next.js frontends: success = version banner printed by next start / standalone
+          # server.js. `▲ Next.js X.Y.Z` is the first line emitted in all modes.
+          # Dropped: `Ready in` (Turbopack dev-server only, never in prod) and
+          # `- Local:` (too generic — matches pnpm/npm output and other CLIs).
+          if echo "$LOGS" | grep -qE "▲ Next\.js [0-9]|Starting Next\.js"; then
+            echo "::notice::$SERVICE Next.js boot banner detected (exit $EXIT_CODE)"
             exit 0
           fi
           echo "::error::$SERVICE container exited (exit $EXIT_CODE) before bootstrap — likely a webpack/build issue (missing module, etc.)"
           exit 1
-          echo "::notice::$SERVICE container running (healthcheck: $STATUS)"
-          if [ "$STATUS" = "unhealthy" ]; then
-            echo "::warning::Healthcheck failed — likely /health endpoint not implemented (DF2, Epic 1+)."
-          fi
       - name: Push image
         id: build
         uses: docker/build-push-action@v6

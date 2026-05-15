@@ -156,6 +156,9 @@ jobs:
             docker compose -f apps.prod.yml --env-file .env.staging pull \$BACKENDS
             docker compose -f apps.prod.yml --env-file .env.staging up -d \\
               --remove-orphans \$BACKENDS
+            echo "── reload Caddy config after rollback..."
+            docker exec tukio-apps-caddy-1 caddy reload --config /etc/caddy/Caddyfile || \\
+              echo "WARN: caddy reload failed during rollback"
           EOF
           echo "::warning::Rolled back staging to ${PREV_TAG}"
 

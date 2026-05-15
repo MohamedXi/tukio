@@ -1,5 +1,5 @@
 # generated: 2026-05-09
-# last_updated: 2026-05-15 (Story 4.5 Stripe Elements checkout frontend + sync coordination ready-for-dev — closing customer end-to-end MVP tunnel : NEW ADR-0015 pragmatic sync exception ADR-006 + payment-svc EXTEND sync endpoint + idempotency check cross-source + gateway-api orchestrate 2 internal calls + compensation flow BOOKING-PAYMENT-COORDINATION-001 + booking-svc EXTEND cancel-booking-on-payment-failure consumer + findByCorrelationId + Stripe Elements PaymentElement + 3DS Secure SCA Europe + locale binding + appearance Tukio + return_url confirmation page UX-DR figé + 14 Playwright Stripe test mode + NFR3 LCP < 1s + RGAA AA)
+# last_updated: 2026-05-15 (Story 4.6 Pro pending bookings page + auto-expire 48h cron + anti-désintermédiation PII masking baseline ready-for-dev — frontend Pro UX critique + backend production-ready cron : /seller/bookings/pending + /seller/bookings/<id> placeholder CTAs Story 4.7 + CountdownBadge live tick 60s + auto-expire-booking.usecase Story 4.1 skeleton → FULL impl + BookingPiiMaskInterceptor FR45 baseline + reminder cron NFR48 + pro.reminder-pending-bookings.v1 event baseline + 8 Playwright e2e + axe-core RGAA AA + Lighthouse CI gate seller bookings UX-DR figé bundle Cloud Design)
 # project: tukio.one
 # project_key: NOKEY
 # tracking_system: file-system
@@ -57,7 +57,7 @@ development_status:
   0-11-ci-github-actions-pipeline: done
   0-12-digitalocean-droplets-docker-compose: done
   0-13-initialize-adrs-vercel-multi-zones-acquisition-schema: done
-  0-13b-frontend-images-build-deploy: review
+  0-13b-frontend-images-build-deploy: done
   0-14-merge-public-customer-apex-tukio-one: done
   epic-0-retrospective: optional
 
@@ -111,7 +111,7 @@ development_status:
   4-3-cart-ui-mono-vendor-persistence-zustand: ready-for-dev
   4-4-booking-submission-3-layer-race-condition-protection: ready-for-dev
   4-5-stripe-paymentintent-elements-checkout: ready-for-dev
-  4-6-pro-pending-requests-page-delai-expiration: backlog
+  4-6-pro-pending-requests-page-delai-expiration: ready-for-dev
   4-7-pro-accept-refuse-stripe-capture-anti-desintermediation: backlog
   4-8-customer-cancellation-flow-templates-politique: backlog
   4-9-invoice-generation-tva-mandat-289-cgi: backlog

@@ -132,3 +132,13 @@
 - **Caddy : retirer le bloc app.tukio.one quand DNS supprimé (~2026-11)** — Le bloc `app.tukio.one { redir ... }` tentera un renouvellement cert ACME HTTP-01 toutes les 60 jours. À supprimer du Caddyfile + redéployer quand le record DNS A est retiré de Squarespace.
 - **build-images.yml : liste services en 3 exemplaires** — shell string + case pattern + JS Set doivent rester synchrones. Refactoriser vers source unique si le nombre de services augmente.
 - **Story 4.3 spec : chemins apps/customer/ stale + logique addLine** — Toutes les références `apps/customer/` dans le corps de la story 4.3 (chemins fichiers, code Zustand) doivent être récrites lors du dev de Story 4.3 en suivant le bandeau ADR-016 en tête de fichier.
+
+## Deferred from: code review of 0-13b-frontend-images-build-deploy (2026-05-15)
+
+- **Caddy reload race — 502 window on first deploy** — `docker compose up -d` est non-bloquant ; le reload Caddy peut arriver avant que les containers frontends écoutent. Ajouter un retry loop ou un `docker compose wait` pour les frontends avant le reload.
+- **Caddy container name `tukio-apps-caddy-1` hardcodé** — si `COMPOSE_PROJECT_NAME` change, l'exec échoue silencieusement. Remplacer par `docker compose -f apps.prod.yml exec caddy caddy reload ...`.
+- **Caddyfile-only push ne déclenche pas de deploy** — `infra/docker-compose/Caddyfile` absent des `paths:` filter de `build-images.yml`. Un commit Caddyfile seul nécessite un `workflow_dispatch` manuel. Ajouter `infra/docker-compose/**` aux paths triggers si besoin d'auto-deploy.
+- **Smoke test vérifie uniquement `api.tukio.one/health`** — les frontends (public, seller, admin) peuvent avoir crashé sans déclencher de rollback. Ajouter une vérification `curl https://tukio.one/` dans le smoke post-deploy.
+- **Admin HEALTHCHECK root → 401/403 possible quand auth-gate active** — prévoir une route `/healthz` ou vérifier `/_next/static/` pour le healthcheck Dockerfile admin.
+- **`webpack.tukio.cjs` absent du template frontend dans gen-dockerfiles.sh** — inconsistance avec le template backend. Pas de risque immédiat (Next.js n'utilise pas ce fichier), mais à surveiller si des packages workspace utilisent webpack au build.
+- **sleep 20 insuffisant pour Next.js cold start CI** — remplacer par un poll (`until curl ... ; do sleep 5; done`) avec timeout de 60s.
