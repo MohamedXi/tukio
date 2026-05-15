@@ -28,7 +28,9 @@ env:
   DO_HOST_APPS: ${{ secrets.DO_HOST_APPS }}
   DO_DEPLOY_KEY: ${{ secrets.DO_DEPLOY_KEY }}
   SLACK_WEBHOOK_DEPLOYS: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
-  STAGING_HEALTH_URL: ${{ vars.STAGING_HEALTH_URL || 'https://api.tukio.one/health' }}
+  # Default probes the gateway root (200 OK) until a dedicated /health endpoint
+  # lands in gateway-api (Epic 1+ DF2). Override via repo var STAGING_HEALTH_URL.
+  STAGING_HEALTH_URL: ${{ vars.STAGING_HEALTH_URL || 'https://api.tukio.one' }}
 
 jobs:
   ssh-deploy:
