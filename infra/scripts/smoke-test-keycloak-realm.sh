@@ -145,28 +145,33 @@ got = d[0]['attributes'].get('pkce.code.challenge.method')
 assert got == 'S256', f'expected S256, got {got!r}; attributes={d[0][\\\"attributes\\\"]!r}'
 \""
 
-# ── Test 5 (AC4): tukio:locale claim in JWT (P-M9 urlsafe b64, P-M12 cleanup via trap) ──
+# ── Test 5 (AC4): tukio:locale claim in JWT — admin REST API for full control ─
+# kcadm's `create users` triggered Keycloak to add required actions
+# (UPDATE_PASSWORD etc.) that blocked the password grant with
+# "Account is not fully set up". The REST API on /admin/realms/.../users
+# accepts a `credentials` array (with `temporary: false`) inline at creation
+# and does NOT auto-populate `requiredActions`. Cleaner and works in CI.
 SMOKE_USER="smoke-test-$$@tukio.one"
 run_test "T5 — tukio:locale claim in JWT (AC4)" "$(cat <<SHELLEOF
-  kcadm create users -r tukio \
-    -s "username=${SMOKE_USER}" \
-    -s "email=${SMOKE_USER}" \
-    -s "enabled=true" \
-    -s "emailVerified=true" \
-    -s "attributes.locale=[\"en\"]" \
-    -s "attributes.status=[\"active\"]" >/dev/null 2>&1
-  SMOKE_USER_ID=\$(kcadm get users -r tukio -q "email=${SMOKE_USER}" --fields id --format csv --noquotes 2>/dev/null | head -1 | tr -d '\r\n ')
+  ADMIN_TOKEN=\$(curl -sS -X POST "${KC}/realms/master/protocol/openid-connect/token" \
+    -d "client_id=admin-cli&username=${KEYCLOAK_ADMIN_USERNAME}&password=${KEYCLOAK_ADMIN_PASSWORD}&grant_type=password" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+  CREATE_PAYLOAD='{"username":"${SMOKE_USER}","email":"${SMOKE_USER}","enabled":true,"emailVerified":true,"attributes":{"locale":["en"],"status":["active"]},"requiredActions":[],"credentials":[{"type":"password","value":"Smoke!Test1234","temporary":false}]}'
+  curl -sS -X POST "${KC}/admin/realms/tukio/users" \
+    -H "Authorization: Bearer \$ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "\$CREATE_PAYLOAD" >/dev/null
+  SMOKE_USER_ID=\$(curl -sS "${KC}/admin/realms/tukio/users?email=${SMOKE_USER}&exact=true" \
+    -H "Authorization: Bearer \$ADMIN_TOKEN" \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['id'] if d else '')")
+  if [ -z "\$SMOKE_USER_ID" ]; then echo "T5: smoke user not created" >&2; false; fi
   echo "\$SMOKE_USER_ID" > /tmp/smoke-user-id-\$\$
-  kcadm set-password -r tukio --username "${SMOKE_USER}" -p "Smoke!Test1234" >/dev/null 2>&1
-  # Clear required actions via JSON payload — kcadm '-s requiredActions=[]' doesn't parse empty arrays.
-  # Required after set-password because Keycloak may add UPDATE_PASSWORD even when --temporary is omitted.
-  echo '{"requiredActions":[]}' | kcadm update "users/\${SMOKE_USER_ID}" -r tukio -f - >/dev/null 2>&1 || true
   TOKEN_RESPONSE=\$(curl -sS -X POST "${KC}/realms/tukio/protocol/openid-connect/token" \
     -d "grant_type=password&username=${SMOKE_USER}&password=Smoke!Test1234&client_id=tukio-smoke-test&client_secret=${KEYCLOAK_CLIENT_SECRET_SMOKE_TEST}")
   ACCESS_TOKEN=\$(echo "\$TOKEN_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('access_token', ''))" 2>/dev/null || true)
   if [ -z "\$ACCESS_TOKEN" ]; then
     echo "T5: no access_token in response: \$TOKEN_RESPONSE" >&2
-    exit 1
+    false
   fi
   # P-M9: JWT payload uses urlsafe base64 with possible padding stripped
   python3 -c "
@@ -186,18 +191,19 @@ SHELLEOF
 # P-M10: pre-clear any existing lockout state by creating a fresh user
 LOCK_USER="smoke-lock-$$@tukio.one"
 run_test "T6 — brute-force lock after 5 failures (AC5)" "$(cat <<SHELLEOF
-  kcadm create users -r tukio \
-    -s "username=${LOCK_USER}" \
-    -s "email=${LOCK_USER}" \
-    -s "enabled=true" \
-    -s "emailVerified=true" >/dev/null 2>&1
-  LOCK_USER_ID=\$(kcadm get users -r tukio -q "email=${LOCK_USER}" --fields id --format csv --noquotes 2>/dev/null | head -1 | tr -d '\r\n ')
+  # Use REST API (same reason as T5: kcadm path produces user with required actions)
+  ADMIN_TOKEN=\$(curl -sS -X POST "${KC}/realms/master/protocol/openid-connect/token" \
+    -d "client_id=admin-cli&username=${KEYCLOAK_ADMIN_USERNAME}&password=${KEYCLOAK_ADMIN_PASSWORD}&grant_type=password" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+  CREATE_LOCK_PAYLOAD='{"username":"${LOCK_USER}","email":"${LOCK_USER}","enabled":true,"emailVerified":true,"requiredActions":[],"credentials":[{"type":"password","value":"Correct!Pass123","temporary":false}]}'
+  curl -sS -X POST "${KC}/admin/realms/tukio/users" \
+    -H "Authorization: Bearer \$ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "\$CREATE_LOCK_PAYLOAD" >/dev/null
+  LOCK_USER_ID=\$(curl -sS "${KC}/admin/realms/tukio/users?email=${LOCK_USER}&exact=true" \
+    -H "Authorization: Bearer \$ADMIN_TOKEN" \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['id'] if d else '')")
   echo "\$LOCK_USER_ID" > /tmp/lock-user-id-\$\$
-  # P-M10: ensure no pre-existing lockout
-  kcadm update "users/\${LOCK_USER_ID}" -r tukio -s "enabled=true" >/dev/null 2>&1 || true
-  kcadm set-password -r tukio --username "${LOCK_USER}" -p "Correct!Pass123" >/dev/null 2>&1
-  # Clear required actions via JSON payload (same as T5 — kcadm -s can't accept empty array)
-  echo '{"requiredActions":[]}' | kcadm update "users/\${LOCK_USER_ID}" -r tukio -f - >/dev/null 2>&1 || true
   for i in \$(seq 1 5); do
     curl -fsS -X POST "${KC}/realms/tukio/protocol/openid-connect/token" \
       -d "grant_type=password&username=${LOCK_USER}&password=WRONG_PASS&client_id=tukio-smoke-test&client_secret=${KEYCLOAK_CLIENT_SECRET_SMOKE_TEST}" >/dev/null 2>&1 || true
