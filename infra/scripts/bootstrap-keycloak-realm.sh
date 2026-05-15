@@ -239,10 +239,18 @@ else
   rm "$TMP_REALM"
 
   # ─── 5 realm roles with i18n attributes (P-M6 reconcile on every run) ─────
+  # NOTE: read into an array first; `docker compose exec -T` consumes loop stdin
+  # when used inside `while read < <(...)` and would exit after the first role.
   log_step "Realm roles (5)"
-  while IFS= read -r role_json; do
+  readarray -t ROLE_LINES < <(python3 -c "
+import json, sys, os
+data = json.load(open(os.path.join(os.environ['KC_CONFIG_DIR'], 'roles.json')))
+for role in data['roles']:
+    print(json.dumps(role))
+")
+  for role_json in "${ROLE_LINES[@]}"; do
     role_name="$(echo "$role_json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['name'])")"
-    existing_id="$(kcadm get "roles/${role_name}" -r tukio --fields id --format csv --noquotes 2>/dev/null | head -1 | tr -d '\r\n ' || true)"
+    existing_id="$(kcadm get "roles/${role_name}" -r tukio --fields id --format csv --noquotes </dev/null 2>/dev/null | head -1 | tr -d '\r\n ' || true)"
     if [ -n "$existing_id" ] && [[ "$existing_id" =~ $UUID_RE ]]; then
       log_info "Role '${role_name}' exists — updating via roles-by-id (reconcile attrs)"
       if echo "$role_json" | kcadm update "roles-by-id/${existing_id}" -r tukio -f - >/dev/null 2>&1; then
@@ -254,18 +262,15 @@ else
       echo "$role_json" | kcadm create roles -r tukio -f - >/dev/null
       log_info "Role '${role_name}' created"
     fi
-  done < <(python3 -c "
-import json, sys, os
-data = json.load(open(os.path.join(os.environ['KC_CONFIG_DIR'], 'roles.json')))
-for role in data['roles']:
-    print(json.dumps(role))
-")
+  done
 
   # ─── MFA flow: tukio-admin-mfa-required (P-M5: rollback on partial failure)
+  # NOTE: Keycloak API expects flow ALIAS in the URL (not UUID) for
+  # `authentication/flows/{alias}/executions/...` endpoints.
   log_step "Authentication flow tukio-admin-mfa-required"
   setup_mfa_flow() {
     local flow_exists
-    flow_exists="$(kcadm get "authentication/flows" -r tukio --format csv --noquotes --fields alias 2>/dev/null \
+    flow_exists="$(kcadm get "authentication/flows" -r tukio --format csv --noquotes --fields alias </dev/null 2>/dev/null \
       | grep -x "tukio-admin-mfa-required" || true)"
     if [ -n "$flow_exists" ]; then
       log_info "Flow 'tukio-admin-mfa-required' already exists"
@@ -277,64 +282,60 @@ for role in data['roles']:
       -s alias=tukio-admin-mfa-required \
       -s providerId=basic-flow \
       -s topLevel=true \
-      -s builtIn=false >/dev/null
+      -s builtIn=false </dev/null >/dev/null
 
-    local flow_id
-    flow_id="$(kcadm get "authentication/flows" -r tukio --format csv --noquotes --fields id,alias 2>/dev/null \
-      | awk -F, '$2=="tukio-admin-mfa-required" {print $1}' | head -1 | tr -d '\r\n ')"
+    # Rollback trap — drop the half-built flow on failure
+    trap 'log_warn "MFA flow setup failed — rolling back partial flow"; kcadm delete "authentication/flows/tukio-admin-mfa-required" -r tukio </dev/null >/dev/null 2>&1 || true' ERR
 
-    # Rollback trap — if any subsequent kcadm call fails, drop the half-built flow
-    trap 'log_warn "MFA flow setup failed — rolling back partial flow"; kcadm delete "authentication/flows/${flow_id}" -r tukio >/dev/null 2>&1 || true' ERR
+    kcadm create "authentication/flows/tukio-admin-mfa-required/executions/execution" -r tukio \
+      -s provider=auth-cookie </dev/null >/dev/null
+    kcadm create "authentication/flows/tukio-admin-mfa-required/executions/execution" -r tukio \
+      -s provider=identity-provider-redirector </dev/null >/dev/null
 
-    kcadm create "authentication/flows/${flow_id}/executions/execution" -r tukio \
-      -s provider=auth-cookie >/dev/null
-    kcadm create "authentication/flows/${flow_id}/executions/execution" -r tukio \
-      -s provider=identity-provider-redirector >/dev/null
-
-    kcadm create "authentication/flows/${flow_id}/executions/flow" -r tukio \
+    kcadm create "authentication/flows/tukio-admin-mfa-required/executions/flow" -r tukio \
       -s alias=tukio-admin-forms \
-      -s type=basic-flow >/dev/null 2>&1 || true
+      -s type=basic-flow </dev/null >/dev/null 2>&1 || true
 
     kcadm create "authentication/flows/tukio-admin-forms/executions/execution" -r tukio \
-      -s provider=auth-username-password-form >/dev/null
+      -s provider=auth-username-password-form </dev/null >/dev/null
 
     kcadm create "authentication/flows/tukio-admin-forms/executions/flow" -r tukio \
       -s alias=tukio-admin-totp-required \
-      -s type=basic-flow >/dev/null
+      -s type=basic-flow </dev/null >/dev/null
 
     kcadm create "authentication/flows/tukio-admin-totp-required/executions/execution" -r tukio \
-      -s provider=auth-otp-form >/dev/null
+      -s provider=auth-otp-form </dev/null >/dev/null
 
     local otp_exec_id
     otp_exec_id="$(kcadm get "authentication/flows/tukio-admin-totp-required/executions" -r tukio \
-      --format csv --noquotes --fields id,providerId 2>/dev/null \
+      --format csv --noquotes --fields id,providerId </dev/null 2>/dev/null \
       | awk -F, '$2=="auth-otp-form" {print $1}' | head -1 | tr -d '\r\n ')"
 
     if [ -n "$otp_exec_id" ]; then
       kcadm update "authentication/flows/tukio-admin-totp-required/executions" -r tukio \
-        -b "{\"id\":\"${otp_exec_id}\",\"requirement\":\"REQUIRED\"}" >/dev/null
+        -b "{\"id\":\"${otp_exec_id}\",\"requirement\":\"REQUIRED\"}" </dev/null >/dev/null
       log_info "OTP execution set to REQUIRED in tukio-admin-totp-required flow"
     fi
 
     # P-H5: bind CONFIGURE_RECOVERY_AUTHN_CODES as required-action execution in the flow
     if kcadm create "authentication/flows/tukio-admin-totp-required/executions/execution" -r tukio \
-      -s provider=registration-recovery-authn-codes >/dev/null 2>&1; then
+      -s provider=registration-recovery-authn-codes </dev/null >/dev/null 2>&1; then
       log_info "Recovery codes execution added to tukio-admin-totp-required"
     else
       log_warn "Recovery codes execution provider not available — fallback: realm-level required action only"
     fi
 
     local forms_exec_id
-    forms_exec_id="$(kcadm get "authentication/flows/${flow_id}/executions" -r tukio \
-      --format csv --noquotes --fields id,displayName 2>/dev/null \
+    forms_exec_id="$(kcadm get "authentication/flows/tukio-admin-mfa-required/executions" -r tukio \
+      --format csv --noquotes --fields id,displayName </dev/null 2>/dev/null \
       | awk -F, '$2=="tukio-admin-forms" {print $1}' | head -1 | tr -d '\r\n ')"
     if [ -n "$forms_exec_id" ]; then
-      kcadm update "authentication/flows/${flow_id}/executions" -r tukio \
-        -b "{\"id\":\"${forms_exec_id}\",\"requirement\":\"ALTERNATIVE\"}" >/dev/null
+      kcadm update "authentication/flows/tukio-admin-mfa-required/executions" -r tukio \
+        -b "{\"id\":\"${forms_exec_id}\",\"requirement\":\"ALTERNATIVE\"}" </dev/null >/dev/null
     fi
 
     trap - ERR
-    log_info "Flow 'tukio-admin-mfa-required' created (id=${flow_id})"
+    log_info "Flow 'tukio-admin-mfa-required' created"
   }
   setup_mfa_flow
 
@@ -383,8 +384,19 @@ json.dump(d, open('$stripped', 'w'), indent=2)
   # ─── Bind MFA flow to tukio-admin client ──────────────────────────────────
   log_step "Binding MFA flow to tukio-admin"
   ADMIN_CLIENT_UUID="$(get_client_uuid "tukio-admin")"
-  MFA_FLOW_ID="$(kcadm get "authentication/flows" -r tukio --format csv --noquotes --fields id,alias 2>/dev/null \
-    | awk -F, '$2=="tukio-admin-mfa-required" {print $1}' | head -1 | tr -d '\r\n ')"
+  # Query the flow with a JSON output for reliable parsing (csv field order may differ)
+  MFA_FLOW_ID="$(kcadm get "authentication/flows" -r tukio </dev/null 2>/dev/null \
+    | python3 -c "
+import sys, json
+try:
+    flows = json.load(sys.stdin)
+    for f in (flows if isinstance(flows, list) else []):
+        if f.get('alias') == 'tukio-admin-mfa-required':
+            print(f.get('id', ''))
+            break
+except Exception:
+    pass
+" || true)"
   if [ -n "$ADMIN_CLIENT_UUID" ] && [ -n "$MFA_FLOW_ID" ]; then
     kcadm update "clients/${ADMIN_CLIENT_UUID}" -r tukio \
       -s "authenticationFlowBindingOverrides.browser=${MFA_FLOW_ID}" >/dev/null
