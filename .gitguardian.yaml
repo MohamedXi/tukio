@@ -1,0 +1,15 @@
+# GitGuardian configuration — Tukio
+# Docs: https://docs.gitguardian.com/ggshield-docs/reference/config-file
+
+version: 2
+
+# Ignore false positives in auto-generated artifacts.
+# Story 1.1: the Keycloak realm export is sanitized at write time
+# (privateKey/publicKey/certificate/clients[].secret/etc. stripped via
+# bootstrap-keycloak-realm.sh). The `passwordPolicy` string contains the
+# tokens "password" + "(N)" which trip GitGuardian's Generic Password
+# fuzzy detector — false positive. The file is checked into git solely
+# for CI drift detection (AC7), never as a secret store.
+secret:
+  ignored-paths:
+    - 'infra/keycloak/realm-export/tukio.realm.json'
