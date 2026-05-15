@@ -58,7 +58,7 @@ development_status:
   0-12-digitalocean-droplets-docker-compose: done
   0-13-initialize-adrs-vercel-multi-zones-acquisition-schema: done
   0-13b-frontend-images-build-deploy: review
-  0-14-merge-public-customer-apex-tukio-one: in-progress
+  0-14-merge-public-customer-apex-tukio-one: done
   epic-0-retrospective: optional
 
   # ─── Epic 1 — Identity & Authentication Backbone (MVP) ────────────────

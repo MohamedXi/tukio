@@ -123,3 +123,12 @@
 - **D-12-3** — gateway-api partage la DB `tukio_identity` avec identity-svc (non documenté en ADR). Décision architecturale à formaliser dans un ADR dédié avant Epic 1.
 - **D-12-4** — Credentials DB/Meili exportés comme env vars dans le heredoc SSH (visible via `docker inspect`). Contrainte MVP sans Vault/Doppler. À traiter V1+ avec secret manager.
 - **D-12-5** — Smoke test fires avant que les migrations DB soient appliquées → faux green possible. Aucune migration TypeORM en Sprint 0 ; à revisiter quand les migrations Epic 1 seront wired dans le deploy workflow.
+
+## Deferred from: code review of 0-14-merge-public-customer-apex-tukio-one (2026-05-15)
+
+- **AUTH_GATED ne couvre pas cart / checkout** — À mettre à jour lors de l'implémentation de Story 4.3 quand les routes `/fr/cart` et `/fr/checkout` seront ajoutées sous `(authenticated)/`.
+- **Cookie acquisition : attributs perdus lors du forward auth-gate → redirect response** — `acqResponse.cookies.getAll()` retourne `{name,value}` sans `Domain`/`Max-Age`/`SameSite`. Pattern pré-existant sur le branch i18n. Impact : cookie acquisition devient session-only sur les redirections auth-gate. À corriger en refactorisant le transfert de cookies (utiliser `ResponseCookies` API directement plutôt que `getAll()`).
+- **app.tukio.one redir 301 downgrade POST** — 301 peut changer POST en GET. Aucun endpoint POST frontend actuellement. Remplacer par 308 si des intégrations POST apparaissent sur `app.tukio.one` avant expiration du record DNS (~2026-11).
+- **Caddy : retirer le bloc app.tukio.one quand DNS supprimé (~2026-11)** — Le bloc `app.tukio.one { redir ... }` tentera un renouvellement cert ACME HTTP-01 toutes les 60 jours. À supprimer du Caddyfile + redéployer quand le record DNS A est retiré de Squarespace.
+- **build-images.yml : liste services en 3 exemplaires** — shell string + case pattern + JS Set doivent rester synchrones. Refactoriser vers source unique si le nombre de services augmente.
+- **Story 4.3 spec : chemins apps/customer/ stale + logique addLine** — Toutes les références `apps/customer/` dans le corps de la story 4.3 (chemins fichiers, code Zustand) doivent être récrites lors du dev de Story 4.3 en suivant le bandeau ADR-016 en tête de fichier.

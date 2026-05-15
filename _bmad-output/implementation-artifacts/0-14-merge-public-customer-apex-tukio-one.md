@@ -1,6 +1,6 @@
 # Story 0.14 — Merge `apps/public` + `apps/customer` en app unifiée sur l'apex `tukio.one` (tunnel B2C)
 
-Status: review
+Status: done
 
 > **Cf. ADR-016** dans `_bmad-output/planning-artifacts/architecture.md` —
 > **supersedes ADR-013** (multi-zones 4 apps frontend). La séparation Sprint 0
@@ -156,6 +156,32 @@ Subdomains retirés : `app.tukio.one` (était public), `customer.tukio.one`
   - [x] 12.2 — ADR-013 dans `_bmad-output/planning-artifacts/architecture.md` ligne 1088 marqué "**superseded by ADR-016 (2026-05-15)**" + ADR-013 dans `docs/adr/0013-frontend-multi-zones-feature-based.md` Status passé à `⛔ Superseded by [ADR-016]` + ADR-016 formel créé `docs/adr/0016-frontend-topology-pivot-apex-unified.md` + `docs/adr/README.md` index mis à jour
   - [x] 12.3 — Memory file `story_0_14_apex_merge_2026_05_15.md` créé avec pointer Story 0.14 + ADR-016 + résumé refactor + référence stories impactées
   - [x] 12.4 — `MEMORY.md` index : entry ajoutée pour la nouvelle memory
+
+### Review Findings (AI) — 2026-05-15
+
+> Code review Sonnet 4.6 · Blind Hunter + Edge Case Hunter + Acceptance Auditor · 1 decision-needed, 4 patches, 8 deferred, 8 dismissed
+
+#### Decision-needed
+
+- [x] [Review][Decision] **Statut HTTP 307 vs 302** — 307 conservé (correct sémantiquement, identique côté navigateur pour GET). Spec 11.7 à mettre à jour. ✅ dismissed
+
+#### Patches
+
+- [x] [Review][Patch] **sprint-status.yaml `in-progress` → `review`** — corrigé ✅ [`_bmad-output/implementation-artifacts/sprint-status.yaml`]
+- [x] [Review][Patch] **Seller rewrite trailing slash `/fr/seller/`** — dismissed : Next.js normalise les trailing slashes vers no-slash avant d'évaluer les rewrites (`trailingSlash: false` par défaut). Commentaire ajouté dans next.config.ts. ✅
+- [x] [Review][Patch] **Story 1.6 path stale `apps/customer/[locale]/auth/verify-email-required`** — remplacé par `apps/public/[locale]/(authenticated)/auth/verify-email-required` ✅ [`_bmad-output/implementation-artifacts/1-6-email-verification-flow-landing-page.md`]
+- [x] [Review][Patch] **AUTH_GATED regex : import LOCALES depuis `@tukio/i18n-client/config`** — regex reconstruite dynamiquement, single source of truth. Tests 23/23 ✅ [`apps/public/src/middleware/auth-gate.ts`]
+
+#### Deferred
+
+- [x] [Review][Defer] **AUTH_GATED ne couvre pas `cart` / `checkout`** — Story 4.3 placera ces routes sous `(authenticated)/`. Middleware à mettre à jour lors de l'implémentation de Story 4.3. [`apps/public/src/middleware/auth-gate.ts`] — deferred, Story 4.3 future
+- [x] [Review][Defer] **Cookie acquisition : attributs (`Domain`, `Max-Age`, `SameSite`) perdus lors du forward auth-gate → authResponse** — `acqResponse.cookies.getAll()` retourne `{name,value}` sans attributs ; même pattern pré-existant sur le branch i18n avant cette PR. [`apps/public/src/middleware.ts:18-21`] — deferred, pre-existing
+- [x] [Review][Defer] **app.tukio.one redir 301 downgrade POST** — la redirection 301 peut changer POST en GET. Aucun endpoint POST n'est enregistré sur le frontend public ; risque théorique uniquement. Corriger en 308 si besoin futur. [`infra/docker-compose/Caddyfile:46`] — deferred, theoretical risk
+- [x] [Review][Defer] **Caddy cert renewal pour app.tukio.one quand DNS retiré** — Caddy tentera le renouvellement ACME HTTP-01 toutes les 60 jours. Quand le record DNS `app.tukio.one` sera supprimé (~6 mois), ce bloc devra être retiré du Caddyfile pour éviter les erreurs. [`infra/docker-compose/Caddyfile`] — deferred, ops task ~2026-11
+- [x] [Review][Defer] **build-images.yml : liste services présente 3 fois** (shell string + case pattern + JS Set) — maintenus synchrones dans ce diff ; risque de dérive future. Refactoriser vers source unique si pipelines grandissent. [`../.github/workflows/build-images.yml`] — deferred, pre-existing pattern
+- [x] [Review][Defer] **Story 4.3 spec : corps entier pointe sur apps/customer/ (chemins filesystem)** — le bandeau ADR-016 en tête de fichier signale la retraite ; les chemins dans le corps restent stale. À corriger lors du dev de Story 4.3. [`_bmad-output/implementation-artifacts/4-3-cart-ui-mono-vendor-persistence-zustand.md`] — deferred, Story 4.3
+- [x] [Review][Defer] **Story 4.3 spec : `addLine` proProfileId non set sur merge-by-listing + self-booking dead code** — issues dans les exemples de code Zustand de la spec. À corriger lors de l'implémentation de Story 4.3. [`_bmad-output/implementation-artifacts/4-3-cart-ui-mono-vendor-persistence-zustand.md`] — deferred, Story 4.3
+- [x] [Review][Defer] **AUTH_GATED locale drift si nouvelle locale ajoutée** — (couvert par Patch P4 si appliqué ; sinon déférer ici) — deferred pending P4
 
 ## Dev Notes
 
