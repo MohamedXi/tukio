@@ -21,7 +21,7 @@ dependencies, job structure, performance budgets, and troubleshooting.
          ▼
  ┌──────────────────────────────────────────────────────────────────┐
  │ lighthouse-ci.yml                                                 │
- │ matrix: { app: [public, customer, seller, admin] }                │
+ │ matrix: { app: [public, seller, admin] }                          │
  │  → build affected app → start server → lhci autorun              │
  └──────────────────────────────────────────────────────────────────┘
          │
@@ -122,7 +122,7 @@ Per-app configs live in `.lighthouserc/*.json`. The strictest is
 - `largest-contentful-paint ≤ 2500 ms` (error — NFR5)
 - `cumulative-layout-shift ≤ 0.1` (error — NFR5)
 
-Connected apps (`customer`, `seller`, `admin`) keep `accessibility ≥ 0.9`
+Connected apps (`seller`, `admin`) keep `accessibility ≥ 0.9`
 as the only `error`; performance is `warn` because they're behind auth
 and not SEO-critical.
 

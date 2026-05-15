@@ -52,7 +52,7 @@ GitHub REST API requires admin rights and is not automated here.)
 
 - **Require status checks before merging — required:**
   - `CI success` (aggregator from `ci.yml`)
-  - `Lighthouse — public` / `customer` / `seller` / `admin`
+  - `Lighthouse — public` / `seller` / `admin`
 - **Require a pull request before merging:** 1 approving review
   (Dependabot bots count as auto-approvers via repo CODEOWNERS)
 - **Dismiss stale pull request approvals when new commits are pushed**

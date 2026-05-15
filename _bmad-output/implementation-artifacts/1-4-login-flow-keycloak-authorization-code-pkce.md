@@ -2,6 +2,15 @@
 
 Status: ready-for-dev
 
+> ⚠️ **ADR-016 / Story 0.14 (2026-05-15) — frontend topology pivot — IMPACT LOURD sur cette story**
+> `apps/customer` a été mergé dans `apps/public` (apex `tukio.one` unifié,
+> visiteurs + customers B2C). Conséquences sur ce flow login :
+> - Redirect post-login Customer : `customer.tukio.one/{locale}/account/dashboard` → `tukio.one/{locale}/account/dashboard`.
+> - Le "cross-zone session sharing" Customer ↔ Customer n'a plus lieu d'être (même origin). Reste la cross-zone vers `seller.tukio.one` (cookie `Domain=.tukio.one`).
+> - Callback URL Keycloak : déjà `tukio.one/{locale}/auth/callback` dans la story (✅ aligné).
+> - Routes auth-gated `apps/public/[locale]/(authenticated)/...` protégées par le middleware Story 0.14 (`apps/public/src/middleware.ts`) — Story 1.4 doit poser le cookie `tukio-session-active` que ce middleware lit.
+> Voir `docs/adr/0016-frontend-topology-pivot-apex-unified.md` et Story 0.14.
+
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
 ## Story

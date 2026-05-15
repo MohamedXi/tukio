@@ -113,7 +113,7 @@ jobs:
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
                       notification-svc media-svc \\
-                      public customer seller admin"
+                      public seller admin"
             docker compose -f apps.prod.yml --env-file .env.production pull \$BACKENDS
             # Don't --wait : backend healthchecks need migrated DB schema (Epic 1).
             # Smoke test against PRODUCTION_HEALTH_URL is the real check + triggers rollback on fail.
@@ -155,7 +155,7 @@ jobs:
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
                       notification-svc media-svc \\
-                      public customer seller admin"
+                      public seller admin"
             docker compose -f apps.prod.yml --env-file .env.production pull \$BACKENDS
             docker compose -f apps.prod.yml --env-file .env.production up -d \\
               --remove-orphans \$BACKENDS

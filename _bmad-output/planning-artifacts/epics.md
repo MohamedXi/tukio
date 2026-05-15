@@ -981,7 +981,7 @@ Epic 0 (Sprint 0 Foundation)
 - **Given** `packages/auth-client/src/` (frontend), **When** je l'ouvre, **Then** je trouve `keycloak-client.ts`, `refresh-token-rotation.ts`, `cookie-manager.ts` (`Domain=.tukio.one`), hooks `useAuth`, `useRole`, `useRequireRole`, `useLogout`, `middleware-helpers.ts`.
 - **Given** un app Next.js qui utilise `useAuth()`, **When** le user est connecté, **Then** le hook retourne `{ user, role, locale, isAuthenticated: true }`.
 - **Given** un user non authentifié hitting `/customer/account/...`, **When** le `KeycloakAuthMiddleware` détecte absence de cookie `tukio-access-token`, **Then** il redirige vers `auth.tukio.one/realms/tukio/protocol/openid-connect/auth?...` avec `state=` pour redirect post-login.
-- **Given** un user authentifié sur `customer.tukio.one`, **When** il navigue vers `seller.tukio.one`, **Then** le cookie session Keycloak (`Domain=.tukio.one`, HttpOnly, Secure, SameSite=Lax) est partagé et il reste authentifié (multi-zones cohérent NFR9).
+- **Given** un user authentifié sur `tukio.one` (apex unifié, ADR-016), **When** il navigue vers `seller.tukio.one`, **Then** le cookie session Keycloak (`Domain=.tukio.one`, HttpOnly, Secure, SameSite=Lax) est partagé et il reste authentifié (NFR9).
 
 #### Story 0.9: Setup @tukio/api-client + @tukio/i18n-client + @tukio/testing
 
@@ -1055,15 +1055,13 @@ Epic 0 (Sprint 0 Foundation)
 **Acceptance Criteria :**
 
 - **Given** `docs/adr/`, **When** je l'ouvre, **Then** je trouve 14 ADRs au format ADR standard (Status / Context / Decision / Consequences) : `0001-pretre-clean-architecture.md`, `0002-nats-jetstream.md`, `0003-database-per-service.md`, `0004-booking-order-split.md`, `0005-meilisearch-mvp.md`, `0006-saga-choreographed.md`, `0007-outbox-pattern.md`, `0008-gateway-api-public-only.md`, `0009-keycloak-identity-svc-split.md`, `0010-typeorm-default-raw-sql-readheavy.md`, `0011-tukio-contracts-package.md`, `0012-i18n-fr-en-sprint-zero.md`, `0013-frontend-multi-zones-feature-based.md`, `0014-api-response-envelope.md`, + `template.md` pour les futurs ADRs.
-- **Given** `apps/public/next.config.ts`, **When** je l'ouvre, **Then** je trouve la config Vercel multi-zones avec rewrites :
+- **Given** `apps/public/next.config.ts` (post Story 0.14 / ADR-016), **When** je l'ouvre, **Then** je trouve un rewrite résiduel uniquement vers `seller.tukio.one` (les routes `/account` et `/cart` sont servies localement par le route group `(authenticated)`) :
   ```ts
   rewrites: [
-    { source: '/:locale/account/:path*', destination: 'https://customer.tukio.one/:locale/account/:path*' },
-    { source: '/:locale/cart/:path*', destination: 'https://customer.tukio.one/:locale/cart/:path*' },
     { source: '/:locale/seller/:path*', destination: 'https://seller.tukio.one/:locale/seller/:path*' },
   ]
   ```
-- **Given** un user connecté sur `tukio.one/fr/`, **When** il clique un lien vers `/fr/account/bookings`, **Then** Vercel rewrite vers `customer.tukio.one/fr/account/bookings`, le cookie session Keycloak est partagé via `Domain=.tukio.one`, et le user reste authentifié.
+- **Given** un user connecté sur `tukio.one/fr/`, **When** il clique un lien vers `/fr/account/bookings`, **Then** la route est servie par `apps/public` localement (pas de rewrite cross-zone), le cookie session Keycloak est lu sur le même domain, et le user reste authentifié.
 - **Given** la migration TypeORM dans `identity-svc/migrations/`, **When** je l'exécute, **Then** les colonnes suivantes sont ajoutées sur `users` ET sur `bookings` (table dans `booking-svc`) : `acquisition_source` (TEXT, ENUM `'organic' | 'google_ads' | 'meta_ads' | 'referral' | 'direct' | 'partner'`), `acquisition_medium` (TEXT), `acquisition_campaign` (TEXT), `acquisition_referral_id` (TEXT NULL), `acquisition_first_touch` (TIMESTAMPTZ), `acquisition_last_touch` (TIMESTAMPTZ).
 - **Given** un Visitor arrive sur `tukio.one/fr/?utm_source=google_ads&utm_campaign=spring2026`, **When** il s'inscrit en tant que customer, **Then** son user record en DB a `acquisition_source = 'google_ads'`, `acquisition_campaign = 'spring2026'` (NFR64 — impossible à rétro-fitter sans perte).
 - **Given** la story est complétée, **When** je vérifie l'état Sprint 0, **Then** : 14 ADRs documentés ✅, Vercel multi-zones configuré ✅, schema acquisition_* migré ✅, et le projet est **prêt à recevoir les stories user-facing Epic 1+**.
@@ -1139,7 +1137,7 @@ Epic 0 (Sprint 0 Foundation)
 
 - **Given** un user sur `tukio.one/fr/auth/login`, **When** il clique "Se connecter", **Then** il est redirigé vers `auth.tukio.one/realms/tukio/protocol/openid-connect/auth?response_type=code&client_id=tukio-web&redirect_uri=...&code_challenge=...&code_challenge_method=S256&state=...&kc_locale=fr` (PKCE obligatoire — NFR9).
 - **Given** un user qui s'authentifie correctement, **When** Keycloak callback `/auth/callback?code=...&state=...`, **Then** Next.js échange code → tokens via Keycloak `/token` endpoint, écrit cookies `tukio-access-token` (HttpOnly, Secure, SameSite=Lax, `Domain=.tukio.one`, max-age 5 min) et `tukio-refresh-token` (HttpOnly, Secure, SameSite=Strict, `Domain=.tukio.one`, max-age 30 jours rolling — NFR12, NFR13).
-- **Given** un Customer authentifié sur `customer.tukio.one`, **When** il navigue vers `seller.tukio.one`, **Then** le cookie est partagé et il reste authentifié sans re-login (NFR9).
+- **Given** un Customer authentifié sur `tukio.one` (apex unifié, ADR-016), **When** il navigue vers `seller.tukio.one`, **Then** le cookie est partagé et il reste authentifié sans re-login (NFR9).
 - **Given** un user qui essaie de se connecter avec mauvais password, **When** la response Keycloak arrive, **Then** Next.js affiche un message générique "Email ou mot de passe incorrect" (pas de leak — NFR9), et incrémente le compteur Brute Force Detection.
 - **Given** un Pro `pending_admin_review`, **When** il se connecte, **Then** il est redirigé vers `/seller/onboarding/pending` (FR17).
 - **Given** un Admin, **When** il se connecte, **Then** Keycloak force la 2FA TOTP avant émission token (FR9). S'il n'a pas configuré TOTP, il est redirigé vers `/auth/totp-setup` (Story 1.7).

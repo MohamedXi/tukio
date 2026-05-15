@@ -46,7 +46,8 @@ Speak French with the user.
 
 - "Add this `ListingCard` directly in `@tukio/ui`." → No. It carries
   Tukio domain concepts (`Listing`, `Pro`, `Price`). It belongs in
-  `apps/customer/src/...` or in `@tukio/contracts/components/` (latter
+  `apps/public/src/...` (under `(authenticated)/` for gated routes) or in
+  `@tukio/contracts/components/` (latter
   doesn't exist yet — surface the need first).
 - "Inline `#a02e1d` for the brand red." → No. Use `bg-brand-500` or
   `colors.brand['500']` from `@tukio/ui/tokens/colors`.

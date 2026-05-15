@@ -28,16 +28,19 @@ See `.agents/context/directory-layout.md` for the full tree.
 
 ## Frontend apps (Next.js 16)
 
-| App        | Port | Audience                                     | Auth                              |
-| ---------- | ---- | -------------------------------------------- | --------------------------------- |
-| `public`   | 3000 | Marketing, search, listing detail, SSR-heavy | Public — no auth                  |
-| `customer` | 3001 | B2C / B2B customer area                      | Keycloak `tukio-web` PKCE         |
-| `seller`   | 3002 | Pro dashboard (KYC, listings, bookings)      | Keycloak `tukio-web` PKCE + role  |
-| `admin`    | 3003 | Moderation console                           | Keycloak `tukio-admin` + MFA TOTP |
+| App      | Port | Hostname           | Audience                                                         | Auth                                                    |
+| -------- | ---- | ------------------ | ---------------------------------------------------------------- | ------------------------------------------------------- |
+| `public` | 3000 | `tukio.one` (apex) | Visitors + authenticated B2C customers (unified tunnel, ADR-016) | `(authenticated)/*` gated via Keycloak `tukio-web` PKCE |
+| `seller` | 3002 | `seller.tukio.one` | Pro dashboard (KYC, listings, bookings)                          | Keycloak `tukio-web` PKCE + role                        |
+| `admin`  | 3003 | `admin.tukio.one`  | Moderation console                                               | Keycloak `tukio-admin` + MFA TOTP                       |
 
-All four use `next-intl` for FR/EN routing (`/{locale}/...`), import the
+All three use `next-intl` for FR/EN routing (`/{locale}/...`), import the
 design system from `@tukio/ui`, and talk to the backend through
-`gateway-api` (port 4000) via `@tukio/api-client`.
+`gateway-api` (port 4000) via `@tukio/api-client`. Story 0.14 (ADR-016)
+merged the previous `apps/customer` (subdomain `customer.tukio.one`) into
+`apps/public` — auth-gated routes live under the `(authenticated)` route
+group and are protected by the Next.js middleware in
+`apps/public/src/middleware.ts`.
 
 ## Backend services (NestJS 11)
 

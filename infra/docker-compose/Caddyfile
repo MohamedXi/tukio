@@ -2,6 +2,15 @@
 # Deployed on droplet `tukio-apps`, only container with public ports 80/443.
 #
 # `{$DATA_PRIV_IP}` is sourced from .env.production (DO VPC private IP of tukio-data).
+#
+# Topology (Story 0.14, ADR-016):
+#   tukio.one        → public:3000  (visitors + authenticated B2C customers, unified tunnel)
+#   seller.tukio.one → seller:3002  (B2B pros)
+#   admin.tukio.one  → admin:3003   (staff console)
+#   api.tukio.one    → gateway-api:4000
+#   auth.tukio.one   → keycloak (cross-droplet via VPC)
+# Legacy `app.tukio.one` 301-redirects to the apex for ~6 months; legacy
+# `customer.tukio.one` is dropped (post-merge).
 
 {
 	email tech-lead@tukio.one
@@ -9,19 +18,15 @@
 }
 
 # ───────────────────────────────────────────────────────────────────
-# Frontend apps
+# Apex — visitors + authenticated B2C customers (unified tunnel)
 # ───────────────────────────────────────────────────────────────────
 
-app.tukio.one {
+tukio.one {
 	reverse_proxy public:3000 {
 		# Preserve the public Host header so Next.js / next-intl build
 		# correct absolute URLs.
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
-		# Next.js 16 + next-intl middleware leak the upstream listening
-		# port into Location headers (e.g. https://app.tukio.one:3000/fr).
-		# Strip it so the client follows the canonical public URL.
-		header_down Location "://app.tukio.one:3000" "://app.tukio.one"
 	}
 	encode gzip zstd
 	header {
@@ -32,25 +37,23 @@ app.tukio.one {
 	}
 }
 
-customer.tukio.one {
-	reverse_proxy customer:3001 {
-		header_up Host {host}
-		header_up X-Forwarded-Proto https
-		header_down Location "://customer.tukio.one:3001" "://customer.tukio.one"
-	}
-	encode gzip zstd
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
-		X-Content-Type-Options "nosniff"
-		Referrer-Policy "strict-origin-when-cross-origin"
-	}
+# ───────────────────────────────────────────────────────────────────
+# Legacy redirects — bookmarked links from the multi-zones era (ADR-013).
+# Keep for ~6 months then revisit.
+# ───────────────────────────────────────────────────────────────────
+
+app.tukio.one {
+	redir https://tukio.one{uri} permanent
 }
+
+# ───────────────────────────────────────────────────────────────────
+# B2B + admin frontends
+# ───────────────────────────────────────────────────────────────────
 
 seller.tukio.one {
 	reverse_proxy seller:3002 {
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
-		header_down Location "://seller.tukio.one:3002" "://seller.tukio.one"
 	}
 	encode gzip zstd
 	header {
@@ -64,7 +67,6 @@ admin.tukio.one {
 	reverse_proxy admin:3003 {
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
-		header_down Location "://admin.tukio.one:3003" "://admin.tukio.one"
 	}
 	encode gzip zstd
 	header {
@@ -103,12 +105,4 @@ auth.tukio.one {
 		header_up X-Real-IP {remote_host}
 	}
 	encode gzip zstd
-}
-
-# ───────────────────────────────────────────────────────────────────
-# Apex canonical redirect → app
-# ───────────────────────────────────────────────────────────────────
-
-tukio.one {
-	redir https://app.tukio.one{uri} permanent
 }

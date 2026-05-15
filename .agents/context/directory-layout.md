@@ -46,10 +46,9 @@ tukio_projects/
 ├── .vscode/ + .idea/                      IDE configs
 │
 ├── apps/
-│   ├── public/                            Next.js 16 — port 3000 — marketing / search / listing detail
-│   ├── customer/                          Next.js 16 — port 3001 — authenticated B2C / B2B
-│   ├── seller/                            Next.js 16 — port 3002 — pro dashboard
-│   ├── admin/                             Next.js 16 — port 3003 — moderation console
+│   ├── public/                            Next.js 16 — port 3000 — apex tukio.one (visitors + authenticated B2C, ADR-016)
+│   ├── seller/                            Next.js 16 — port 3002 — pro dashboard (seller.tukio.one)
+│   ├── admin/                             Next.js 16 — port 3003 — moderation console (admin.tukio.one)
 │   ├── gateway-api/                       NestJS 11 — port 4000 — public REST gateway
 │   ├── identity-svc/                      NestJS 11 — port 4001 — canonical Pretre reference
 │   │   ├── src/
