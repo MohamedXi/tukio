@@ -75,8 +75,12 @@ services:
       KC_HEALTH_ENABLED: 'true'
       KC_METRICS_ENABLED: 'true'
       KC_HTTP_ENABLED: 'true'
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD_FILE: /run/secrets/kc_admin_password
+      # Admin username + password via env — KEYCLOAK_ADMIN_PASSWORD_FILE is NOT
+      # honored by Keycloak 25 for initial admin creation. Use direct env vars.
+      # Set KC_ADMIN_USERNAME and KC_ADMIN_PASSWORD in .env.production (or export
+      # them from secrets before running docker compose up).
+      KEYCLOAK_ADMIN: ${KC_ADMIN_USERNAME}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
       JAVA_OPTS_APPEND: '-Xms256m -Xmx512m'
     secrets:
       - kc_admin_password
