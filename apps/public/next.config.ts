@@ -15,8 +15,15 @@ const config: NextConfig = {
       // /{locale}/seller/* → seller app. Customer-area routes (`/account`,
       // `/cart`, …) are served locally by the (authenticated) route group
       // since Story 0.14 (ADR-016 supersedes ADR-013 multi-zones).
+      // Two entries: bare `/fr/seller` + `/fr/seller/*` — the path-to-regexp
+      // {/:path*} optional-group syntax used pre-Story 0.14 broke under
+      // Next.js 16's stricter rewrite parser.
       {
-        source: '/:locale/seller{/:path*}',
+        source: '/:locale/seller',
+        destination: `${sellerHost}/:locale/seller`,
+      },
+      {
+        source: '/:locale/seller/:path*',
         destination: `${sellerHost}/:locale/seller/:path*`,
       },
     ];

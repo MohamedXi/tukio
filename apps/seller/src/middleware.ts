@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { acquisitionCookieMiddleware } from './middleware/acquisition-cookie.js';
+import { acquisitionCookieMiddleware } from './middleware/acquisition-cookie';
 
 // Story 0.13 — acquisition cookie middleware runs on all requests.
 // Story 0.8 placeholder — replace with Keycloak auth middleware in Story Epic 1+:
