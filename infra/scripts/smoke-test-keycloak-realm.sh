@@ -160,7 +160,7 @@ run_test "T5 — tukio:locale claim in JWT (AC4)" "$(cat <<SHELLEOF
   # (locale is built-in; status would be rejected). We test only tukio:locale here.
   # Inline credentials array in POST aren't honoured by KC26 — set the password
   # via the dedicated reset-password endpoint instead.
-  CREATE_PAYLOAD='{"username":"${SMOKE_USER}","email":"${SMOKE_USER}","enabled":true,"emailVerified":true,"attributes":{"locale":["en"]},"requiredActions":[]}'
+  CREATE_PAYLOAD='{"username":"${SMOKE_USER}","email":"${SMOKE_USER}","firstName":"Smoke","lastName":"Test","enabled":true,"emailVerified":true,"attributes":{"locale":["en"]},"requiredActions":[]}'
   curl -sS -X POST "${KC}/admin/realms/tukio/users" \
     -H "Authorization: Bearer \$ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
@@ -179,6 +179,8 @@ run_test "T5 — tukio:locale claim in JWT (AC4)" "$(cat <<SHELLEOF
     -d "grant_type=password&username=${SMOKE_USER}&password=Smoke!Test1234&client_id=tukio-smoke-test&client_secret=${KEYCLOAK_CLIENT_SECRET_SMOKE_TEST}")
   ACCESS_TOKEN=\$(echo "\$TOKEN_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('access_token', ''))" 2>/dev/null || true)
   if [ -z "\$ACCESS_TOKEN" ]; then
+    USER_FINAL=\$(curl -sS "${KC}/admin/realms/tukio/users/\${SMOKE_USER_ID}" -H "Authorization: Bearer \$ADMIN_TOKEN")
+    echo "T5 final user state: \$USER_FINAL" >&2
     echo "T5: no access_token in response: \$TOKEN_RESPONSE" >&2
     exit 1
   fi
@@ -205,7 +207,7 @@ run_test "T6 — brute-force lock after 5 failures (AC5)" "$(cat <<SHELLEOF
   ADMIN_TOKEN=\$(curl -sS -X POST "${KC}/realms/master/protocol/openid-connect/token" \
     -d "client_id=admin-cli&username=${KEYCLOAK_ADMIN_USERNAME}&password=${KEYCLOAK_ADMIN_PASSWORD}&grant_type=password" \
     | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-  CREATE_LOCK_PAYLOAD='{"username":"${LOCK_USER}","email":"${LOCK_USER}","enabled":true,"emailVerified":true,"requiredActions":[]}'
+  CREATE_LOCK_PAYLOAD='{"username":"${LOCK_USER}","email":"${LOCK_USER}","firstName":"Lock","lastName":"Test","enabled":true,"emailVerified":true,"requiredActions":[]}'
   curl -sS -X POST "${KC}/admin/realms/tukio/users" \
     -H "Authorization: Bearer \$ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
