@@ -80,6 +80,7 @@ declare -a RESULTS
 # P-M11: capture stderr on FAIL so failures aren't undebuggable
 run_test() {
   local name="$1"
+  echo "  → starting: ${name}" >&2
   local start_ms
   start_ms="$(($(date +%s%N) / 1000000))"
   local status="PASS"
@@ -92,11 +93,13 @@ run_test() {
   if [ "$status" = "PASS" ]; then
     RESULTS+=("✅ ${name} (${elapsed_ms}ms)")
     PASSED=$((PASSED + 1))
+    echo "  ← PASS: ${name} (${elapsed_ms}ms)" >&2
   else
     local err_summary
-    err_summary="$(head -3 "$err_log" | tr '\n' ' ' | head -c 200)"
+    err_summary="$(head -5 "$err_log" | tr '\n' ' ' | head -c 400)"
     RESULTS+=("❌ ${name} (${elapsed_ms}ms) — FAILED: ${err_summary}")
     FAILED=$((FAILED + 1))
+    echo "  ← FAIL: ${name} (${elapsed_ms}ms) — ${err_summary}" >&2
   fi
   rm -f "$err_log"
 }
@@ -155,11 +158,11 @@ run_test "T5 — tukio:locale claim in JWT (AC4)" "$(cat <<SHELLEOF
   kcadm set-password -r tukio --username "${SMOKE_USER}" -p "Smoke!Test1234" >/dev/null 2>&1
   TOKEN_RESPONSE=\$(curl -sS -X POST "${KC}/realms/tukio/protocol/openid-connect/token" \
     -d "grant_type=password&username=${SMOKE_USER}&password=Smoke!Test1234&client_id=tukio-smoke-test&client_secret=${KEYCLOAK_CLIENT_SECRET_SMOKE_TEST}")
-  if ! echo "\$TOKEN_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); 'access_token' in d or (_ for _ in ()).throw(AssertionError(f'no access_token, response={d!r}'))" 2>&1; then
-    echo "T5 token request failed: \$TOKEN_RESPONSE" >&2
+  ACCESS_TOKEN=\$(echo "\$TOKEN_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('access_token', ''))" 2>/dev/null || true)
+  if [ -z "\$ACCESS_TOKEN" ]; then
+    echo "T5: no access_token in response: \$TOKEN_RESPONSE" >&2
     exit 1
   fi
-  ACCESS_TOKEN=\$(echo "\$TOKEN_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
   # P-M9: JWT payload uses urlsafe base64 with possible padding stripped
   python3 -c "
 import base64, json, sys
