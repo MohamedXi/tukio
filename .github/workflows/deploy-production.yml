@@ -115,6 +115,10 @@ jobs:
             docker compose -f apps.prod.yml --env-file .env.production up -d \\
               --remove-orphans \$BACKENDS
             docker compose -f apps.prod.yml --env-file .env.production ps
+            # Caddy doesn't auto-reload on Caddyfile changes; trigger explicitly.
+            echo "── reload Caddy config..."
+            docker exec tukio-apps-caddy-1 caddy reload --config /etc/caddy/Caddyfile || \\
+              echo "WARN: caddy reload failed (was it running?)"
           EOF
 
       - name: Smoke test (production health URL)
