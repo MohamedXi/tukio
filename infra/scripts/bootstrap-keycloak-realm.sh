@@ -374,7 +374,12 @@ json.dump(d, open('$stripped', 'w'), indent=2)
       kcadm create clients -r tukio -f - < "$tmp_payload" >/dev/null
     fi
     rm -f "$tmp_payload"
-    [ -n "$stripped" ] && rm -f "$stripped"
+    if [ -n "$stripped" ]; then
+      rm -f "$stripped"
+    fi
+    # Explicit success — without this, the function's last command (an empty `[ -n "" ] && …`)
+    # would return 1 and `set -e` would abort the outer for-loop after the first client.
+    return 0
   }
 
   for client_file in tukio-web tukio-admin tukio-api tukio-mobile tukio-smoke-test; do
