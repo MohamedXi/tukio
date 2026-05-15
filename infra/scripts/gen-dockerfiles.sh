@@ -160,6 +160,10 @@ RUN apk upgrade --no-cache \\
  && adduser -u 1001 -S -G nodejs -s /bin/sh tukio
 
 COPY --from=builder --chown=tukio:nodejs /deploy ./
+# pnpm deploy --legacy doesn't ship build artefacts. Copy the Next.js
+# .next/ output + public/ assets explicitly so 'next start' has what it needs.
+COPY --from=builder --chown=tukio:nodejs /app/apps/${app}/.next ./.next
+COPY --from=builder --chown=tukio:nodejs /app/apps/${app}/public ./public
 
 USER tukio
 
