@@ -2,7 +2,7 @@ name: Deploy — staging
 
 # Story 0.12 — SSH-based deploy to DigitalOcean droplet `tukio-apps`.
 # Triggers automatically on a successful Build Images run for `develop`,
-# or manually via workflow_dispatch.
+# or manually via workflow_dispatch (defaults to the `develop` Docker tag).
 
 on:
   workflow_run:
@@ -10,6 +10,11 @@ on:
     types: [completed]
     branches: [develop]
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy (default: develop)'
+        required: false
+        default: 'develop'
 
 concurrency:
   group: deploy-staging-${{ github.workflow }}
@@ -23,7 +28,7 @@ env:
   DO_HOST_APPS: ${{ secrets.DO_HOST_APPS }}
   DO_DEPLOY_KEY: ${{ secrets.DO_DEPLOY_KEY }}
   SLACK_WEBHOOK_DEPLOYS: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
-  STAGING_HEALTH_URL: ${{ vars.STAGING_HEALTH_URL || 'https://api.tukio.one/health' }}
+  STAGING_HEALTH_URL: ${{ vars.STAGING_HEALTH_URL || 'https://api.tukio.one/' }}
 
 jobs:
   ssh-deploy:
@@ -35,6 +40,11 @@ jobs:
       url: https://app.tukio.one
     timeout-minutes: 15
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
       - name: Guard — required secrets present
         run: |
           missing=()
@@ -46,7 +56,7 @@ jobs:
             exit 1
           fi
 
-      - name: Setup SSH key
+      - name: Setup SSH key + known_hosts
         run: |
           mkdir -p ~/.ssh
           printf '%s\n' "${DO_DEPLOY_KEY}" > ~/.ssh/id_ed25519
@@ -56,32 +66,47 @@ jobs:
       - name: Resolve image tag
         id: tag
         run: |
-          # Manual dispatch defaults to the current branch SHA; workflow_run carries the head SHA.
-          if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            SHA="${{ github.event.workflow_run.head_sha }}"
-          else
-            SHA="${{ github.sha }}"
-          fi
-          echo "image_tag=sha-${SHA::7}" >> "$GITHUB_OUTPUT"
-          echo "Deploying image tag: sha-${SHA::7}"
+          TAG="${{ inputs.image_tag || 'develop' }}"
+          echo "image_tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Deploying image tag: ${TAG}"
 
-      - name: Remote pull + restart
+      - name: SCP compose + Caddyfile to droplet
+        run: |
+          scp -i ~/.ssh/id_ed25519 \
+            infra/docker-compose/apps.prod.yml \
+            infra/docker-compose/Caddyfile \
+            tukio@"${DO_HOST_APPS}":~/tukio-apps/
+
+      - name: Remote pull + up
         env:
           IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
         run: |
-          ssh -o StrictHostKeyChecking=yes tukio@"${DO_HOST_APPS}" bash -se <<EOF
+          ssh -i ~/.ssh/id_ed25519 tukio@"${DO_HOST_APPS}" bash -se <<EOF
             set -euo pipefail
-            cd /home/tukio/tukio
+            cd ~/tukio-apps
+            # Source secrets from on-droplet files (mode 644, owner tukio).
+            # NestJS @nestjs/config / Keycloak / Meilisearch do not honor the
+            # _FILE env suffix, so values are read on the host side and exported
+            # as direct compose env substitutions.
+            export DB_USER=\$(cat /home/tukio/tukio/secrets/pg_user)
+            export DB_PASSWORD=\$(cat /home/tukio/tukio/secrets/pg_password)
+            export MEILI_MASTER_KEY=\$(cat /home/tukio/tukio/secrets/meili_key)
             export IMAGE_TAG="${IMAGE_TAG}"
+            # 11 services (10 backends + caddy). Frontends pending Story 0.12
+            # follow-up to extend build-images.yml with the 4 Next.js apps.
+            BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
+                      order-svc payment-svc messaging-svc review-svc \\
+                      notification-svc media-svc"
             echo "── pulling images at tag \${IMAGE_TAG}..."
-            docker compose -f infra/docker-compose/apps.prod.yml pull
+            docker compose -f apps.prod.yml --env-file .env.production pull \$BACKENDS
             echo "── restarting stack..."
-            docker compose -f infra/docker-compose/apps.prod.yml up -d --remove-orphans
-            echo "── waiting for healthy state..."
-            docker compose -f infra/docker-compose/apps.prod.yml ps
+            docker compose -f apps.prod.yml --env-file .env.production up -d \\
+              --remove-orphans --wait \$BACKENDS
+            echo "── compose ps..."
+            docker compose -f apps.prod.yml --env-file .env.production ps
           EOF
 
-      - name: Smoke test
+      - name: Smoke test (staging health URL)
         run: |
           for i in $(seq 1 30); do
             if curl -fsS --max-time 5 "${STAGING_HEALTH_URL}" >/dev/null; then
