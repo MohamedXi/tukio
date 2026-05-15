@@ -61,6 +61,10 @@ declare -A SECRETS_DATA=(
   #   export KC_DB_PASSWORD=$(cat secrets/kc_db_password)
   [kc_db_username]="Keycloak DB username (usually same value as pg_user)"
   [kc_db_password]="Keycloak DB password (usually same value as pg_password)"
+  # Story 1.1 — realm-level secrets consumed by bootstrap-keycloak-realm.sh
+  [kc_client_secret_tukio_api]="Keycloak confidential client secret for tukio-api (M2M)"
+  [kc_client_secret_smoke_test]="Keycloak confidential client secret for tukio-smoke-test (CI)"
+  [kc_webhook_secret]="HMAC shared secret for Phasetwo LOGIN_ERROR webhook → identity-svc"
   [meili_key]="Meilisearch master key (32+ chars hex)"
   [r2_access_key]="Cloudflare R2 access key ID (for backups)"
   [r2_secret_key]="Cloudflare R2 secret access key (for backups)"

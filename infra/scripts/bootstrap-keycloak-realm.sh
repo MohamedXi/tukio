@@ -66,22 +66,57 @@ case $ENV in
     export SMOKE_TEST_ENABLED="${SMOKE_TEST_ENABLED:-true}"
     ;;
   staging)
-    command -v doppler >/dev/null 2>&1 || { log_error "Doppler CLI required for --env=staging"; exit 1; }
-    DOPPLER_ENV_OUT="$(doppler secrets download --no-file --format env --project tukio --config staging 2>/dev/null || true)"
-    if [ -z "$DOPPLER_ENV_OUT" ]; then
-      log_error "Doppler returned empty output. Check authentication: doppler login"
+    # Story 1.1b — run on the tukio-data droplet; secrets are file-based per
+    # the MVP infra pivot (memory: mvp_infra_pivot_2026_05_14.md). Doppler removed.
+    SECRETS_DIR="${SECRETS_DIR:-/home/tukio/tukio/secrets}"
+    if [ ! -d "$SECRETS_DIR" ]; then
+      log_error "Secrets dir not found: $SECRETS_DIR"
+      log_error "This script must run on the tukio-data droplet. SSH first:"
+      log_error "  ssh tukio@\$DO_HOST_DATA"
+      log_error "  cd ~/tukio-data && bash infra/scripts/bootstrap-keycloak-realm.sh --env=staging"
       exit 1
     fi
-    eval "$DOPPLER_ENV_OUT"
-    : "${KEYCLOAK_URL:?required from Doppler}"
-    : "${KEYCLOAK_ADMIN_USERNAME:?required from Doppler}"
-    : "${KEYCLOAK_ADMIN_PASSWORD:?required from Doppler}"
-    : "${KEYCLOAK_CLIENT_SECRET_TUKIO_API:?required from Doppler}"
-    : "${KEYCLOAK_WEBHOOK_SECRET:?required from Doppler}"
-    export KEYCLOAK_HEALTH_URL="${KEYCLOAK_HEALTH_URL:-${KEYCLOAK_URL}/health/ready}"
-    export REDIRECT_URIS_TUKIO_WEB='["https://*.staging.tukio.one/*"]'
-    export REDIRECT_URIS_TUKIO_ADMIN='["https://admin.staging.tukio.one/*"]'
-    export IDENTITY_SVC_WEBHOOK_URL="${IDENTITY_SVC_WEBHOOK_URL:-https://api.staging.tukio.one/internal/keycloak-events}"
+    read_secret() {
+      local file="${SECRETS_DIR}/$1"
+      if [ ! -r "$file" ]; then
+        log_error "Missing secret: $file"
+        log_error "Provision via: ./infra/scripts/provision-secrets.sh data"
+        exit 1
+      fi
+      tr -d '\r\n' < "$file"
+    }
+    export KEYCLOAK_URL="${KEYCLOAK_URL:-https://auth.tukio.one}"
+    _admin_username="$(read_secret kc_admin_username 2>/dev/null || echo admin)"
+    _admin_password="$(read_secret kc_admin_password)"
+    _client_secret_api="$(read_secret kc_client_secret_tukio_api)"
+    _client_secret_smoke="$(read_secret kc_client_secret_smoke_test)"
+    _webhook_secret="$(read_secret kc_webhook_secret)"
+    export KEYCLOAK_ADMIN_USERNAME="${KEYCLOAK_ADMIN_USERNAME:-$_admin_username}"
+    export KEYCLOAK_ADMIN_PASSWORD="$_admin_password"
+    export KEYCLOAK_CLIENT_SECRET_TUKIO_API="$_client_secret_api"
+    export KEYCLOAK_CLIENT_SECRET_SMOKE_TEST="$_client_secret_smoke"
+    export KEYCLOAK_WEBHOOK_SECRET="$_webhook_secret"
+    # Health probe uses the local data-private-IP management port (9000) exposed
+    # by data.prod.yml so we bypass Caddy/TLS handshake.
+    DATA_PRIV_IP_FILE="${SECRETS_DIR}/data_priv_ip"
+    if [ -r "$DATA_PRIV_IP_FILE" ]; then
+      DATA_PRIV_IP="$(tr -d '\r\n' < "$DATA_PRIV_IP_FILE")"
+      export KEYCLOAK_HEALTH_URL="${KEYCLOAK_HEALTH_URL:-http://${DATA_PRIV_IP}:9000/health/ready}"
+    else
+      export KEYCLOAK_HEALTH_URL="${KEYCLOAK_HEALTH_URL:-${KEYCLOAK_URL}/health/ready}"
+    fi
+    export REDIRECT_URIS_TUKIO_WEB='["https://tukio.one/*","https://seller.tukio.one/*"]'
+    export REDIRECT_URIS_TUKIO_ADMIN='["https://admin.tukio.one/*"]'
+    export IDENTITY_SVC_WEBHOOK_URL="${IDENTITY_SVC_WEBHOOK_URL:-http://gateway-api:4000/internal/keycloak-events}"
+    # SMTP — read from secrets dir if present, else leave empty (no email delivery)
+    _smtp_host="$(read_secret smtp_host 2>/dev/null || echo '')"
+    _smtp_user="$(read_secret smtp_user 2>/dev/null || echo '')"
+    _smtp_password="$(read_secret smtp_password 2>/dev/null || echo '')"
+    export SMTP_HOST="${SMTP_HOST:-$_smtp_host}"
+    export SMTP_PORT="${SMTP_PORT:-587}"
+    export SMTP_FROM="${SMTP_FROM:-no-reply@tukio.one}"
+    export SMTP_USER="${SMTP_USER:-$_smtp_user}"
+    export SMTP_PASSWORD="${SMTP_PASSWORD:-$_smtp_password}"
     export SMOKE_TEST_ENABLED="${SMOKE_TEST_ENABLED:-false}"
     ;;
   production)
@@ -92,16 +127,16 @@ case $ENV in
   *) log_error "Unknown env: $ENV (valid: local|staging|production)"; exit 1 ;;
 esac
 
-# ─── kcadm.sh wrapper (docker compose exec for local, docker run for remote) ──
+# ─── kcadm.sh wrapper ─────────────────────────────────────────────────────────
+# local:   docker compose exec against the dev compose file
+# staging: docker exec on the tukio_keycloak container running on the same droplet
 COMPOSE_FILE="${REPO_ROOT}/infra/docker-compose/docker-compose.dev.yml"
+KEYCLOAK_CONTAINER="${KEYCLOAK_CONTAINER:-tukio_keycloak}"
 kcadm() {
   if [[ "$ENV" == "local" ]]; then
     docker compose -f "$COMPOSE_FILE" exec -T keycloak /opt/keycloak/bin/kcadm.sh "$@"
   else
-    docker run --rm --network host \
-      -v /tmp/kcadm-config:/opt/keycloak/.keycloak \
-      quay.io/keycloak/keycloak:latest \
-      /opt/keycloak/bin/kcadm.sh "$@"
+    docker exec -i "${KEYCLOAK_CONTAINER}" /opt/keycloak/bin/kcadm.sh "$@"
   fi
 }
 
