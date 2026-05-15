@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48" role="img" aria-label="Tukio">
+  <!-- Tukio brand placeholder — replace with final logo asset -->
+  <rect width="200" height="48" fill="none"/>
+  <text
+    x="100" y="34"
+    font-family="Georgia, serif"
+    font-size="32"
+    font-weight="600"
+    fill="#C2410C"
+    text-anchor="middle"
+    letter-spacing="-1"
+  >tukio</text>
+</svg>

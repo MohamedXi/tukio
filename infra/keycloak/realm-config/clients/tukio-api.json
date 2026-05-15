@@ -1,0 +1,16 @@
+{
+  "clientId": "tukio-api",
+  "name": "Tukio API (confidential, M2M service account)",
+  "enabled": true,
+  "publicClient": false,
+  "protocol": "openid-connect",
+  "standardFlowEnabled": false,
+  "directAccessGrantsEnabled": false,
+  "serviceAccountsEnabled": true,
+  "implicitFlowEnabled": false,
+  "secret": "${KEYCLOAK_CLIENT_SECRET_TUKIO_API}",
+  "attributes": {
+    "access.token.lifespan": "300",
+    "use.refresh.tokens": "false"
+  }
+}

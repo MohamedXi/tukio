@@ -32,6 +32,28 @@ export class UserController {
 }
 ```
 
+## Realm dependency (Story 1.1)
+
+This package requires the `tukio` Keycloak realm provisioned via Story 1.1:
+
+```sh
+pnpm docker:up:wait && pnpm keycloak:bootstrap
+```
+
+**JWKS endpoint**: `${KEYCLOAK_URL}/realms/tukio/protocol/openid-connect/certs`
+(cached 10 min by `JwksCacheService`)
+
+**Custom JWT claims** emitted by the realm:
+
+- `tukio:locale` — user locale (`fr` | `en`), default `fr`
+- `tukio:status` — account status (`active` | `pending_admin_review` | `rejected` | `suspended`)
+- `aud: ["tukio-api"]` — validated by `KeycloakJwtGuard`
+- `realm_access.roles` — contains one of `client` | `pro` | `admin-support` | `admin-modo` | `admin-super`
+- `amr` — includes `totp` after MFA; consumed by `@RequireMfa()` via `payload.amr.includes('totp')`
+- `acr === '2'` — fallback MFA indicator (resilience for future Keycloak versions)
+
+See `infra/scripts/bootstrap-keycloak-realm.sh` and `docs/runbook/keycloak-realm-bootstrap.md`.
+
 ## Exception codes
 
 | Code                        | HTTP | Meaning                 |

@@ -1,0 +1,21 @@
+{
+  "clientId": "tukio-mobile",
+  "name": "Tukio Mobile (public, React Native — V2 prep)",
+  "enabled": true,
+  "publicClient": true,
+  "protocol": "openid-connect",
+  "standardFlowEnabled": true,
+  "directAccessGrantsEnabled": false,
+  "serviceAccountsEnabled": false,
+  "implicitFlowEnabled": false,
+  "redirectUris": ["tukio://callback", "tukio://login-callback"],
+  "webOrigins": [],
+  "defaultClientScopes": ["openid", "profile", "email", "roles", "tukio-locale-scope"],
+  "optionalClientScopes": ["address", "phone", "offline_access"],
+  "attributes": {
+    "pkce.code.challenge.method": "S256",
+    "access.token.lifespan": "300",
+    "use.refresh.tokens": "true",
+    "refresh.token.max.reuse": "0"
+  }
+}

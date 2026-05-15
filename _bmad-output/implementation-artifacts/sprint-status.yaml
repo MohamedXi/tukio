@@ -1,5 +1,5 @@
 # generated: 2026-05-09
-# last_updated: 2026-05-15 (Story 4.6 Pro pending bookings page + auto-expire 48h cron + anti-désintermédiation PII masking baseline ready-for-dev — frontend Pro UX critique + backend production-ready cron : /seller/bookings/pending + /seller/bookings/<id> placeholder CTAs Story 4.7 + CountdownBadge live tick 60s + auto-expire-booking.usecase Story 4.1 skeleton → FULL impl + BookingPiiMaskInterceptor FR45 baseline + reminder cron NFR48 + pro.reminder-pending-bookings.v1 event baseline + 8 Playwright e2e + axe-core RGAA AA + Lighthouse CI gate seller bookings UX-DR figé bundle Cloud Design)
+# last_updated: 2026-05-16 (Story 4.8 Customer cancellation flow + 3 templates politique flexible/standard/strict + customer-initiated refund ready-for-dev — closing Customer side cancellation MVP : NEW CancellationPolicyService pure 3 templates + cancel-booking-by-customer Story 4.1 skeleton → FULL impl + NEW get-cancellation-preview usecase + booking.cancelled.v1 schema extend optional payload + NEW payment-svc refund-on-customer-cancellation consumer + booking-events.consumer routing per reasonCode + 2 gateway endpoints GET preview + POST cancel + CustomerCancellationModal UX-DR cancel-flow figé + required checkbox destructive + idempotency Stripe + 0-refund no-call edge case + 10 Playwright e2e + Stories 4.7+4.8 closent les 2 sides MVP)
 # project: tukio.one
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-09
-last_updated: 2026-05-15
+last_updated: 2026-05-16
 project: tukio.one
 project_key: NOKEY
 tracking_system: file-system
@@ -63,7 +63,7 @@ development_status:
 
   # ─── Epic 1 — Identity & Authentication Backbone (MVP) ────────────────
   epic-1: in-progress
-  1-1-provision-keycloak-realm-tukio-roles-clients-phasetwo: ready-for-dev
+  1-1-provision-keycloak-realm-tukio-roles-clients-phasetwo: done
   1-2-customer-b2c-registration: ready-for-dev
   1-3-pro-registration-pending-admin-review: ready-for-dev
   1-4-login-flow-keycloak-authorization-code-pkce: ready-for-dev
@@ -112,8 +112,8 @@ development_status:
   4-4-booking-submission-3-layer-race-condition-protection: ready-for-dev
   4-5-stripe-paymentintent-elements-checkout: ready-for-dev
   4-6-pro-pending-requests-page-delai-expiration: ready-for-dev
-  4-7-pro-accept-refuse-stripe-capture-anti-desintermediation: backlog
-  4-8-customer-cancellation-flow-templates-politique: backlog
+  4-7-pro-accept-refuse-stripe-capture-anti-desintermediation: ready-for-dev
+  4-8-customer-cancellation-flow-templates-politique: ready-for-dev
   4-9-invoice-generation-tva-mandat-289-cgi: backlog
   4-10-auto-payout-cron-stripe-transfer: backlog
   4-11-customer-pro-bookings-list-detail-page: backlog

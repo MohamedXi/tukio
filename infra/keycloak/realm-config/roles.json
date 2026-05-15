@@ -1,0 +1,46 @@
+{
+  "roles": [
+    {
+      "name": "client",
+      "description": "B2C/B2B Customer — can book services",
+      "attributes": {
+        "description.fr": ["Client B2C/B2B — peut réserver des prestations"],
+        "description.en": ["B2C/B2B Customer — can book services"]
+      }
+    },
+    {
+      "name": "pro",
+      "description": "Service Provider — publishes services and manages bookings",
+      "attributes": {
+        "description.fr": ["Prestataire — publie des prestations et gère les réservations"],
+        "description.en": ["Service Provider — publishes services and manages bookings"]
+      }
+    },
+    {
+      "name": "admin-support",
+      "description": "Support Admin — answers tickets, reads audit trail",
+      "attributes": {
+        "description.fr": ["Admin Support — répond aux tickets, lit l'audit trail"],
+        "description.en": ["Support Admin — answers tickets, reads audit trail"]
+      }
+    },
+    {
+      "name": "admin-modo",
+      "description": "Moderation Admin — validates pros, moderates content, suspends accounts",
+      "attributes": {
+        "description.fr": ["Admin Modération — valide pros, modère contenus, suspend comptes"],
+        "description.en": [
+          "Moderation Admin — validates pros, moderates content, suspends accounts"
+        ]
+      }
+    },
+    {
+      "name": "admin-super",
+      "description": "Super Admin — full platform access, replay events, impersonation",
+      "attributes": {
+        "description.fr": ["Admin Super — accès complet plateforme, replay events, impersonation"],
+        "description.en": ["Super Admin — full platform access, replay events, impersonation"]
+      }
+    }
+  ]
+}

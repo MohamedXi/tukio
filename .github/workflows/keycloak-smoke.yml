@@ -1,0 +1,85 @@
+name: Keycloak Realm Smoke Tests
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'infra/keycloak/**'
+      - 'infra/scripts/bootstrap-keycloak-realm.sh'
+      - 'infra/scripts/smoke-test-keycloak-realm.sh'
+      - 'infra/scripts/build-keycloak-themes.sh'
+      - 'infra/docker-compose/docker-compose.dev.yml'
+
+jobs:
+  smoke:
+    name: Keycloak realm smoke (8 tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start Keycloak stack
+        run: docker compose -f infra/docker-compose/docker-compose.dev.yml up -d keycloak postgres --wait
+        env:
+          COMPOSE_ANSI: never
+
+      - name: Wait for Keycloak to be healthy
+        run: |
+          for i in $(seq 1 18); do
+            if curl -fsS http://localhost:8080/realms/master/.well-known/openid-configuration >/dev/null 2>&1; then
+              echo "Keycloak ready (attempt $i)"
+              break
+            fi
+            [ "$i" -eq 18 ] && { echo "Keycloak not ready after 90s" >&2; exit 1; }
+            sleep 5
+          done
+
+      - name: Build Keycloak themes
+        run: bash infra/scripts/build-keycloak-themes.sh
+
+      - name: Bootstrap realm
+        run: bash infra/scripts/bootstrap-keycloak-realm.sh --env=local --skip-phasetwo-webhook
+
+      - name: Run smoke tests
+        run: bash infra/scripts/smoke-test-keycloak-realm.sh --env=local
+
+      - name: Check realm-export drift
+        run: |
+          # Stash the committed file before regenerating from the live realm
+          cp infra/keycloak/realm-export/tukio.realm.json /tmp/committed.realm.json
+          bash infra/scripts/bootstrap-keycloak-realm.sh --env=local --export-only --skip-phasetwo-webhook
+          # Normalize both (drop _comment meta, sort keys) — P-L3
+          python3 - <<'PYEOF'
+          import json
+          for src, dst in [
+              ('/tmp/committed.realm.json', '/tmp/committed.norm.json'),
+              ('infra/keycloak/realm-export/tukio.realm.json', '/tmp/fresh.norm.json'),
+          ]:
+              d = json.load(open(src))
+              for k in ('_comment', '_realm'):
+                  d.pop(k, None)
+              with open(dst, 'w') as f:
+                  json.dump(d, f, sort_keys=True, indent=2)
+          PYEOF
+          if diff -u /tmp/committed.norm.json /tmp/fresh.norm.json > /tmp/realm-diff.txt; then
+            echo "✅ No realm-export drift"
+          else
+            echo "❌ realm-export drift detected — run 'pnpm keycloak:export' locally and commit infra/keycloak/realm-export/tukio.realm.json"
+            head -200 /tmp/realm-diff.txt
+            exit 1
+          fi
+
+      - name: Upload themes JAR artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tukio-keycloak-themes
+          path: dist/tukio-keycloak-themes.jar
+          retention-days: 7
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f infra/docker-compose/docker-compose.dev.yml down -v

@@ -1,0 +1,14 @@
+{
+  "_comment": "AUTO-GENERATED — do not edit manually. Run: pnpm keycloak:bootstrap",
+  "_realm": "tukio",
+  "bruteForceProtected": true,
+  "defaultLocale": "fr",
+  "displayName": "Tukio",
+  "displayNameHtml": "<strong>Tukio</strong> — Marketplace événementielle",
+  "enabled": true,
+  "failureFactor": 5,
+  "internationalizationEnabled": true,
+  "maxFailureWaitSeconds": 900,
+  "realm": "tukio",
+  "supportedLocales": ["en", "fr"]
+}
