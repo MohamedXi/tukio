@@ -118,10 +118,12 @@ mkdir -p /home/tukio/tukio/secrets
 chmod 700 /home/tukio/tukio/secrets
 chown -R tukio:tukio /home/tukio/tukio
 
-# Data droplet: prepare PG bind-mount dir
+# Data droplet: prepare PG bind-mount dir + backup-postgres.sh working dir.
 if [[ "$ROLE" == "data" ]]; then
   mkdir -p /var/lib/tukio/postgres
   chown 999:999 /var/lib/tukio/postgres  # postgres:16-alpine UID
+  mkdir -p /var/lib/tukio/backups
+  chown tukio:tukio /var/lib/tukio/backups  # backup-postgres.sh runs as tukio
 fi
 
 # ─── 7. rclone (only on data droplet — for backups to R2) ────────────
