@@ -164,14 +164,23 @@ run_test "T5 — tukio:locale claim in JWT (AC4)" "$(cat <<SHELLEOF
   SMOKE_USER_ID=\$(curl -sS "${KC}/admin/realms/tukio/users?email=${SMOKE_USER}&exact=true" \
     -H "Authorization: Bearer \$ADMIN_TOKEN" \
     | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['id'] if d else '')")
-  if [ -z "\$SMOKE_USER_ID" ]; then echo "T5: smoke user not created" >&2; false; fi
+  if [ -z "\$SMOKE_USER_ID" ]; then echo "T5: smoke user not created" >&2; exit 1; fi
   echo "\$SMOKE_USER_ID" > /tmp/smoke-user-id-\$\$
+  # Diagnostic: dump user state to err_log so we can see requiredActions
+  USER_DUMP=\$(curl -sS "${KC}/admin/realms/tukio/users/\${SMOKE_USER_ID}" -H "Authorization: Bearer \$ADMIN_TOKEN")
+  echo "T5 user after create: \$USER_DUMP" >&2
+  # Explicit PUT to clear requiredActions (in case POST didn't honor it)
+  CLEARED=\$(echo "\$USER_DUMP" | python3 -c "import sys,json; d=json.load(sys.stdin); d['requiredActions']=[]; print(json.dumps(d))")
+  curl -sS -X PUT "${KC}/admin/realms/tukio/users/\${SMOKE_USER_ID}" \
+    -H "Authorization: Bearer \$ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "\$CLEARED" >/dev/null
   TOKEN_RESPONSE=\$(curl -sS -X POST "${KC}/realms/tukio/protocol/openid-connect/token" \
     -d "grant_type=password&username=${SMOKE_USER}&password=Smoke!Test1234&client_id=tukio-smoke-test&client_secret=${KEYCLOAK_CLIENT_SECRET_SMOKE_TEST}")
   ACCESS_TOKEN=\$(echo "\$TOKEN_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('access_token', ''))" 2>/dev/null || true)
   if [ -z "\$ACCESS_TOKEN" ]; then
     echo "T5: no access_token in response: \$TOKEN_RESPONSE" >&2
-    false
+    exit 1
   fi
   # P-M9: JWT payload uses urlsafe base64 with possible padding stripped
   python3 -c "
