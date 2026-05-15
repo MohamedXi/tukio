@@ -17,7 +17,8 @@ const config: NextConfig = {
       // since Story 0.14 (ADR-016 supersedes ADR-013 multi-zones).
       // Two entries: bare `/fr/seller` + `/fr/seller/*` — the path-to-regexp
       // {/:path*} optional-group syntax used pre-Story 0.14 broke under
-      // Next.js 16's stricter rewrite parser.
+      // Next.js 16's stricter rewrite parser. Trailing slash (`/fr/seller/`)
+      // is normalised by Next.js default trailingSlash:false before rewrites.
       {
         source: '/:locale/seller',
         destination: `${sellerHost}/:locale/seller`,
