@@ -19,7 +19,8 @@ indépendamment, mais l'ordre ci-dessous correspond à la dépendance fonctionne
 | 2     | [Slack webhooks](./slack-webhooks.md)                                       | 15 min | Notifs deploy + chaos absentes — pas de notification          |
 | 3     | [Branch protection](./branch-protection.md)                                 | 10 min | Merges directs possibles — VITAL                              |
 | 4     | [Trivy / gestion des CVE](./trivy-cve-management.md) _(optionnel)_          | au cas par cas | Build images bloqué si CVE non patchable trouvée    |
-| 5     | [DigitalOcean deployment](./digitalocean-deployment.md)                     | Story 0.12 | Pas de déploiement réel — workflows placeholders         |
+| 5     | [DigitalOcean deployment](./digitalocean-deployment.md)                     | Story 0.12 — ~3h | Pas de déploiement réel — workflows en attente des secrets DO |
+| 6     | [Disaster recovery](./disaster-recovery.md)                                 | Story 0.12 — référence ops | Runbooks DR à exécuter quand incident |
 
 ## Outils différés (V1+ — coût)
 
@@ -39,8 +40,7 @@ Tous les secrets sont créés dans **GitHub → Settings → Secrets and variabl
 | `SLACK_WEBHOOK_DEPLOYS_PROD`  | Slack prod             | 0.11   | [slack-webhooks.md](./slack-webhooks.md)                    |
 | `SLACK_WEBHOOK_ALERTS`        | Slack chaos alerts     | 0.11   | [slack-webhooks.md](./slack-webhooks.md)                    |
 | `DO_DEPLOY_KEY`               | SSH key DO droplet     | 0.12   | [digitalocean-deployment.md](./digitalocean-deployment.md)  |
-| `DO_HOST_STAGING`             | IP/hostname droplet    | 0.12   | [digitalocean-deployment.md](./digitalocean-deployment.md)  |
-| `DO_HOST_PRODUCTION`          | IP/hostname droplet    | 0.12   | [digitalocean-deployment.md](./digitalocean-deployment.md)  |
+| `DO_HOST_APPS`                | IP publique droplet `tukio-apps` | 0.12 | [digitalocean-deployment.md](./digitalocean-deployment.md)  |
 
 ## Budget MVP cible
 
@@ -48,7 +48,8 @@ Le pipeline + l'infra Tukio MVP doit tenir sous **€50/mois total**. Le détail
 
 | Poste                                   | Coût MVP                  | Détail                                                |
 | --------------------------------------- | ------------------------- | ----------------------------------------------------- |
-| **Hébergement** (DO Droplets)           | €12-35/mois               | 1-2 droplets selon Option A/B/C (voir Story 0.12)     |
+| **Hébergement** (DO Droplets Option B)  | €24/mois                  | 2 droplets (`tukio-apps` + `tukio-data`), 2 GB chacun |
+| **Snapshots DO** (rétention 3j)         | ~€9/mois                  | 2 droplets × 3 snapshots × 25 GB × $0.06              |
 | **Domain `tukio.one`** (Squarespace)    | ~€1/mois                  | facturé annuel (DNS gratuit dans le pricing domain)   |
 | **GitHub Actions** (CI)                 | gratuit                   | 2000 min/mois free tier                               |
 | **GHCR** (Docker images)                | gratuit                   | repos privés free tier                                |
@@ -58,7 +59,7 @@ Le pipeline + l'infra Tukio MVP doit tenir sous **€50/mois total**. Le détail
 | **Slack workspace** (free)              | gratuit                   | webhooks illimités                                    |
 | **Lighthouse CI App**                   | gratuit                   | illimité                                              |
 | **Trivy** + **Dependabot**              | gratuit                   | OSS / GitHub native                                   |
-| **Total estimé**                        | **€13-36/mois**           |                                                       |
+| **Total estimé**                        | **€34/mois**              | Sous l'enveloppe €50/mois cible                       |
 
 **Outils différés** (cf. table ci-dessus) :
 

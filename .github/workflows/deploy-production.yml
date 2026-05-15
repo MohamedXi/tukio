@@ -1,14 +1,22 @@
 name: Deploy — production
 
-# Placeholder workflow (Story 0.11). Story 0.12 finalises ArgoCD integration
-# against the Hetzner production cluster + real secrets. Tag-driven release;
-# `production` GitHub Environment requires a manual approval before deploy.
+# Story 0.12 — SSH-based deploy to DigitalOcean droplet `tukio-apps`.
+# Tag-driven release; `production` GitHub Environment requires manual approval.
+#
+# For MVP we share the apps droplet between staging and production (single
+# environment, ~€29/mo budget). The `production` environment gate gives us
+# the manual approval step we'd otherwise get from a separate cluster.
+# Smoke-fail triggers automatic rollback to the previous tag.
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag to deploy (e.g. v1.2.3)'
+        required: true
 
 concurrency:
   group: deploy-production-${{ github.workflow }}
@@ -17,52 +25,136 @@ concurrency:
 permissions:
   contents: read
   deployments: write
-  id-token: write
 
-# Workflow-level env so `if:` conditions can reference populated values.
 env:
-  ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-  ARGOCD_PRODUCTION_TOKEN: ${{ secrets.ARGOCD_PRODUCTION_TOKEN }}
+  DO_HOST_APPS: ${{ secrets.DO_HOST_APPS }}
+  DO_DEPLOY_KEY: ${{ secrets.DO_DEPLOY_KEY }}
   SLACK_WEBHOOK_DEPLOYS_PROD: ${{ secrets.SLACK_WEBHOOK_DEPLOYS_PROD }}
+  PRODUCTION_HEALTH_URL: ${{ vars.PRODUCTION_HEALTH_URL || 'https://api.tukio.one/' }}
 
 jobs:
-  argocd-sync:
-    name: ArgoCD sync — tukio-production
+  ssh-deploy:
+    name: SSH deploy — tukio-apps (production)
     runs-on: ubuntu-latest
     environment:
       name: production
       url: https://tukio.one
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - name: Skip notice (Story 0.12 finalises)
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Guard — required secrets present
         run: |
-          echo "::notice::Placeholder mode — Story 0.12 wires the real ArgoCD sync."
-          echo "Required secrets (to be configured in Story 0.12):"
-          echo "  - ARGOCD_SERVER (e.g. argocd.tukio.one)"
-          echo "  - ARGOCD_PRODUCTION_TOKEN"
-          echo "  - SLACK_WEBHOOK_DEPLOYS_PROD"
-      - name: Trigger ArgoCD sync
-        if: env.ARGOCD_PRODUCTION_TOKEN != ''
+          missing=()
+          [ -z "${DO_HOST_APPS}" ] && missing+=("DO_HOST_APPS")
+          [ -z "${DO_DEPLOY_KEY}" ] && missing+=("DO_DEPLOY_KEY")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Setup SSH key + known_hosts
         run: |
-          curl --fail-with-body -sS \
-            -H "Authorization: Bearer ${ARGOCD_PRODUCTION_TOKEN}" \
-            -X POST "https://${ARGOCD_SERVER}/api/v1/applications/tukio-production/sync"
-      - name: Smoke test
-        if: env.ARGOCD_PRODUCTION_TOKEN != ''
+          mkdir -p ~/.ssh
+          printf '%s\n' "${DO_DEPLOY_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${DO_HOST_APPS}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Resolve image tag
+        id: tag
         run: |
-          for _ in $(seq 1 30); do
-            curl -fsS https://tukio.one/health && exit 0
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            REF="${{ inputs.tag }}"
+          else
+            REF="${{ github.ref_name }}"
+          fi
+          if [[ ! "${REF}" =~ ^v ]]; then
+            echo "::error::Production deploy requires a vX.Y.Z tag (got '${REF}')"
+            exit 1
+          fi
+          echo "image_tag=${REF}" >> "$GITHUB_OUTPUT"
+          echo "Deploying image tag: ${REF}"
+
+      - name: Snapshot previous tag (for rollback)
+        id: previous
+        run: |
+          PREV=$(ssh -i ~/.ssh/id_ed25519 tukio@"${DO_HOST_APPS}" \
+            'grep -E "^IMAGE_TAG=" /home/tukio/tukio-apps/.env.production 2>/dev/null | cut -d= -f2 || echo ""')
+          echo "previous_tag=${PREV}" >> "$GITHUB_OUTPUT"
+          echo "Previous tag (for rollback): ${PREV:-<none>}"
+
+      - name: SCP compose + Caddyfile to droplet
+        run: |
+          scp -i ~/.ssh/id_ed25519 \
+            infra/docker-compose/apps.prod.yml \
+            infra/docker-compose/Caddyfile \
+            tukio@"${DO_HOST_APPS}":~/tukio-apps/
+
+      - name: Remote pull + up
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 tukio@"${DO_HOST_APPS}" bash -se <<EOF
+            set -euo pipefail
+            cd ~/tukio-apps
+            # Persist the deployed tag so the next release can read it for rollback.
+            sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_TAG}|" .env.production || \\
+              echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.production
+            export DB_USER=\$(cat /home/tukio/tukio/secrets/pg_user)
+            export DB_PASSWORD=\$(cat /home/tukio/tukio/secrets/pg_password)
+            export MEILI_MASTER_KEY=\$(cat /home/tukio/tukio/secrets/meili_key)
+            export IMAGE_TAG="${IMAGE_TAG}"
+            BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
+                      order-svc payment-svc messaging-svc review-svc \\
+                      notification-svc media-svc"
+            docker compose -f apps.prod.yml --env-file .env.production pull \$BACKENDS
+            # Don't --wait : backend healthchecks need migrated DB schema (Epic 1).
+            # Smoke test against PRODUCTION_HEALTH_URL is the real check + triggers rollback on fail.
+            docker compose -f apps.prod.yml --env-file .env.production up -d \\
+              --remove-orphans \$BACKENDS
+            docker compose -f apps.prod.yml --env-file .env.production ps
+          EOF
+
+      - name: Smoke test (production health URL)
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 5 "${PRODUCTION_HEALTH_URL}" >/dev/null; then
+              echo "::notice::Healthcheck OK after ${i} attempt(s)"
+              exit 0
+            fi
             sleep 10
           done
-          echo "::error::Production healthcheck did not become green within 5 min."
+          echo "::error::Production healthcheck did not become green within 5 min at ${PRODUCTION_HEALTH_URL}"
           exit 1
-      - name: Rollback on failure (placeholder — Story 0.12 implements the body)
-        if: failure() && env.ARGOCD_PRODUCTION_TOKEN != ''
+
+      - name: Rollback on failure
+        if: failure() && steps.previous.outputs.previous_tag != ''
+        env:
+          PREV_TAG: ${{ steps.previous.outputs.previous_tag }}
         run: |
-          echo "::warning::Rollback placeholder — Story 0.12 implements the rollback request body."
-          # ArgoCD rollback requires a JSON body `{"id": <history-id>}`.
-          # Implementation deferred to Story 0.12 (needs ArgoCD application history lookup).
-          exit 0
+          echo "::warning::Smoke test failed — rolling back to ${PREV_TAG}"
+          ssh -i ~/.ssh/id_ed25519 tukio@"${DO_HOST_APPS}" bash -se <<EOF
+            set -euo pipefail
+            cd ~/tukio-apps
+            sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${PREV_TAG}|" .env.production
+            export DB_USER=\$(cat /home/tukio/tukio/secrets/pg_user)
+            export DB_PASSWORD=\$(cat /home/tukio/tukio/secrets/pg_password)
+            export MEILI_MASTER_KEY=\$(cat /home/tukio/tukio/secrets/meili_key)
+            export IMAGE_TAG="${PREV_TAG}"
+            BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
+                      order-svc payment-svc messaging-svc review-svc \\
+                      notification-svc media-svc"
+            docker compose -f apps.prod.yml --env-file .env.production pull \$BACKENDS
+            docker compose -f apps.prod.yml --env-file .env.production up -d \\
+              --remove-orphans \$BACKENDS
+          EOF
+          echo "::warning::Rolled back to ${PREV_TAG}"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519
+
       - name: Notify Slack — success
         if: success() && env.SLACK_WEBHOOK_DEPLOYS_PROD != ''
         uses: slackapi/slack-github-action@v2
@@ -71,8 +163,9 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": ":rocket: Production deploy succeeded — `${{ github.ref_name }}`"
+              "text": ":rocket: Production deploy succeeded — tag `${{ steps.tag.outputs.image_tag }}`"
             }
+
       - name: Notify Slack — failure
         if: failure() && env.SLACK_WEBHOOK_DEPLOYS_PROD != ''
         uses: slackapi/slack-github-action@v2
@@ -81,5 +174,5 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": ":x: Production deploy FAILED — `${{ github.ref_name }}` — rollback placeholder triggered. See ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "text": ":x: Production deploy FAILED — tag `${{ steps.tag.outputs.image_tag }}` (rollback: `${{ steps.previous.outputs.previous_tag }}`) — see ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }

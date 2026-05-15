@@ -1,17 +1,17 @@
 # DigitalOcean deployment — Configuration et setup (Story 0.12)
 
-> ⚠️ **Statut** : ce guide concerne **Story 0.12** (déploiement DO Droplets + docker-compose), pas Story 0.11. Les workflows `deploy-staging.yml` et `deploy-production.yml` sont des **placeholders** qui dégradent gracieusement quand les secrets DO sont absents.
+> ✅ **Statut** : guide opérationnel post-pivot (Story 0.12 — `0-12-digitalocean-droplets-docker-compose.md`). Les workflows `deploy-staging.yml` et `deploy-production.yml` font SSH + `docker compose pull && up -d` sur le droplet `tukio-apps`.
 
-**Plateforme** : [DigitalOcean](https://www.digitalocean.com/) — VPS (Droplets) + Spaces (S3-compat) + Managed Databases.
+**Plateforme** : [DigitalOcean](https://www.digitalocean.com/) — Droplets + VPC privé + Cloudflare R2 (storage backups + media).
 
-**Pivot architectural** : on est parti initialement sur Hetzner + K8s + ArgoCD (cf. Story 0.12 originale + ADR). Décision révisée en mai 2026 pour MVP : **DO Droplets + docker-compose** — beaucoup moins cher, plus simple à exploiter, suffit largement pour le volume de trafic MVP.
+**Pivot architectural** (ADR-015, mai 2026) : abandon du plan original Hetzner + K8s + ArgoCD + Neon + Grafana Cloud. Adopté pour MVP : **2 DO Droplets + docker-compose** (Option B). Beaucoup moins cher (€29/mois vs €120+/mois), plus simple à exploiter pour 1 dev solo, suffit largement pour le volume MVP cible (< 1k visiteurs/jour).
 
-**Budget cible MVP** : **€15-35/mois** (1-2 droplets, tout self-host).
+**Budget cible MVP** : **€29/mois** (Option B retenue — 2 droplets séparant `apps` et `data`).
 
 **Workflows consommateurs (Story 0.12)** :
 
-- `deploy-staging.yml` — SSH + `docker compose pull && docker compose up -d` sur le droplet staging au merge `main`.
-- `deploy-production.yml` — idem prod sur tag `v*` avec manual approval GitHub Environment.
+- `deploy-staging.yml` — déclenché au succès de `Build Images` sur `develop` → SSH `tukio@tukio-apps` → `docker compose pull && up -d` → smoke test → notif Slack.
+- `deploy-production.yml` — déclenché au push d'un tag `v*` → manual approval GitHub Environment `production` → SSH → pull/up → smoke → **rollback automatique** au tag précédent si smoke fail → notif Slack.
 
 ---
 
@@ -45,7 +45,51 @@
 
 ---
 
-## Architecture cible (Option A — €15/mois)
+## Architecture retenue (Option B — €29/mois)
+
+```
+                Squarespace DNS (records A → IP publique apps)
+                              │
+                ┌─────────────┴──────────────┐
+                ▼                            ▼
+         app/customer/seller/admin     api/auth.tukio.one
+                              │
+                              ▼
+              ┌──────────────────────────────────┐
+              │  Droplet tukio-apps (2 GB, $12)  │
+              │  Frankfurt — public 80/443       │
+              │                                  │
+              │  infra/docker-compose/apps.prod.yml │
+              │    ├─ Caddy (TLS + reverse-proxy) │
+              │    ├─ 10 services NestJS          │
+              │    └─ 4 frontends Next.js         │
+              └────────────┬─────────────────────┘
+                           │  VPC privé (10.114.0.0/24, $0)
+                           ▼
+              ┌──────────────────────────────────┐
+              │  Droplet tukio-data (2 GB, $12)  │
+              │  Frankfurt — VPC only, pas de    │
+              │  ports publics                   │
+              │                                  │
+              │  infra/docker-compose/data.prod.yml │
+              │    ├─ Postgres 16 (1 DB/svc)     │
+              │    ├─ Keycloak 25                │
+              │    ├─ NATS JetStream 2.10        │
+              │    ├─ Meilisearch v1.10          │
+              │    └─ Redis 7                    │
+              └────────────┬─────────────────────┘
+                           │
+                           ▼
+                Cloudflare R2 (10 GB free)
+                  → backups Postgres quotidiens
+                  → media uploads pros (signed URLs)
+```
+
+> 📝 **Pourquoi Option B (et pas A)** : un droplet 2 GB unique est tight — Keycloak + Postgres consomment ~1 GB chacun, donc risque OOM-kill sous charge. Split sur 2 droplets isole le plan de données et permet de scaler indépendamment. Coût supplémentaire : +€12/mois, justifié.
+
+---
+
+## Architecture initiale envisagée (Option A — €15/mois, REJETÉE)
 
 ```
                   Squarespace DNS (records A, gratuit)
@@ -113,70 +157,105 @@ VPC privé inter-droplets → pas de bande passante facturée.
 
 ---
 
-## Pré-requis (Story 0.12)
+## Pré-requis (Story 0.12 Phase B)
 
-1. **Compte DigitalOcean** activé, méthode de paiement.
-2. **Domain `.one`** acheté (Cloudflare, Namecheap, OVH… ~€10-20/an).
-3. **SSH key** générée et ajoutée à ton compte DO (clé Ed25519 recommandée).
-4. **GitHub repo secrets** prêts à être ajoutés (cf. § « Secrets » plus bas).
+1. **Compte DigitalOcean** activé, méthode de paiement (€24/mois pour 2 droplets).
+2. **`DO_TOKEN`** dans `~/.zshrc` ou env shell (déjà fait — variable utilisée par `doctl`).
+3. **Domain `tukio.one`** géré chez Squarespace (déjà acheté).
+4. **SSH key dédiée CI** générée (cf. § « Secrets GitHub »).
+5. **Compte Cloudflare** + bucket R2 `tukio-backups-prod` + bucket `tukio-prod-media` créés.
+6. **Compte UptimeRobot** (free tier 50 monitors) pour uptime checks.
 
 ---
 
-## Étapes (Story 0.12)
+## Provisioning séquentiel (Phase B)
 
-### 1. Créer le droplet DO
+### 1. Créer les 2 droplets + VPC
 
 ```sh
-# Via doctl CLI (recommandé) — installer brew install doctl
-doctl auth init
+# 1.1 — Créer le VPC privé (région FRA1)
+doctl vpcs create --name tukio-vpc --region fra1 --ip-range 10.114.0.0/24
+VPC_UUID=$(doctl vpcs list --format ID,Name --no-header | awk '$2=="tukio-vpc" {print $1}')
 
-# Création droplet
-doctl compute droplet create tukio-prod \
+# 1.2 — Récupérer le fingerprint de la SSH key
+SSH_FP=$(doctl compute ssh-key list --format FingerPrint --no-header | head -1)
+
+# 1.3 — Créer tukio-apps
+doctl compute droplet create tukio-apps \
   --image docker-20-04 \
   --size s-1vcpu-2gb \
   --region fra1 \
-  --vpc-uuid <vpc-uuid> \
-  --ssh-keys <ssh-key-fingerprint> \
+  --vpc-uuid "$VPC_UUID" \
+  --ssh-keys "$SSH_FP" \
+  --enable-monitoring \
+  --enable-ipv6 \
   --wait
 
-# Récupérer l'IP
-doctl compute droplet list
+# 1.4 — Créer tukio-data (mêmes flags)
+doctl compute droplet create tukio-data \
+  --image docker-20-04 \
+  --size s-1vcpu-2gb \
+  --region fra1 \
+  --vpc-uuid "$VPC_UUID" \
+  --ssh-keys "$SSH_FP" \
+  --enable-monitoring \
+  --enable-ipv6 \
+  --wait
+
+# 1.5 — Récupérer les IPs (public + privée VPC)
+doctl compute droplet list --format Name,PublicIPv4,PrivateIPv4
 ```
 
-Ou via l'UI : https://cloud.digitalocean.com/droplets/new → Frankfurt (FRA1) → image Docker 20.04 → 2GB / 1 CPU → ajouter ta SSH key.
+> Note les `PrivateIPv4` des deux droplets — la **VPC private IP de `tukio-data`** est la valeur à mettre dans `DATA_PRIV_IP` de `/home/tukio/tukio/.env.production` sur `tukio-apps`.
 
-### 2. Initial setup du droplet
+### 2. Initialiser chaque droplet (script idempotent)
 
 ```sh
-ssh root@<droplet-ip>
+# 2.1 — Pousser le repo sur les droplets (en root one-shot)
+APPS_IP=$(doctl compute droplet get tukio-apps --format PublicIPv4 --no-header)
+DATA_IP=$(doctl compute droplet get tukio-data --format PublicIPv4 --no-header)
 
-# Créer un user non-root
-adduser tukio
-usermod -aG docker tukio
-usermod -aG sudo tukio
-mkdir -p /home/tukio/.ssh
-cp /root/.ssh/authorized_keys /home/tukio/.ssh/
-chown -R tukio:tukio /home/tukio/.ssh
+# 2.2 — Init apps droplet
+scp -o StrictHostKeyChecking=no infra/scripts/do-droplet-init.sh root@${APPS_IP}:/tmp/
+ssh root@${APPS_IP} 'bash /tmp/do-droplet-init.sh apps'
 
-# Désactiver le login root SSH
-sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-systemctl restart sshd
-
-# Firewall (DO firewall plus simple, voir step 3)
-exit
+# 2.3 — Init data droplet
+scp -o StrictHostKeyChecking=no infra/scripts/do-droplet-init.sh root@${DATA_IP}:/tmp/
+ssh root@${DATA_IP} 'bash /tmp/do-droplet-init.sh data'
 ```
 
-### 3. DO Cloud Firewall
+Le script `do-droplet-init.sh` (cf. `infra/scripts/`) :
+
+- Crée user `tukio` (UID 1001), ajoute aux groupes docker + sudo
+- Désactive `PermitRootLogin` + `PasswordAuthentication`
+- Installe `unattended-upgrades`, `fail2ban`, `rclone` (data only), `doctl`
+- Configure `/etc/cron.d/tukio-*` (backups + snapshots — installés au step 8)
+- Crée `/home/tukio/tukio/secrets/` (mode 700, owner tukio:tukio)
+
+### 3. DO Cloud Firewall (2 firewalls)
 
 ```sh
+APPS_ID=$(doctl compute droplet get tukio-apps --format ID --no-header)
+DATA_ID=$(doctl compute droplet get tukio-data --format ID --no-header)
+
+# 3.1 — Firewall apps : SSH (ton IP), 80/443 public
+MY_IP="$(curl -s ifconfig.me)/32"
 doctl compute firewall create \
-  --name tukio-firewall \
-  --inbound-rules "protocol:tcp,ports:22,sources:addresses:<your-ip>/32 protocol:tcp,ports:80,sources:addresses:0.0.0.0/0 protocol:tcp,ports:443,sources:addresses:0.0.0.0/0" \
+  --name tukio-fw-apps \
+  --inbound-rules "protocol:tcp,ports:22,sources:addresses:${MY_IP} protocol:tcp,ports:80,sources:addresses:0.0.0.0/0 protocol:tcp,ports:443,sources:addresses:0.0.0.0/0" \
+  --outbound-rules "protocol:tcp,ports:all,destinations:addresses:0.0.0.0/0 protocol:udp,ports:all,destinations:addresses:0.0.0.0/0 protocol:icmp,destinations:addresses:0.0.0.0/0" \
+  --droplet-ids "$APPS_ID"
+
+# 3.2 — Firewall data : SSH (ton IP), 5432/6379/4222/7700/8080 SEULEMENT depuis tukio-apps (VPC IP)
+APPS_PRIV=$(doctl compute droplet get tukio-apps --format PrivateIPv4 --no-header)
+doctl compute firewall create \
+  --name tukio-fw-data \
+  --inbound-rules "protocol:tcp,ports:22,sources:addresses:${MY_IP} protocol:tcp,ports:5432,sources:addresses:${APPS_PRIV}/32 protocol:tcp,ports:6379,sources:addresses:${APPS_PRIV}/32 protocol:tcp,ports:4222,sources:addresses:${APPS_PRIV}/32 protocol:tcp,ports:7700,sources:addresses:${APPS_PRIV}/32 protocol:tcp,ports:8080,sources:addresses:${APPS_PRIV}/32" \
   --outbound-rules "protocol:tcp,ports:all,destinations:addresses:0.0.0.0/0 protocol:udp,ports:all,destinations:addresses:0.0.0.0/0" \
-  --droplet-ids <droplet-id>
+  --droplet-ids "$DATA_ID"
 ```
 
-Restreint SSH à ton IP, ouvre 80/443 au monde.
+> 🔒 **Defense in depth** : le compose `data.prod.yml` bind tous les ports sur `${DATA_PRIV_IP}` (VPC private IP) — pas sur `0.0.0.0`. Donc même si le firewall était mal configuré, les services data ne seraient pas exposés publiquement.
 
 ### 4. Squarespace DNS — records à ajouter
 
@@ -223,20 +302,74 @@ ou https://www.whatsmydns.net pour vérifier la propagation globale.
 
 > 💡 **Pourquoi pas Cloudflare DNS** : Squarespace gère les NS records de `tukio.one` et ne permet pas leur délégation à Cloudflare. Si tu veux le CDN Cloudflare gratuit (proxy + DDoS), il faudrait transférer le domaine vers un autre registrar (Cloudflare Registrar, Namecheap…) ce qui n'est pas une priorité MVP.
 
-### 5. Cloner le repo sur le droplet
+### 5. Cloner le repo sur chaque droplet
 
 ```sh
-ssh tukio@<droplet-ip>
-
-# Clone via deploy key (read-only)
-git clone https://github.com/MohamedXi/tukio.git
+# Sur chaque droplet (apps + data), en tant que user tukio :
+ssh tukio@${APPS_IP}
+git clone https://github.com/MohamedXi/tukio.git tukio
 cd tukio
 
-# Login GHCR pour pull les images
-echo $GHCR_TOKEN | docker login ghcr.io -u MohamedXi --password-stdin
+# Login GHCR pour pull les images (PAT classic avec read:packages)
+echo $GHCR_PAT | docker login ghcr.io -u MohamedXi --password-stdin
+
+# Idem sur tukio-data
+ssh tukio@${DATA_IP}
+git clone https://github.com/MohamedXi/tukio.git tukio
 ```
 
-### 6. Créer `docker-compose.prod.yml` (Story 0.12)
+### 6. Provisionner les secrets (interactif)
+
+Sur chaque droplet, lancer le script de provisioning des secrets :
+
+```sh
+# Sur tukio-data
+ssh tukio@${DATA_IP}
+cd /home/tukio/tukio
+./infra/scripts/provision-secrets.sh data
+# Te demande : pg_user, pg_password, kc_admin_password, meili_key, r2_*
+
+# Sur tukio-apps
+ssh tukio@${APPS_IP}
+cd /home/tukio/tukio
+./infra/scripts/provision-secrets.sh apps
+# Te demande : pg_user, pg_password, meili_key, stripe_secret, resend_api_key, r2_*
+```
+
+Le script :
+
+- Écrit chaque secret dans `/home/tukio/tukio/secrets/<name>` (mode 600, tukio:tukio)
+- Idempotent : ne re-prompte pas si le fichier existe déjà (sauf `--rotate <name>`)
+- Refuse les valeurs vides
+
+> ⚠️ **Mêmes valeurs sur les deux droplets** pour `pg_user`, `pg_password`, `meili_key`, `r2_*` — les services apps doivent matcher la config data.
+
+### 6.bis. Créer `.env.production` sur tukio-apps
+
+```sh
+# Sur tukio-apps en tant que tukio
+DATA_PRIV=$(ssh -o StrictHostKeyChecking=no tukio@${DATA_IP} "ip -4 addr show dev eth1 | awk '/inet/ {print \$2}' | cut -d/ -f1")
+# Adapte le nom d'interface (eth1 ou ens5) selon DO
+
+cat > /home/tukio/tukio/.env.production <<EOF
+DATA_PRIV_IP=${DATA_PRIV}
+IMAGE_TAG=develop
+R2_BUCKET=tukio-prod-media
+R2_ENDPOINT=https://<your-r2-account-id>.r2.cloudflarestorage.com
+EOF
+chmod 600 /home/tukio/tukio/.env.production
+```
+
+### 7. Compose files de production
+
+Les compose files **sont déjà dans le repo** (Story 0.12 Phase A) :
+
+- `infra/docker-compose/data.prod.yml` — Postgres + Keycloak + NATS + Meili + Redis
+- `infra/docker-compose/apps.prod.yml` — Caddy + 10 services + 4 frontends
+- `infra/docker-compose/Caddyfile` — reverse-proxy + TLS auto Let's Encrypt
+- `infra/docker-compose/init-databases.sh` — crée 1 DB par service + Keycloak au premier boot Postgres
+
+### 7.bis. Référence historique : compose squelette d'origine (PRE-Phase A)
 
 Squelette à créer dans `infra/docker-compose/docker-compose.prod.yml` :
 
@@ -369,123 +502,155 @@ Caddy obtient les certs Let's Encrypt automatiquement + renouvelle. Pas besoin d
 ### 8. Premier déploiement manuel
 
 ```sh
-ssh tukio@<droplet-ip>
-cd tukio
-docker compose -f infra/docker-compose/docker-compose.prod.yml up -d
+# 8.1 — Démarrer la couche data
+ssh tukio@${DATA_IP}
+cd /home/tukio/tukio
+docker compose -f infra/docker-compose/data.prod.yml up -d --wait
+docker compose -f infra/docker-compose/data.prod.yml ps
+# Attendre 30-60s que Keycloak finisse de bootstrap son DB
 
-# Vérifier
-docker compose ps
-curl https://api.tukio.one/health
+# 8.2 — Démarrer la couche apps
+ssh tukio@${APPS_IP}
+cd /home/tukio/tukio
+export $(grep -v '^#' .env.production | xargs)
+docker compose -f infra/docker-compose/apps.prod.yml pull
+docker compose -f infra/docker-compose/apps.prod.yml up -d --wait
+docker compose -f infra/docker-compose/apps.prod.yml ps
+
+# 8.3 — Vérifier la TLS auto Caddy
+curl -I https://api.tukio.one/health
+curl -I https://app.tukio.one
+curl -I https://auth.tukio.one
 ```
 
-### 9. Workflow `deploy-staging.yml` (à finaliser Story 0.12)
+### 9. Workflows de déploiement (finalisés)
 
-Réécrire le workflow placeholder pour SSH + docker compose :
+Les workflows `deploy-staging.yml` et `deploy-production.yml` (Story 0.12 Phase A) implémentent le pattern SSH + docker compose. Comportement :
 
-```yaml
-name: Deploy — staging
+| Workflow              | Trigger                                                     | Image tag       | Rollback                    | Environment GitHub      |
+| --------------------- | ----------------------------------------------------------- | --------------- | --------------------------- | ----------------------- |
+| `deploy-staging.yml`  | `Build Images` succès sur `develop` ou `workflow_dispatch`  | `sha-XXXXXXX`   | ❌ (staging = jetable)      | `staging` (no approval) |
+| `deploy-production.yml` | push tag `v*` ou `workflow_dispatch` (input `tag`)        | `vX.Y.Z`        | ✅ auto vers `previous_tag` | `production` (approval) |
 
-on:
-  workflow_run:
-    workflows: ['Build Images']
-    types: [completed]
-    branches: [main]
-  workflow_dispatch:
+Chaque workflow :
 
-jobs:
-  deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
-    environment:
-      name: staging
-      url: https://staging.tukio.one
-    steps:
-      - name: Setup SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DO_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.DO_HOST_STAGING }} >> ~/.ssh/known_hosts
-
-      - name: Deploy via SSH
-        run: |
-          ssh -i ~/.ssh/id_ed25519 tukio@${{ secrets.DO_HOST_STAGING }} <<'EOF'
-            cd tukio
-            git pull origin main
-            docker compose -f infra/docker-compose/docker-compose.prod.yml pull
-            docker compose -f infra/docker-compose/docker-compose.prod.yml up -d --remove-orphans
-            docker image prune -f
-          EOF
-
-      - name: Smoke test
-        run: |
-          for _ in $(seq 1 30); do
-            curl -fsS https://staging.tukio.one/health && exit 0
-            sleep 10
-          done
-          echo "::error::Smoke test failed"; exit 1
-```
+1. Vérifie que `DO_HOST_APPS` + `DO_DEPLOY_KEY` sont configurés (fail-fast si absents).
+2. Configure une SSH key éphémère + `ssh-keyscan` du host.
+3. Snapshot le tag courant depuis `.env.production` (production uniquement, pour rollback).
+4. Lance `docker compose pull && up -d --remove-orphans` via SSH.
+5. Smoke-teste `${HEALTH_URL}` 30× × 10s.
+6. **Rollback automatique** (production) : si smoke fail, restaure `previous_tag` et redéploie.
+7. Cleanup SSH key + notification Slack succès/échec.
 
 ---
 
-## Secrets GitHub à provisionner (Story 0.12)
+## Secrets GitHub à provisionner (Story 0.12 Phase B)
 
-| Secret              | Valeur                                                    |
-| ------------------- | --------------------------------------------------------- |
-| `DO_DEPLOY_KEY`     | Contenu de la SSH private key (`~/.ssh/id_ed25519`)       |
-| `DO_HOST_STAGING`   | IP ou hostname du droplet staging                         |
-| `DO_HOST_PRODUCTION`| IP ou hostname du droplet production                      |
+| Secret                       | Description                                                       | Comment générer                                                |
+| ---------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------- |
+| `DO_DEPLOY_KEY`              | Private SSH key utilisée par GitHub Actions                       | `ssh-keygen -t ed25519 -C github-actions-tukio -f tukio_deploy` |
+| `DO_HOST_APPS`               | IP publique du droplet `tukio-apps`                               | `doctl compute droplet get tukio-apps --format PublicIPv4 --no-header` |
+| `SLACK_WEBHOOK_DEPLOYS`      | Webhook Slack pour notifs deploys staging                         | Slack app → Incoming Webhooks → channel `#deploys`             |
+| `SLACK_WEBHOOK_DEPLOYS_PROD` | Webhook Slack pour notifs deploys production                      | Idem, channel `#deploys-prod`                                  |
 
-Générer une SSH key dédiée CI :
+**Repo variables (optionnel)** :
+
+| Variable                | Default                          | Override use case                       |
+| ----------------------- | -------------------------------- | --------------------------------------- |
+| `STAGING_HEALTH_URL`    | `https://api.tukio.one/health`   | Si endpoint health bouge                |
+| `PRODUCTION_HEALTH_URL` | `https://api.tukio.one/health`   | Idem prod                               |
+
+Générer + déposer la SSH key dédiée CI :
 
 ```sh
 ssh-keygen -t ed25519 -C "github-actions-tukio" -f ~/.ssh/tukio_deploy -N ""
-# Copier la public key sur le droplet
-ssh-copy-id -i ~/.ssh/tukio_deploy.pub tukio@<droplet-ip>
-# Ajouter la private key comme secret GitHub
-cat ~/.ssh/tukio_deploy | gh secret set DO_DEPLOY_KEY
+
+# Pousser la public key dans authorized_keys du user tukio (sur les 2 droplets)
+ssh-copy-id -i ~/.ssh/tukio_deploy.pub tukio@${APPS_IP}
+ssh-copy-id -i ~/.ssh/tukio_deploy.pub tukio@${DATA_IP}
+
+# Provisionner les secrets GitHub
+gh secret set DO_DEPLOY_KEY < ~/.ssh/tukio_deploy
+gh secret set DO_HOST_APPS --body "${APPS_IP}"
+gh secret set SLACK_WEBHOOK_DEPLOYS --body "<webhook-url-#deploys>"
+gh secret set SLACK_WEBHOOK_DEPLOYS_PROD --body "<webhook-url-#deploys-prod>"
 ```
 
 ---
 
-## Backups + monitoring
+## Backups + monitoring (Phase A — déjà scriptés)
 
-### Backups Postgres
+### Backups Postgres → Cloudflare R2
 
-Cron quotidien dans `infra/scripts/backup-postgres.sh` :
+Script : `infra/scripts/backup-postgres.sh` (déposé Phase A) — dump GZ via `pg_dump` par DB, upload `rclone` vers R2, retention 7 daily / 4 weekly / 6 monthly.
 
-```sh
-#!/usr/bin/env bash
-set -euo pipefail
-DATE=$(date -u +%Y%m%d)
-docker compose exec postgres pg_dumpall -U postgres > /backups/pg_${DATE}.sql
-# Upload to Cloudflare R2 (free 10GB)
-rclone copy /backups/pg_${DATE}.sql r2:tukio-backups/postgres/
-# Cleanup > 30 jours
-find /backups -name 'pg_*.sql' -mtime +30 -delete
-```
-
-Cron via systemd timer ou crontab :
-
-```cron
-0 3 * * * /home/tukio/tukio/infra/scripts/backup-postgres.sh
-```
-
-### Monitoring basic (gratuit)
-
-- **Uptime** : [UptimeRobot](https://uptimerobot.com/) — 50 monitors gratuits, alerte Slack/email.
-- **Logs** : `docker compose logs -f` + redirection vers fichier rotaté (logrotate).
-- **Métriques** : `docker stats` + Grafana Cloud free tier (10k metrics) — optionnel V1+.
-
-### DO snapshots
-
-Snapshot du droplet hebdomadaire :
+Cron : `infra/cron/tukio-backup-postgres` (03:15 UTC quotidien, sur `tukio-data`).
 
 ```sh
-doctl compute droplet-action snapshot <droplet-id> --snapshot-name "tukio-weekly-$(date +%Y%m%d)"
+# Installation sur tukio-data (à faire Phase B)
+ssh tukio@${DATA_IP}
+sudo install -m 644 /home/tukio/tukio/infra/cron/tukio-backup-postgres /etc/cron.d/
+sudo mkdir -p /var/log/tukio && sudo chown tukio:tukio /var/log/tukio
+sudo systemctl restart cron
+
+# Configurer rclone remote `r2:` (interactif)
+rclone config
+# > New remote: r2 / s3 / Cloudflare / endpoint: https://<account>.r2.cloudflarestorage.com
+
+# Test à la main
+/home/tukio/tukio/infra/scripts/backup-postgres.sh
 ```
 
-Coût : $0.06/GB/mois — 50GB droplet = $3/mois pour 1 snapshot persistant.
+### Restauration Postgres depuis R2
+
+Script : `infra/scripts/restore-postgres.sh`. Cf. `disaster-recovery.md` pour les runbooks détaillés.
+
+```sh
+# Exemple : restaurer tukio_catalog au 2026-05-13
+ssh tukio@${DATA_IP}
+cd /home/tukio/tukio
+./infra/scripts/restore-postgres.sh tukio_catalog 2026-05-13
+```
+
+### DO snapshots quotidiens
+
+Scripts : `infra/scripts/do-snapshot.sh` + crons `tukio-do-snapshot-{apps,data}`.
+
+- `tukio-apps` snapshot à 04:00 UTC quotidien
+- `tukio-data` snapshot à 04:30 UTC quotidien
+- Rétention : 7 snapshots par droplet (les plus anciens sont supprimés via `doctl`)
+
+```sh
+# Installation sur chaque droplet
+ssh tukio@${APPS_IP}
+sudo install -m 644 /home/tukio/tukio/infra/cron/tukio-do-snapshot-apps /etc/cron.d/
+sudo mkdir -p /var/log/tukio && sudo chown tukio:tukio /var/log/tukio
+sudo systemctl restart cron
+
+ssh tukio@${DATA_IP}
+sudo install -m 644 /home/tukio/tukio/infra/cron/tukio-do-snapshot-data /etc/cron.d/
+sudo systemctl restart cron
+
+# Configurer doctl avec DO_TOKEN
+doctl auth init --access-token "$DO_TOKEN"
+```
+
+**Coût snapshots** : DO facture $0.06/GB/mois au-delà du 1er snapshot inclus. 25 GB × 7 snapshots × 2 droplets ≈ 350 GB × $0.06 = **$21/mois**. Ajusté dans le récap budgétaire ci-dessous.
+
+> 💡 **Optimisation budget** : si €29 + $21 dépasse l'enveloppe, réduire la rétention de snapshots à 3 (suffit pour 72h DR window) — ramène à ~$9/mois supplémentaires.
+
+### Uptime monitoring — UptimeRobot
+
+50 monitors gratuits, alertes Slack/email. À configurer Phase B (URLs `app.tukio.one`, `api.tukio.one/health`, `auth.tukio.one`).
+
+### Logs
+
+- `docker compose logs -f --tail=200` ad-hoc
+- json-file driver configuré (`max-size: 10m`, `max-file: 3`) → rotation auto par container
+
+### Métriques (V1+)
+
+Pas de Grafana Cloud pour MVP (budget). Si besoin opérationnel : `docker stats` + healthcheck endpoints services + UptimeRobot.
 
 ---
 
@@ -543,24 +708,37 @@ journalctl --vacuum-time=7d
 
 ---
 
-## Coût récapitulatif
+## Coût récapitulatif (réel Option B)
 
-| Composant | Mensuel |
-| --- | --- |
-| Droplet 2GB Frankfurt | $12 |
-| Snapshot hebdo (50GB) | $3 |
-| Domain `.one` (annuel) | ~$1 |
-| Cloudflare (DNS+CDN+R2) | Free |
-| GHCR | Free |
-| UptimeRobot | Free |
-| **Total Option A** | **~$16/mois (€15)** |
+| Composant                        | Mensuel  | Notes                                      |
+| -------------------------------- | -------- | ------------------------------------------ |
+| 2 × Droplet 2GB Frankfurt        | $24      | $12 chacun                                 |
+| VPC FRA1                         | $0       | Inclus                                     |
+| Snapshots (7×2 ≈ 350 GB)         | $21      | $0.06/GB/mois — réductible à $9 (3 retention) |
+| Bandwidth                        | $0       | 2 TB inclus / droplet                      |
+| Domain `tukio.one` (annuel/12)   | ~$1      | Squarespace                                |
+| Cloudflare R2                    | $0       | 10 GB storage + 1M reads gratuits          |
+| GHCR (containers)                | $0       | Public repo + GitHub free tier             |
+| UptimeRobot                      | $0       | 50 monitors free                           |
+| Resend (transactional email)     | $0       | 3k emails/mois free tier                   |
+| **Total Option B**               | **~$46/mois (€43)** | Avec snapshots 7d         |
+| **Total Option B (snap 3d)**     | **~$34/mois (€32)** | Plus proche du budget €50  |
 
-| Composant | Mensuel Option B |
-| --- | --- |
-| 2 droplets 2GB | $24 |
-| Snapshots | $6 |
-| Domain | ~$1 |
-| **Total Option B** | **~$31/mois (€29)** |
+⚠️ **Au-dessus du budget €30 si on garde snapshots 7 jours**. Décision : snapshots rétention 3 jours pour MVP, étendre à 7 quand traffic justifie.
+
+---
+
+## Disaster recovery
+
+Voir [`disaster-recovery.md`](./disaster-recovery.md) pour les runbooks complets :
+
+- **Scénario 1** — service unique down (rollback image via `deploy-production.yml`)
+- **Scénario 2** — droplet `tukio-apps` mort (provisionner replacement + restore snapshot)
+- **Scénario 3** — droplet `tukio-data` mort (provisionner replacement + restore PG depuis R2)
+- **Scénario 4** — perte de données Postgres (restore-postgres.sh ciblé DB)
+- **Scénario 5** — clé secret compromise (rotation via `provision-secrets.sh --rotate <name>`)
+
+RPO target : **24h** (backups quotidiens). RTO target : **2h** (snapshot restore + smoke).
 
 ---
 
@@ -574,6 +752,8 @@ journalctl --vacuum-time=7d
 
 ## Voir aussi
 
-- [`trivy-cve-management.md`](./trivy-cve-management.md) — étape précédente.
+- [`trivy-cve-management.md`](./trivy-cve-management.md) — étape précédente (Story 0.11).
+- [`disaster-recovery.md`](./disaster-recovery.md) — runbooks DR détaillés.
 - [`index.md`](./index.md) — retour à l'index.
-- Story 0.12 : `_bmad-output/implementation-artifacts/0-12-helm-charts-k8s-argocd-staging-observability.md` _(à renommer en `0-12-digitalocean-deployment-docker-compose.md` lors du re-spec)_.
+- Story 0.12 : `_bmad-output/implementation-artifacts/0-12-digitalocean-droplets-docker-compose.md`.
+- ADR-015 : `_bmad-output/planning-artifacts/architecture.md` (pivot Hetzner+K8s → DO+compose).

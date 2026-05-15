@@ -1,14 +1,20 @@
 name: Deploy — staging
 
-# Placeholder workflow (Story 0.11). Story 0.12 finalises ArgoCD integration
-# against the Hetzner staging cluster + real secrets.
+# Story 0.12 — SSH-based deploy to DigitalOcean droplet `tukio-apps`.
+# Triggers automatically on a successful Build Images run for `develop`,
+# or manually via workflow_dispatch (defaults to the `develop` Docker tag).
 
 on:
   workflow_run:
     workflows: ['Build Images']
     types: [completed]
-    branches: [main]
+    branches: [develop]
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy (default: develop)'
+        required: false
+        default: 'develop'
 
 concurrency:
   group: deploy-staging-${{ github.workflow }}
@@ -17,48 +23,107 @@ concurrency:
 permissions:
   contents: read
   deployments: write
-  id-token: write
 
-# Workflow-level env so `if:` conditions can reference populated values.
-# Without this, step-level `env:` is evaluated AFTER the step's `if:` runs
-# and the guard always falls through to skip.
 env:
-  ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-  ARGOCD_STAGING_TOKEN: ${{ secrets.ARGOCD_STAGING_TOKEN }}
+  DO_HOST_APPS: ${{ secrets.DO_HOST_APPS }}
+  DO_DEPLOY_KEY: ${{ secrets.DO_DEPLOY_KEY }}
   SLACK_WEBHOOK_DEPLOYS: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+  STAGING_HEALTH_URL: ${{ vars.STAGING_HEALTH_URL || 'https://api.tukio.one/' }}
 
 jobs:
-  argocd-sync:
-    name: ArgoCD sync — tukio-staging
+  ssh-deploy:
+    name: SSH deploy — tukio-apps
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: staging
-      url: https://staging.tukio.one
+      url: https://app.tukio.one
     timeout-minutes: 15
     steps:
-      - name: Skip notice (Story 0.12 finalises)
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Guard — required secrets present
         run: |
-          echo "::notice::Placeholder mode — Story 0.12 wires the real ArgoCD sync."
-          echo "Required secrets (to be configured in Story 0.12):"
-          echo "  - ARGOCD_SERVER (e.g. argocd.staging.tukio.one)"
-          echo "  - ARGOCD_STAGING_TOKEN"
-          echo "  - SLACK_WEBHOOK_DEPLOYS"
-      - name: Trigger ArgoCD sync
-        if: env.ARGOCD_STAGING_TOKEN != ''
+          missing=()
+          [ -z "${DO_HOST_APPS}" ] && missing+=("DO_HOST_APPS")
+          [ -z "${DO_DEPLOY_KEY}" ] && missing+=("DO_DEPLOY_KEY")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            echo "Configure them in repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Setup SSH key + known_hosts
         run: |
-          curl --fail-with-body -sS \
-            -H "Authorization: Bearer ${ARGOCD_STAGING_TOKEN}" \
-            -X POST "https://${ARGOCD_SERVER}/api/v1/applications/tukio-staging/sync"
-      - name: Smoke test
-        if: env.ARGOCD_STAGING_TOKEN != ''
+          mkdir -p ~/.ssh
+          printf '%s\n' "${DO_DEPLOY_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${DO_HOST_APPS}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Resolve image tag
+        id: tag
         run: |
-          for _ in $(seq 1 30); do
-            curl -fsS https://staging.tukio.one/health && exit 0
+          TAG="${{ inputs.image_tag || 'develop' }}"
+          echo "image_tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Deploying image tag: ${TAG}"
+
+      - name: SCP compose + Caddyfile to droplet
+        run: |
+          scp -i ~/.ssh/id_ed25519 \
+            infra/docker-compose/apps.prod.yml \
+            infra/docker-compose/Caddyfile \
+            tukio@"${DO_HOST_APPS}":~/tukio-apps/
+
+      - name: Remote pull + up
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 tukio@"${DO_HOST_APPS}" bash -se <<EOF
+            set -euo pipefail
+            cd ~/tukio-apps
+            # Source secrets from on-droplet files (mode 644, owner tukio).
+            # NestJS @nestjs/config / Keycloak / Meilisearch do not honor the
+            # _FILE env suffix, so values are read on the host side and exported
+            # as direct compose env substitutions.
+            export DB_USER=\$(cat /home/tukio/tukio/secrets/pg_user)
+            export DB_PASSWORD=\$(cat /home/tukio/tukio/secrets/pg_password)
+            export MEILI_MASTER_KEY=\$(cat /home/tukio/tukio/secrets/meili_key)
+            export IMAGE_TAG="${IMAGE_TAG}"
+            # 11 services (10 backends + caddy). Frontends pending Story 0.12
+            # follow-up to extend build-images.yml with the 4 Next.js apps.
+            BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
+                      order-svc payment-svc messaging-svc review-svc \\
+                      notification-svc media-svc"
+            echo "── pulling images at tag \${IMAGE_TAG}..."
+            docker compose -f apps.prod.yml --env-file .env.production pull \$BACKENDS
+            echo "── restarting stack..."
+            # Don't --wait : backend healthchecks need migrated DB schema (Epic 1).
+            # The downstream smoke test against STAGING_HEALTH_URL is the real check.
+            docker compose -f apps.prod.yml --env-file .env.production up -d \\
+              --remove-orphans \$BACKENDS
+            echo "── compose ps..."
+            docker compose -f apps.prod.yml --env-file .env.production ps
+          EOF
+
+      - name: Smoke test (staging health URL)
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 5 "${STAGING_HEALTH_URL}" >/dev/null; then
+              echo "::notice::Healthcheck OK after ${i} attempt(s)"
+              exit 0
+            fi
             sleep 10
           done
-          echo "::error::Staging healthcheck did not become green within 5 min."
+          echo "::error::Staging healthcheck did not become green within 5 min at ${STAGING_HEALTH_URL}"
           exit 1
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519
+
       - name: Notify Slack — success
         if: success() && env.SLACK_WEBHOOK_DEPLOYS != ''
         uses: slackapi/slack-github-action@v2
@@ -67,8 +132,9 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": ":rocket: Staging deploy succeeded — `${{ github.sha }}`"
+              "text": ":rocket: Staging deploy succeeded — tag `${{ steps.tag.outputs.image_tag }}`"
             }
+
       - name: Notify Slack — failure
         if: failure() && env.SLACK_WEBHOOK_DEPLOYS != ''
         uses: slackapi/slack-github-action@v2
@@ -77,5 +143,5 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": ":x: Staging deploy FAILED — `${{ github.sha }}` — see ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "text": ":x: Staging deploy FAILED — tag `${{ steps.tag.outputs.image_tag }}` — see ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
