@@ -98,7 +98,13 @@ services:
       # /home/tukio/tukio/keycloak/themes (rsync'd by the runbook).
       - ./keycloak/themes:/opt/keycloak/themes:ro
     healthcheck:
-      test: ['CMD-SHELL', 'curl -fs http://localhost:9000/health/ready | grep -q "UP" || exit 1']
+      # Phasetwo Quarkus image doesn't ship curl/wget — use bash /dev/tcp + raw
+      # HTTP probe against the management port. Same pattern as the dev compose.
+      test:
+        - 'CMD'
+        - '/bin/bash'
+        - '-c'
+        - 'response=$$(exec 3<>/dev/tcp/localhost/9000; printf "GET /health/ready HTTP/1.0\r\nHost: localhost\r\n\r\n" >&3; cat <&3); echo "$$response" | grep -q "\"status\": \"UP\""'
       interval: 15s
       timeout: 5s
       retries: 12

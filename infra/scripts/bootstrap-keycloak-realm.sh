@@ -15,8 +15,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 readonly REPO_ROOT
-readonly KC_CONFIG_DIR="${REPO_ROOT}/infra/keycloak/realm-config"
-readonly KC_EXPORT_DIR="${REPO_ROOT}/infra/keycloak/realm-export"
+# Allow override for non-repo layouts (e.g., droplet has keycloak/ at workdir root).
+KC_CONFIG_DIR="${KC_CONFIG_DIR:-${REPO_ROOT}/infra/keycloak/realm-config}"
+readonly KC_CONFIG_DIR
+KC_EXPORT_DIR="${KC_EXPORT_DIR:-${REPO_ROOT}/infra/keycloak/realm-export}"
+readonly KC_EXPORT_DIR
 
 # ─── Tool prerequisites ───────────────────────────────────────────────────────
 for tool in curl python3 envsubst docker; do
@@ -76,7 +79,10 @@ case $ENV in
       log_error "  cd ~/tukio-data && bash infra/scripts/bootstrap-keycloak-realm.sh --env=staging"
       exit 1
     fi
-    read_secret() {
+    # `set -e` propagates `exit 1` from a $(...) subshell to the parent
+    # even when followed by `|| fallback`. Split into a required (exits) and
+    # an optional (returns empty) variant to make fallbacks behave.
+    read_secret_required() {
       local file="${SECRETS_DIR}/$1"
       if [ ! -r "$file" ]; then
         log_error "Missing secret: $file"
@@ -85,12 +91,17 @@ case $ENV in
       fi
       tr -d '\r\n' < "$file"
     }
+    read_secret_optional() {
+      local file="${SECRETS_DIR}/$1"
+      [ -r "$file" ] && tr -d '\r\n' < "$file" || true
+    }
     export KEYCLOAK_URL="${KEYCLOAK_URL:-https://auth.tukio.one}"
-    _admin_username="$(read_secret kc_admin_username 2>/dev/null || echo admin)"
-    _admin_password="$(read_secret kc_admin_password)"
-    _client_secret_api="$(read_secret kc_client_secret_tukio_api)"
-    _client_secret_smoke="$(read_secret kc_client_secret_smoke_test)"
-    _webhook_secret="$(read_secret kc_webhook_secret)"
+    _admin_username_file="$(read_secret_optional kc_admin_username)"
+    _admin_username="${_admin_username_file:-admin}"
+    _admin_password="$(read_secret_required kc_admin_password)"
+    _client_secret_api="$(read_secret_required kc_client_secret_tukio_api)"
+    _client_secret_smoke="$(read_secret_required kc_client_secret_smoke_test)"
+    _webhook_secret="$(read_secret_required kc_webhook_secret)"
     export KEYCLOAK_ADMIN_USERNAME="${KEYCLOAK_ADMIN_USERNAME:-$_admin_username}"
     export KEYCLOAK_ADMIN_PASSWORD="$_admin_password"
     export KEYCLOAK_CLIENT_SECRET_TUKIO_API="$_client_secret_api"
@@ -107,11 +118,14 @@ case $ENV in
     fi
     export REDIRECT_URIS_TUKIO_WEB='["https://tukio.one/*","https://seller.tukio.one/*"]'
     export REDIRECT_URIS_TUKIO_ADMIN='["https://admin.tukio.one/*"]'
-    export IDENTITY_SVC_WEBHOOK_URL="${IDENTITY_SVC_WEBHOOK_URL:-http://gateway-api:4000/internal/keycloak-events}"
+    # Webhook is empty by default in staging — identity-svc not deployed until Story 1.10.
+    # When ready, set IDENTITY_SVC_WEBHOOK_URL to http://<apps-priv-ip>:4000/internal/keycloak-events
+    # OR via Caddy with an internal route, then re-run this script.
+    export IDENTITY_SVC_WEBHOOK_URL="${IDENTITY_SVC_WEBHOOK_URL:-}"
     # SMTP — read from secrets dir if present, else leave empty (no email delivery)
-    _smtp_host="$(read_secret smtp_host 2>/dev/null || echo '')"
-    _smtp_user="$(read_secret smtp_user 2>/dev/null || echo '')"
-    _smtp_password="$(read_secret smtp_password 2>/dev/null || echo '')"
+    _smtp_host="$(read_secret_optional smtp_host)"
+    _smtp_user="$(read_secret_optional smtp_user)"
+    _smtp_password="$(read_secret_optional smtp_password)"
     export SMTP_HOST="${SMTP_HOST:-$_smtp_host}"
     export SMTP_PORT="${SMTP_PORT:-587}"
     export SMTP_FROM="${SMTP_FROM:-no-reply@tukio.one}"
@@ -496,6 +510,9 @@ PYEOF
   if [[ "$SKIP_PHASETWO_WEBHOOK" == "false" ]]; then
     log_step "Phasetwo Webhook (LOGIN_ERROR → identity-svc)"
 
+    if [ -z "${IDENTITY_SVC_WEBHOOK_URL:-}" ]; then
+      log_warn "IDENTITY_SVC_WEBHOOK_URL is empty — skipping webhook (configure once Story 1.10 deploys identity-svc)"
+    else
     # P-H1: obtain a real access token via /token endpoint (not kcadm stdout)
     ACCESS_TOKEN=""
     ACCESS_TOKEN="$(get_admin_access_token 2>/dev/null || true)"
@@ -530,7 +547,7 @@ except Exception:
 JSON
 )
       if [ -n "$EXISTING_WEBHOOK_ID" ]; then
-        webhook_status="$(curl -fsS -o /dev/null -w '%{http_code}' \
+        webhook_status="$(curl -sS -o /dev/null -w '%{http_code}' \
           -X PUT "${KEYCLOAK_URL}/realms/tukio/webhooks/${EXISTING_WEBHOOK_ID}" \
           -H "Authorization: Bearer ${ACCESS_TOKEN}" \
           -H "Content-Type: application/json" \
@@ -541,7 +558,7 @@ JSON
           *)   log_warn "Phasetwo webhook update HTTP=${webhook_status} (continuing)" ;;
         esac
       else
-        webhook_status="$(curl -fsS -o /dev/null -w '%{http_code}' \
+        webhook_status="$(curl -sS -o /dev/null -w '%{http_code}' \
           -X POST "${KEYCLOAK_URL}/realms/tukio/webhooks" \
           -H "Authorization: Bearer ${ACCESS_TOKEN}" \
           -H "Content-Type: application/json" \
@@ -553,6 +570,7 @@ JSON
         esac
       fi
     fi
+    fi  # IDENTITY_SVC_WEBHOOK_URL non-empty
   fi
 
 fi  # end EXPORT_ONLY check
