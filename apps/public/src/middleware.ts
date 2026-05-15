@@ -10,21 +10,17 @@ const i18nMiddleware = createTukioI18nMiddleware();
 // 2. authGateMiddleware — redirects unauthenticated requests on /(authenticated)/* (Story 0.14, ADR-016)
 // 3. i18n middleware — locale routing/redirect
 export default async function middleware(request: NextRequest) {
-  // Step 1: evaluate acquisition cookie (always runs, never blocks routing).
   const acqResponse = acquisitionCookieMiddleware(request);
 
-  // Step 2: auth-gate. Redirects to /login on /(authenticated)/* without session.
   const authResponse = authGateMiddleware(request);
   if (authResponse) {
     acqResponse.cookies.getAll().forEach((cookie) => authResponse.cookies.set(cookie));
     return authResponse;
   }
 
-  // Step 3: run i18n middleware (may redirect to locale-prefixed URL).
   // Cast bridges Next.js 15 (i18n-client peer) vs 16 (app) NextRequest mismatch.
   // Runtime type is compatible; the [Internal] symbol differs only in TS type declarations.
-  // Track: upgrade @tukio/i18n-client peer to next@16 when all apps are on 16.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // TODO @ismael: upgrade @tukio/i18n-client peer to next@16 when all apps are on 16.
   const i18nResponse = await i18nMiddleware(request as any);
   if (i18nResponse) {
     acqResponse.cookies.getAll().forEach((cookie) => i18nResponse.cookies.set(cookie));

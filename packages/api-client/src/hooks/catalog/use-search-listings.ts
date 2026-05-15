@@ -4,8 +4,7 @@ import { useApiClient } from '../../providers/api-client-context.js';
 import { QueryKeys, type SearchParams } from '../../types/query-keys.js';
 import { ApiError } from '../../types/api-error.js';
 
-// TODO: replace with @tukio/contracts/dtos/catalog ListingResponseDto when
-// Story 3.2 (catalog-svc Pretre) lands.
+// TODO Story 3.2: replace with @tukio/contracts/dtos/catalog ListingResponseDto
 export interface ListingSearchResultDto {
   id: string;
   categorySlug: string;

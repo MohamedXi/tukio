@@ -4,8 +4,7 @@ import { useApiClient } from '../../providers/api-client-context.js';
 import { QueryKeys, type VerificationFilter } from '../../types/query-keys.js';
 import { ApiError } from '../../types/api-error.js';
 
-// TODO: replace with @tukio/contracts/dtos/admin VerificationResponseDto when
-// Story 2.3 (admin verification queue) lands.
+// TODO Story 2.3: replace with @tukio/contracts/dtos/admin VerificationResponseDto
 export interface VerificationResponseDto {
   id: string;
   proId: string;

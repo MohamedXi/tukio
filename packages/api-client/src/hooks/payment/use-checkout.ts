@@ -4,8 +4,7 @@ import type { PaymentIntentResponseDto } from '@tukio/contracts/dtos/payment';
 import { useApiClient } from '../../providers/api-client-context.js';
 import { ApiError } from '../../types/api-error.js';
 
-// TODO: replace with @tukio/contracts/dtos/payment CreatePaymentIntentDto when
-// Story 4.5 (Stripe checkout) lands.
+// TODO Story 4.5: replace with @tukio/contracts/dtos/payment CreatePaymentIntentDto
 export interface CreatePaymentIntentInput {
   bookingId: string;
   amountInCents: number;

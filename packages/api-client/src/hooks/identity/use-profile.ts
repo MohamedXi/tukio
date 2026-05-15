@@ -4,8 +4,7 @@ import { useApiClient } from '../../providers/api-client-context.js';
 import { QueryKeys } from '../../types/query-keys.js';
 import { ApiError } from '../../types/api-error.js';
 
-// TODO: replace with @tukio/contracts/dtos/identity UserProfileResponseDto
-// when DTO is exported (Story 0.6 has it but it isn't yet in @tukio/contracts).
+// TODO Story 1.x: replace with @tukio/contracts/dtos/identity UserProfileResponseDto
 export interface UserProfileResponseDto {
   id: string;
   keycloakUserId: string;

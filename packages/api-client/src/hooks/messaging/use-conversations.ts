@@ -4,8 +4,7 @@ import { useApiClient } from '../../providers/api-client-context.js';
 import { QueryKeys } from '../../types/query-keys.js';
 import { ApiError } from '../../types/api-error.js';
 
-// TODO: replace with @tukio/contracts/dtos/messaging ConversationResponseDto
-// when Story 5.1 (messaging-svc Pretre) lands.
+// TODO Story 5.1: replace with @tukio/contracts/dtos/messaging ConversationResponseDto
 export interface ConversationSummaryDto {
   id: string;
   participantId: string;

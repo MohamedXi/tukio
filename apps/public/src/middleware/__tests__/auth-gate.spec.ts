@@ -30,25 +30,21 @@ function buildRequest(pathname: string, sessionMarker?: string, search = ''): un
 describe('authGateMiddleware', () => {
   describe('public routes (not auth-gated)', () => {
     it('returns undefined for landing /fr/', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = authGateMiddleware(buildRequest('/fr/') as any);
       expect(result).toBeUndefined();
     });
 
     it('returns undefined for /fr/login', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = authGateMiddleware(buildRequest('/fr/login') as any);
       expect(result).toBeUndefined();
     });
 
     it('returns undefined for /en/services/marquees', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = authGateMiddleware(buildRequest('/en/services/marquees') as any);
       expect(result).toBeUndefined();
     });
 
     it('returns undefined for the apex root /', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = authGateMiddleware(buildRequest('/') as any);
       expect(result).toBeUndefined();
     });
@@ -67,7 +63,6 @@ describe('authGateMiddleware', () => {
     ];
 
     it.each(gated)('redirects to /login when no session marker cookie is present (%s)', (path) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = authGateMiddleware(buildRequest(path) as any) as
         | { status: number; url: URL }
         | undefined;
@@ -78,7 +73,6 @@ describe('authGateMiddleware', () => {
     });
 
     it('redirects when the session marker cookie is set to "0"', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = authGateMiddleware(buildRequest('/fr/account', '0') as any) as
         | { status: number }
         | undefined;
@@ -88,7 +82,6 @@ describe('authGateMiddleware', () => {
 
     it('preserves query string in the callback parameter', () => {
       const result = authGateMiddleware(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         buildRequest('/fr/account', undefined, '?from=cart') as any,
       ) as { status: number; url: URL } | undefined;
       expect(result).toBeDefined();
@@ -96,7 +89,6 @@ describe('authGateMiddleware', () => {
     });
 
     it('lets the request through when the session marker cookie is "1"', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = authGateMiddleware(buildRequest('/fr/account', '1') as any);
       expect(result).toBeUndefined();
     });
@@ -104,7 +96,6 @@ describe('authGateMiddleware', () => {
 
   describe('locale routing', () => {
     it('uses the locale from the URL when redirecting (en)', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = authGateMiddleware(buildRequest('/en/bookings') as any) as
         | { url: URL }
         | undefined;
@@ -113,7 +104,6 @@ describe('authGateMiddleware', () => {
 
     it('does not gate routes that share a prefix outside the gated list', () => {
       // /fr/accounts (plural) is not in the AUTH_GATED set.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = authGateMiddleware(buildRequest('/fr/accounts') as any);
       expect(result).toBeUndefined();
     });

@@ -4,8 +4,7 @@ import { useApiClient } from '../../providers/api-client-context.js';
 import { QueryKeys } from '../../types/query-keys.js';
 import { ApiError } from '../../types/api-error.js';
 
-// TODO: replace with @tukio/contracts/dtos/review ReviewResponseDto when
-// Story 5.5 (review-svc Pretre) lands.
+// TODO Story 5.5: replace with @tukio/contracts/dtos/review ReviewResponseDto
 export interface ReviewResponseDto {
   id: string;
   authorId: string;
