@@ -5,6 +5,7 @@ import {
   FastifyAdapter,
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import multipart from '@fastify/multipart';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AppModule } from './app.module.js';
 import { EnvironmentConfigService } from './infrastructure/config/environment-config.service.js';
@@ -12,12 +13,18 @@ import { EnvelopeExceptionFilter } from './infrastructure/http/filters/envelope-
 import { ResponseEnvelopeInterceptor } from './infrastructure/http/interceptors/response-envelope.interceptor.js';
 import { LOGGER } from './domain/ports/tokens.js';
 
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: false }),
     { bufferLogs: true },
   );
+
+  // Register @fastify/multipart before any route handling.
+  // Story 1.3b — `POST /internal/pros` uses multipart for KYC file uploads.
+  await app.register(multipart, { limits: { fileSize: MAX_FILE_SIZE_BYTES } });
 
   // Route NestJS internal logs (bootstrap, DI errors) through the Pino adapter.
   app.useLogger(app.get<LoggerService>(LOGGER));

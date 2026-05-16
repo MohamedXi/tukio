@@ -3,9 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import type {
   DatabaseConfig,
   IConfigService,
+  InseeConfig,
   KeycloakAdminConfig,
   KeycloakConfig,
   NatsConfig,
+  R2KycConfig,
 } from '../../domain/ports/config.port.js';
 import type { Env } from './env.schema.js';
 
@@ -80,5 +82,26 @@ export class EnvironmentConfigService implements IConfigService {
       streamName: this.get('NATS_STREAM_NAME'),
       replicas: this.get('NATS_REPLICAS'),
     };
+  }
+
+  getInseeConfig(): InseeConfig {
+    return {
+      apiUrl: this.get('INSEE_API_URL'),
+      // In dev/test the key is optional; the adapter handles undefined gracefully.
+      apiKey: this.get('INSEE_API_KEY') ?? '',
+    };
+  }
+
+  getR2KycConfig(): R2KycConfig {
+    return {
+      endpoint: this.get('R2_KYC_ENDPOINT') ?? '',
+      bucket: this.get('R2_KYC_BUCKET'),
+      accessKeyId: this.get('R2_KYC_ACCESS_KEY_ID') ?? '',
+      secretAccessKey: this.get('R2_KYC_SECRET_ACCESS_KEY') ?? '',
+    };
+  }
+
+  getR2KycBucket(): string {
+    return this.get('R2_KYC_BUCKET');
   }
 }

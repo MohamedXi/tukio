@@ -72,6 +72,14 @@ const buildConfig = (kcUrl: string): IConfigService => {
       streamName: 'TUKIO_TEST',
       replicas: 1,
     }),
+    getInseeConfig: () => ({ apiUrl: 'https://api.insee.fr', apiKey: '' }),
+    getR2KycConfig: () => ({
+      endpoint: '',
+      bucket: 'tukio-kyc-staging',
+      accessKeyId: '',
+      secretAccessKey: '',
+    }),
+    getR2KycBucket: () => 'tukio-kyc-staging',
   };
 };
 

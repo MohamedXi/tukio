@@ -93,7 +93,7 @@ development_status:
   # cf. _bmad-output/planning-artifacts/sprint-change-proposal-2026-05-16.md
   1-3-pro-registration-pending-admin-review: done  # split umbrella — voir 1.3a-d ci-dessous
   1-3a-contracts-pro-domain-usecase: done
-  1-3b-identity-svc-infrastructure-insee-r2-controller: ready-for-dev
+  1-3b-identity-svc-infrastructure-insee-r2-controller: review
   1-3c-gateway-api-pro-register-multipart-forwarder: ready-for-dev
   1-3d-frontend-wizard-seller-middleware-e2e-observability: ready-for-dev
   1-4-login-flow-keycloak-authorization-code-pkce: ready-for-dev

@@ -42,6 +42,14 @@ export const EnvSchema = z
     NATS_URL: z.string().min(1).default('nats://localhost:4222'),
     NATS_STREAM_NAME: z.string().min(1).default('TUKIO_IDENTITY'),
     NATS_REPLICAS: z.coerce.number().int().positive().default(1),
+    // INSEE SIRENE V3.11 apiKey (Story 1.3b). Optional — only required when pro registration is active.
+    INSEE_API_URL: z.string().url().min(1).default('https://api.insee.fr'),
+    INSEE_API_KEY: z.string().min(1).optional(),
+    // Cloudflare R2 KYC bucket (Story 1.3b). Optional — only required when pro registration is active.
+    R2_KYC_ENDPOINT: z.string().url().min(1).optional(),
+    R2_KYC_ACCESS_KEY_ID: z.string().min(1).optional(),
+    R2_KYC_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    R2_KYC_BUCKET: z.string().min(1).default('tukio-kyc-staging'),
   })
   .passthrough();
 

@@ -54,6 +54,9 @@ const buildConfigMock = (): IConfigService => ({
   getInternalServiceSecret: jest.fn().mockReturnValue('hmac-secret'),
   getPublicBaseUrl: jest.fn().mockReturnValue('http://localhost:3000'),
   getNatsConfig: jest.fn(),
+  getInseeConfig: jest.fn(),
+  getR2KycConfig: jest.fn(),
+  getR2KycBucket: jest.fn().mockReturnValue('tukio-kyc-staging'),
 });
 
 const buildLoggerMock = (): jest.Mocked<ILogger> => ({

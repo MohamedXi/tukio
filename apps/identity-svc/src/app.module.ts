@@ -9,6 +9,7 @@ import { HttpModule } from './infrastructure/http/http.module.js';
 import { UseCasesProxyModule } from './infrastructure/usecases-proxy/usecases-proxy.module.js';
 import { UserProfileEntity } from './infrastructure/persistence/typeorm/entities/user-profile.entity.js';
 import { EmailVerificationTokenEntity } from './infrastructure/persistence/typeorm/entities/email-verification-token.entity.js';
+import { ProProfileEntity } from './infrastructure/persistence/typeorm/entities/pro-profile.entity.js';
 import { ALL_MIGRATIONS } from './infrastructure/persistence/typeorm/migrations/index.js';
 import { OutboxEntity } from '@tukio/messaging/outbox/entity';
 import { TukioAuthModule } from '@tukio/auth/module';
@@ -59,6 +60,7 @@ import { EnvironmentConfigService } from './infrastructure/config/environment-co
           entities: [
             UserProfileEntity,
             EmailVerificationTokenEntity,
+            ProProfileEntity,
             OutboxEntity,
           ],
           // Auto-apply pending migrations at boot. TypeORM tracks applied
