@@ -21,10 +21,10 @@ export default async function SignUpPage({ params }: { params: Promise<{ locale:
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'auth.signup' });
 
-  const gatewayUrl = process.env.NEXT_PUBLIC_GATEWAY_URL;
-  if (!gatewayUrl && process.env.NODE_ENV === 'production') {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!apiUrl && process.env.NODE_ENV === 'production') {
     throw new Error(
-      'NEXT_PUBLIC_GATEWAY_URL is required in production builds (refusing to fall back to localhost).',
+      'NEXT_PUBLIC_API_URL is required in production builds (refusing to fall back to localhost).',
     );
   }
 
@@ -47,7 +47,7 @@ export default async function SignUpPage({ params }: { params: Promise<{ locale:
       ]}
       footerCopyright={t('footer.copyright')}
     >
-      <SignUpProviders gatewayUrl={gatewayUrl ?? 'http://localhost:4000'}>
+      <SignUpProviders gatewayUrl={apiUrl ?? 'http://localhost:4000'}>
         <SignUpForm />
       </SignUpProviders>
     </AuthShell>
