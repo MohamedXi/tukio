@@ -53,7 +53,7 @@ describe('IdentitySvcClient.registerCustomer', () => {
     let capturedBody: unknown = null;
 
     nock(IDENTITY_SVC_URL)
-      .post('/internal/customers')
+      .post('/v1/internal/customers')
       .reply(function reply(_uri: string, requestBody: unknown) {
         capturedBody = requestBody;
         capturedHeaders = this.req.headers;
@@ -101,7 +101,7 @@ describe('IdentitySvcClient.registerCustomer', () => {
     const expectedBodyHash = createHash('sha256').update(rawBody).digest('hex');
     expect(bodyHash).toBe(expectedBodyHash);
 
-    const canonical = `${String(ts)}.POST./internal/customers.${expectedBodyHash}`;
+    const canonical = `${String(ts)}.POST./v1/internal/customers.${expectedBodyHash}`;
     const expectedToken = createHmac('sha256', INTERNAL_SECRET)
       .update(canonical)
       .digest('hex');
@@ -110,7 +110,7 @@ describe('IdentitySvcClient.registerCustomer', () => {
 
   it('throws IdentitySvcConflictError on 409 with the tukioCode propagated', async () => {
     nock(IDENTITY_SVC_URL)
-      .post('/internal/customers')
+      .post('/v1/internal/customers')
       .reply(409, {
         method: 'POST',
         code: 409,
@@ -118,7 +118,7 @@ describe('IdentitySvcClient.registerCustomer', () => {
           type: 'https://tukio.one/errors/identity-conflict-001',
           title: 'Identity conflict',
           detail: 'Email already registered',
-          instance: '/internal/customers',
+          instance: '/v1/internal/customers',
           tukioCode: 'IDENTITY-CONFLICT-001',
         },
         meta: { timestamp: '...', correlationId: 'corr', locale: 'fr' },
@@ -134,7 +134,7 @@ describe('IdentitySvcClient.registerCustomer', () => {
 
   it('throws IdentitySvcValidationError on 422 carrying the issues array', async () => {
     nock(IDENTITY_SVC_URL)
-      .post('/internal/customers')
+      .post('/v1/internal/customers')
       .reply(422, {
         method: 'POST',
         code: 422,
@@ -142,7 +142,7 @@ describe('IdentitySvcClient.registerCustomer', () => {
           type: 'https://tukio.one/errors/validation-failed',
           title: 'Validation failed',
           detail: 'Request payload failed validation.',
-          instance: '/internal/customers',
+          instance: '/v1/internal/customers',
           tukioCode: 'VALIDATION-FAILED-001',
           issues: [
             { path: 'password', code: 'too_small', message: 'Min 12 chars' },
@@ -163,7 +163,7 @@ describe('IdentitySvcClient.registerCustomer', () => {
 
   it('throws IdentitySvcUnreachableError on network failure', async () => {
     nock(IDENTITY_SVC_URL)
-      .post('/internal/customers')
+      .post('/v1/internal/customers')
       .replyWithError({ code: 'ECONNREFUSED', message: 'Connection refused' });
 
     const client = new IdentitySvcClient(buildConfig());
@@ -174,7 +174,7 @@ describe('IdentitySvcClient.registerCustomer', () => {
 
   it('retries 5xx responses up to the configured count then surfaces unreachable', async () => {
     const scope = nock(IDENTITY_SVC_URL)
-      .post('/internal/customers')
+      .post('/v1/internal/customers')
       .times(2)
       .reply(503, {
         method: 'POST',
@@ -183,7 +183,7 @@ describe('IdentitySvcClient.registerCustomer', () => {
           type: '',
           title: 'Service unavailable',
           detail: 'identity-svc is down',
-          instance: '/internal/customers',
+          instance: '/v1/internal/customers',
           tukioCode: 'INTERNAL-SERVER-ERROR-001',
         },
         meta: { timestamp: '', correlationId: '', locale: 'fr' },
@@ -198,7 +198,7 @@ describe('IdentitySvcClient.registerCustomer', () => {
 
   it('flags a malformed success envelope as unreachable (defensive shape check)', async () => {
     nock(IDENTITY_SVC_URL)
-      .post('/internal/customers')
+      .post('/v1/internal/customers')
       .reply(201, {
         method: 'POST',
         code: 201,
