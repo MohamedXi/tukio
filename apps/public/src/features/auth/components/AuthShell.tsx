@@ -86,16 +86,11 @@ export function AuthShell({
 
       <footer className="flex flex-wrap items-center gap-x-5 gap-y-1">
         {footerLinks.map((link) => (
-          <Typography
-            key={link.href}
-            variant="caption"
-            color="subtle"
-            as={Link}
-            href={link.href}
-            className="hover:text-charcoal-600"
-          >
-            {link.label}
-          </Typography>
+          <Link key={link.href} href={link.href} className="hover:text-charcoal-600">
+            <Typography variant="caption" color="subtle">
+              {link.label}
+            </Typography>
+          </Link>
         ))}
         <Typography variant="caption" color="subtle" className="ml-auto">
           {footerCopyright}

@@ -469,8 +469,8 @@ function PasswordStrengthMeter({ strength }: { strength: PasswordStrength }) {
       : strength.level === 'medium'
         ? 'bg-warning-500'
         : 'bg-error-500';
-  const labelByLevel: Record<typeof strength.level, string> = {
-    empty: '',
+  // Early-return above narrows the type to 'weak' | 'medium' | 'strong'.
+  const labelByLevel: Record<'weak' | 'medium' | 'strong', string> = {
     weak: 'Faible',
     medium: 'Moyen',
     strong: 'Fort',
