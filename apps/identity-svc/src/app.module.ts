@@ -9,6 +9,7 @@ import { HttpModule } from './infrastructure/http/http.module.js';
 import { UseCasesProxyModule } from './infrastructure/usecases-proxy/usecases-proxy.module.js';
 import { UserProfileEntity } from './infrastructure/persistence/typeorm/entities/user-profile.entity.js';
 import { EmailVerificationTokenEntity } from './infrastructure/persistence/typeorm/entities/email-verification-token.entity.js';
+import { ALL_MIGRATIONS } from './infrastructure/persistence/typeorm/migrations/index.js';
 import { OutboxEntity } from '@tukio/messaging/outbox/entity';
 import { TukioAuthModule } from '@tukio/auth/module';
 import { KeycloakJwtGuard } from '@tukio/auth/guards';
@@ -60,8 +61,15 @@ import { EnvironmentConfigService } from './infrastructure/config/environment-co
             EmailVerificationTokenEntity,
             OutboxEntity,
           ],
+          // Auto-apply pending migrations at boot. TypeORM tracks applied
+          // migrations in a `migrations` table and wraps each in a transaction,
+          // so this is idempotent and safe to run on every container start.
+          // Single-replica per service on DO Droplet → no multi-leader race.
+          // If a migration fails, the container crashes and the deploy rolls
+          // back instead of leaving the schema in a half-applied state.
+          migrations: ALL_MIGRATIONS,
+          migrationsRun: true,
           synchronize: false,
-          migrationsRun: false,
           logging: db.verbose
             ? ['query', 'error', 'warn', 'migration']
             : ['error', 'warn', 'migration'],

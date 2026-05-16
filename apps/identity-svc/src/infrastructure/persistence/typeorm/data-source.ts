@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { UserProfileEntity } from './entities/user-profile.entity.js';
 import { EmailVerificationTokenEntity } from './entities/email-verification-token.entity.js';
+import { ALL_MIGRATIONS } from './migrations/index.js';
 
 // Standalone DataSource for TypeORM CLI (migration:generate / run / revert).
 // Migrations glob is resolved relative to the CLI cwd (apps/identity-svc/).
@@ -36,7 +37,10 @@ const dataSource = new DataSource({
   password: dbPassword,
   database: process.env.DB_NAME ?? 'tukio_identity',
   entities: [UserProfileEntity, EmailVerificationTokenEntity],
-  migrations: ['src/infrastructure/persistence/typeorm/migrations/*.{ts,js}'],
+  // Single source of truth — shared with `app.module.ts` runtime config so the
+  // CLI (`pnpm migration:run` / `migration:generate` / `migration:revert`) and
+  // the app boot path always see the same ordered registry.
+  migrations: ALL_MIGRATIONS,
   migrationsRun: false,
   synchronize: false,
   logging: isTrue(process.env.DB_VERBOSE)
