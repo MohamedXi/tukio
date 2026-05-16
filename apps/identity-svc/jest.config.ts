@@ -31,7 +31,7 @@ const config: Config = {
       },
     ],
   },
-  transformIgnorePatterns: ['/node_modules/(?!.*?(jose)/)'],
+  transformIgnorePatterns: ['/node_modules/(?!.*?(jose|@keycloak)/)'],
   moduleNameMapper: {
     // Strip `.js` extension from relative imports (NodeNext ESM → ts-jest CJS).
     '^(\\.{1,2}/.*)\\.js$': '$1',

@@ -21,6 +21,8 @@ import { BOOKING_ACCEPTED_V1_TYPE } from '../events/booking/booking-accepted.v1.
 import { LISTING_PUBLISHED_V1_TYPE } from '../events/catalog/listing-published.v1.js';
 import { PAYMENT_INTENT_CAPTURED_V1_TYPE } from '../events/payment/payment-intent-captured.v1.js';
 import { ADMIN_ACTION_PRO_VERIFIED_V1_TYPE } from '../events/admin/admin-action-pro-verified.v1.js';
+import { USER_REGISTERED_V1_TYPE } from '../events/identity/user-registered.v1.js';
+import { EMAIL_SEND_V1_TYPE, EMAIL_TEMPLATE_IDS } from '../events/notification/email-send.v1.js';
 
 import { DomainException } from '../exceptions/domain.exception.js';
 import { DomainException as DomainExceptionFromBarrel } from '../exceptions/index.js';
@@ -47,6 +49,21 @@ describe('event _TYPE constants', () => {
     expect(ADMIN_ACTION_PRO_VERIFIED_V1_TYPE).toBe('admin.action.pro-verified.v1');
   });
 
+  it('USER_REGISTERED_V1_TYPE matches the canonical event name', () => {
+    expect(USER_REGISTERED_V1_TYPE).toBe('identity.user.registered.v1');
+  });
+
+  it('EMAIL_SEND_V1_TYPE matches the canonical event name', () => {
+    expect(EMAIL_SEND_V1_TYPE).toBe('notification.email.send.v1');
+  });
+
+  it('EMAIL_TEMPLATE_IDS lists the MVP transactional templates', () => {
+    expect(EMAIL_TEMPLATE_IDS).toContain('email-verify');
+    expect(EMAIL_TEMPLATE_IDS).toContain('password-reset');
+    expect(EMAIL_TEMPLATE_IDS).toContain('booking-confirmed');
+    expect(EMAIL_TEMPLATE_IDS.length).toBeGreaterThanOrEqual(9);
+  });
+
   it('all event types follow the <domain>.<entity>.<verb>.v<n> convention', () => {
     const allTypes = [
       BOOKING_REQUESTED_V1_TYPE,
@@ -54,6 +71,8 @@ describe('event _TYPE constants', () => {
       LISTING_PUBLISHED_V1_TYPE,
       PAYMENT_INTENT_CAPTURED_V1_TYPE,
       ADMIN_ACTION_PRO_VERIFIED_V1_TYPE,
+      USER_REGISTERED_V1_TYPE,
+      EMAIL_SEND_V1_TYPE,
     ];
     const NATS_NAMING = /^[a-z]+(?:\.[a-z][a-z0-9-]*)+\.v\d+$/;
     for (const type of allTypes) {

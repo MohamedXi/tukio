@@ -45,6 +45,18 @@ describe('RegisterCustomerInputSchema', () => {
     expect(result.acquisition?.campaign).toBe('spring2026');
   });
 
+  it('passes non-string email values through the preprocessor untouched', () => {
+    // Exercises the `typeof val === 'string'` false branch of EmailSchema so
+    // the preprocessor is not silently single-branch — Zod then rejects with
+    // an invalid_type / invalid_format code rather than crashing.
+    const result = RegisterCustomerInputSchema.safeParse({ ...validInput, email: 12345 });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const emailIssues = result.error.issues.filter((i) => i.path[0] === 'email');
+      expect(emailIssues.length).toBeGreaterThan(0);
+    }
+  });
+
   it('rejects a too-short password with path "password" and code too_small', () => {
     const result = RegisterCustomerInputSchema.safeParse({ ...validInput, password: 'short1!' });
     expect(result.success).toBe(false);

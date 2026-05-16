@@ -19,7 +19,7 @@
       }
     ]
   },
-  "transformIgnorePatterns": ["node_modules/(?!.*?(jose)/)"],
+  "transformIgnorePatterns": ["node_modules/(?!.*?(jose|@keycloak)/)"],
   "moduleNameMapper": {
     "^(\\.{1,2}/.*)\\.js$": "$1",
     "^@tukio/contracts$": "<rootDir>/../../packages/contracts/src/index.ts",

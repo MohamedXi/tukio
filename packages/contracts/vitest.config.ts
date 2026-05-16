@@ -25,6 +25,7 @@ export default defineConfig({
         'src/types/**', // Actor, Currency, DomainEvent, Locale, Money — all type aliases
         'src/index.ts', // root barrel — `export type` re-exports + 1 runtime `export { DomainException }` covered via subpath import
         'src/dtos/index.ts', // dtos barrel — `export type` re-exports only
+        'src/dtos/identity/index.ts', // identity dtos barrel — re-exports only
       ],
       thresholds: {
         lines: 95,

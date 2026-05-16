@@ -30,7 +30,9 @@ const config: Config = {
       },
     ],
   },
-  transformIgnorePatterns: ['/node_modules/(?!.*?(jose|testcontainers)/)'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!.*?(jose|@keycloak|testcontainers)/)',
+  ],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@tukio/contracts$': '<rootDir>/../../../packages/contracts/src/index.ts',
