@@ -7,6 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Public } from '@tukio/auth/decorators/public';
 import type { GetUserProfileByIdUseCase } from '../../../usecases/get-user-profile.usecase.js';
 import type { RegisterCustomerUseCase } from '../../../usecases/register-customer.usecase.js';
 import { UseCaseProxy } from '../../usecases-proxy/usecases-proxy.js';
@@ -32,7 +33,11 @@ interface RegisterCustomerResponseDto {
  * `gateway-api → identity-svc:4001` in production (Story 0.12). V1+ supersedes
  * the HMAC guard with mTLS via Linkerd.
  */
+// `@Public()` bypasses the global `KeycloakJwtGuard` (no Bearer JWT on
+// internal traffic from gateway-api — the HMAC `InternalServiceGuard` is the
+// authentication mechanism here).
 @Controller('internal/customers')
+@Public()
 @UseGuards(InternalServiceGuard)
 export class CustomerController {
   constructor(

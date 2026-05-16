@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import * as RadixCheckbox from '@radix-ui/react-checkbox';
 import { CheckIcon } from 'lucide-react';
@@ -14,9 +14,6 @@ import {
 } from '@tukio/contracts/dtos/identity/register-customer';
 import { useRegisterCustomer } from '@tukio/api-client/hooks/identity';
 import { useAcquisitionTracking } from '@tukio/api-client/hooks/use-acquisition-tracking';
-import { FormField } from '@tukio/ui/form-field';
-import { Input } from '@tukio/ui/input';
-import { Button } from '@tukio/ui/button';
 import { classifySignUpError } from '../services/sign-up.service.js';
 
 const FormSchema = RegisterCustomerInputSchema.omit({ locale: true });
@@ -24,10 +21,6 @@ type FormValues = Omit<RegisterCustomerInputDto, 'locale'>;
 
 type FieldKey = keyof FormValues;
 
-// Maps a Zod issue (stable code + path + raw message) to an i18n key under
-// `auth.signup.errors.*`. Uses `issue.code` first; falls back to message
-// keyword matching ONLY for password regex variants (we control those messages
-// in `register-customer.dto.ts`, so the keywords are stable).
 function zodIssueToI18nKey(path: FieldKey | string, code: string, message: string): string {
   if (path === 'email') {
     if (code === 'too_big') return 'emailTooLong';
@@ -55,8 +48,6 @@ function zodIssueToI18nKey(path: FieldKey | string, code: string, message: strin
   return 'unknown';
 }
 
-// RHF resolver that runs Zod and stores the i18n key in `error.message`
-// (the SignUpForm only does `t(errors.field.message)` — no string matching).
 const zodV4Resolver: Resolver<FormValues> = async (values) => {
   const result = FormSchema.safeParse(values);
   if (result.success) return { values: result.data, errors: {} };
@@ -78,6 +69,23 @@ type FormError =
   | { kind: 'network' }
   | { kind: 'rate_limited'; retryAfterSeconds: number };
 
+interface PasswordStrength {
+  level: 'empty' | 'weak' | 'medium' | 'strong';
+  score: number;
+}
+
+function computePasswordStrength(password: string): PasswordStrength {
+  if (!password) return { level: 'empty', score: 0 };
+  let score = 0;
+  if (password.length >= 12) score += 1;
+  if (/\p{Ll}/u.test(password)) score += 1;
+  if (/\p{Lu}/u.test(password)) score += 1;
+  if (/\d/u.test(password)) score += 1;
+  if (/[^\p{L}\p{N}]/u.test(password)) score += 1;
+  const level = score >= 5 ? 'strong' : score >= 3 ? 'medium' : 'weak';
+  return { level, score };
+}
+
 export function SignUpForm() {
   const t = useTranslations('auth.signup');
   const rawLocale = useLocale();
@@ -93,6 +101,7 @@ export function SignUpForm() {
     register,
     control,
     handleSubmit,
+    watch,
     setError,
     formState: { errors },
   } = useForm<FormValues>({
@@ -108,9 +117,9 @@ export function SignUpForm() {
     },
   });
 
-  // RGAA AA: move keyboard focus to the form-level banner whenever it appears,
-  // so SR + keyboard users land on the failure message instead of the disabled
-  // submit button.
+  const password = watch('password');
+  const strength = useMemo(() => computePasswordStrength(password ?? ''), [password]);
+
   useEffect(() => {
     if (formError) bannerRef.current?.focus();
   }, [formError]);
@@ -125,10 +134,9 @@ export function SignUpForm() {
       },
       {
         onSuccess: () => {
-          // Clear plaintext password + PII from TanStack mutation cache
-          // (visible via devtools / Sentry breadcrumbs otherwise).
           mutation.reset();
-          router.push(`/${locale}/auth/verify-email-required`);
+          const params = new URLSearchParams({ email: data.email });
+          router.push(`/${locale}/auth/verify-email-required?${params.toString()}`);
         },
         onError: (error) => {
           mutation.reset();
@@ -162,6 +170,13 @@ export function SignUpForm() {
     );
   });
 
+  /* Form rhythm (compact — see packages/ui/src/styles/theme.css "Semantic spacing").
+     Tightened to match the Cloud Design auth maquette so the page fits a
+     single viewport (~800-900px) without scroll on standard laptops.
+     - Form root: gap-4 (16px between sections)
+     - Sibling fields: gap-3 (12px)
+     - Checkbox stack: gap-2.5 (10px)
+     - Secondary links: gap-1 with gap-3 from CTA */
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       {formError && (
@@ -169,7 +184,7 @@ export function SignUpForm() {
           ref={bannerRef}
           role="alert"
           tabIndex={-1}
-          className="p-3 bg-error-50 border border-error-300 rounded-md text-sm text-error-700 focus:outline-none focus:ring-2 focus:ring-error-400"
+          className="rounded-md border border-error-500/30 bg-error-50 p-3 text-sm leading-snug text-error-700 focus:outline-none focus:ring-2 focus:ring-error-500/40"
         >
           {formError.kind === 'rate_limited'
             ? t('errors.rateLimited', { seconds: formError.retryAfterSeconds })
@@ -179,132 +194,293 @@ export function SignUpForm() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <FormField
-          label={t('fields.firstName.label')}
-          error={errors.firstName?.message ? t(`errors.${errors.firstName.message}`) : undefined}
-          required
-        >
-          <Input
-            type="text"
-            placeholder={t('fields.firstName.placeholder')}
-            autoComplete="given-name"
-            {...register('firstName')}
-          />
-        </FormField>
-        <FormField
-          label={t('fields.lastName.label')}
-          error={errors.lastName?.message ? t(`errors.${errors.lastName.message}`) : undefined}
-          required
-        >
-          <Input
-            type="text"
-            placeholder={t('fields.lastName.placeholder')}
-            autoComplete="family-name"
-            {...register('lastName')}
-          />
-        </FormField>
+      {/* Section 1 — Social providers (placeholders, OAuth = Story 1.4) */}
+      <div className="flex flex-col gap-2">
+        <SocialButton provider="google" disabled label={t('social.google')} />
+        <SocialButton provider="apple" disabled label={t('social.apple')} />
       </div>
 
-      <FormField
-        label={t('fields.email.label')}
-        error={errors.email?.message ? t(`errors.${errors.email.message}`) : undefined}
-        required
-      >
-        <Input
-          type="email"
-          placeholder={t('fields.email.placeholder')}
-          autoComplete="email"
-          inputMode="email"
-          {...register('email')}
-        />
-      </FormField>
+      <Separator label={t('separator')} />
 
-      <FormField
-        label={t('fields.password.label')}
-        helper={!errors.password ? t('fields.password.helper') : undefined}
-        error={errors.password?.message ? t(`errors.${errors.password.message}`) : undefined}
-        required
-      >
-        <Input
-          type="password"
-          placeholder={t('fields.password.placeholder')}
-          autoComplete="new-password"
-          {...register('password')}
-        />
-      </FormField>
+      {/* Section 2 — Email/password fields */}
+      <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            id="firstName"
+            label={t('fields.firstName.label')}
+            error={errors.firstName?.message ? t(`errors.${errors.firstName.message}`) : undefined}
+          >
+            <input
+              id="firstName"
+              type="text"
+              placeholder={t('fields.firstName.placeholder')}
+              autoComplete="given-name"
+              className={inputClass(!!errors.firstName)}
+              {...register('firstName')}
+            />
+          </Field>
+          <Field
+            id="lastName"
+            label={t('fields.lastName.label')}
+            error={errors.lastName?.message ? t(`errors.${errors.lastName.message}`) : undefined}
+          >
+            <input
+              id="lastName"
+              type="text"
+              placeholder={t('fields.lastName.placeholder')}
+              autoComplete="family-name"
+              className={inputClass(!!errors.lastName)}
+              {...register('lastName')}
+            />
+          </Field>
+        </div>
 
-      <div className="flex items-start gap-2">
-        <Controller
-          control={control}
-          name="acceptTerms"
-          render={({ field }) => (
-            <RadixCheckbox.Root
-              id="acceptTerms"
-              checked={field.value === true}
-              onCheckedChange={(checked) => field.onChange(checked === true ? true : undefined)}
-              className="mt-0.5 w-4 h-4 shrink-0 rounded-sm border border-cream-400 bg-cream-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 data-[state=checked]:bg-brand-500 data-[state=checked]:border-brand-500"
-              aria-required="true"
-              aria-invalid={errors.acceptTerms ? 'true' : undefined}
-              aria-describedby={errors.acceptTerms ? 'acceptTerms-error' : undefined}
-            >
-              <RadixCheckbox.Indicator className="flex items-center justify-center text-cream-50">
-                <CheckIcon size={12} />
-              </RadixCheckbox.Indicator>
-            </RadixCheckbox.Root>
-          )}
-        />
-        <div>
-          <label htmlFor="acceptTerms" className="text-sm text-charcoal-700 cursor-pointer">
-            {t('fields.acceptTerms.label')}
+        <Field
+          id="email"
+          label={t('fields.email.label')}
+          error={errors.email?.message ? t(`errors.${errors.email.message}`) : undefined}
+        >
+          <input
+            id="email"
+            type="email"
+            placeholder={t('fields.email.placeholder')}
+            autoComplete="email"
+            inputMode="email"
+            className={inputClass(!!errors.email)}
+            {...register('email')}
+          />
+        </Field>
+
+        <Field
+          id="password"
+          label={t('fields.password.label')}
+          error={errors.password?.message ? t(`errors.${errors.password.message}`) : undefined}
+          helper={!errors.password && !password ? t('fields.password.helper') : undefined}
+        >
+          <input
+            id="password"
+            type="password"
+            placeholder={t('fields.password.placeholder')}
+            autoComplete="new-password"
+            className={inputClass(!!errors.password)}
+            {...register('password')}
+          />
+          {password && !errors.password && <PasswordStrengthMeter strength={strength} />}
+        </Field>
+      </div>
+
+      {/* Section 3 — Consent checkboxes */}
+      <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-1.5">
+          <label className="flex items-start gap-2.5 text-[13px] leading-snug text-charcoal-600">
+            <Controller
+              control={control}
+              name="acceptTerms"
+              render={({ field }) => (
+                <RadixCheckbox.Root
+                  id="acceptTerms"
+                  checked={field.value === true}
+                  onCheckedChange={(checked) => field.onChange(checked === true ? true : undefined)}
+                  className="mt-0.5 size-4 shrink-0 rounded-sm border border-cream-300 bg-cream-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20 data-[state=checked]:border-brand-500 data-[state=checked]:bg-brand-500"
+                  aria-required="true"
+                  aria-invalid={errors.acceptTerms ? 'true' : undefined}
+                  aria-describedby={errors.acceptTerms ? 'acceptTerms-error' : undefined}
+                >
+                  <RadixCheckbox.Indicator className="flex items-center justify-center text-cream-50">
+                    <CheckIcon size={12} />
+                  </RadixCheckbox.Indicator>
+                </RadixCheckbox.Root>
+              )}
+            />
+            <span>
+              {t.rich('fields.acceptTerms.label', {
+                terms: (chunks) => (
+                  <Link
+                    href={`/${locale}/legal/terms`}
+                    className="font-medium text-brand-700 hover:underline"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+                privacy: (chunks) => (
+                  <Link
+                    href={`/${locale}/legal/privacy`}
+                    className="font-medium text-brand-700 hover:underline"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </span>
           </label>
           {errors.acceptTerms && (
-            <p id="acceptTerms-error" role="alert" className="text-xs text-error-500 mt-0.5">
+            <p id="acceptTerms-error" role="alert" className="ml-7 text-xs text-error-500">
               {t('errors.acceptTermsRequired')}
             </p>
           )}
         </div>
-      </div>
 
-      <div className="flex items-center gap-2">
-        <Controller
-          control={control}
-          name="acceptMarketing"
-          render={({ field }) => (
-            <RadixCheckbox.Root
-              id="acceptMarketing"
-              checked={field.value === true}
-              onCheckedChange={(checked) => field.onChange(checked === true)}
-              className="w-4 h-4 shrink-0 rounded-sm border border-cream-400 bg-cream-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 data-[state=checked]:bg-brand-500 data-[state=checked]:border-brand-500"
-            >
-              <RadixCheckbox.Indicator className="flex items-center justify-center text-cream-50">
-                <CheckIcon size={12} />
-              </RadixCheckbox.Indicator>
-            </RadixCheckbox.Root>
-          )}
-        />
-        <label htmlFor="acceptMarketing" className="text-sm text-charcoal-600 cursor-pointer">
-          {t('fields.acceptMarketing.label')}
+        <label className="flex items-start gap-2.5 text-[13px] leading-snug text-charcoal-600">
+          <Controller
+            control={control}
+            name="acceptMarketing"
+            render={({ field }) => (
+              <RadixCheckbox.Root
+                id="acceptMarketing"
+                checked={field.value === true}
+                onCheckedChange={(checked) => field.onChange(checked === true)}
+                className="mt-0.5 size-4 shrink-0 rounded-sm border border-cream-300 bg-cream-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20 data-[state=checked]:border-brand-500 data-[state=checked]:bg-brand-500"
+              >
+                <RadixCheckbox.Indicator className="flex items-center justify-center text-cream-50">
+                  <CheckIcon size={12} />
+                </RadixCheckbox.Indicator>
+              </RadixCheckbox.Root>
+            )}
+          />
+          <span>{t('fields.acceptMarketing.label')}</span>
         </label>
       </div>
 
-      <Button
-        type="submit"
-        variant="primary"
-        className="w-full mt-2"
-        loading={isPending}
-        disabled={isPending}
-        aria-busy={isPending}
-      >
-        {isPending ? t('loading') : t('cta')}
-      </Button>
+      {/* Section 4 — Primary CTA + secondary links */}
+      <div className="flex flex-col gap-3">
+        <button
+          type="submit"
+          disabled={isPending}
+          aria-busy={isPending}
+          className="mt-1 inline-flex h-11 w-full items-center justify-center rounded-md bg-brand-500 px-5 text-base font-medium text-cream-50 transition-colors hover:bg-brand-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isPending ? t('loading') : t('cta')}
+        </button>
 
-      <p className="text-sm text-center text-charcoal-600">
-        {t('loginLink')}{' '}
-        <Link href={`/${locale}/auth/login`} className="text-brand-600 hover:underline font-medium">
-          {t('loginLinkLabel')}
-        </Link>
-      </p>
+        <div className="flex flex-col gap-1 text-center">
+          <p className="text-[13px] text-charcoal-500">
+            {t('loginLink')}{' '}
+            <Link
+              href={`/${locale}/auth/login`}
+              className="font-medium text-brand-700 hover:underline"
+            >
+              {t('loginLinkLabel')}
+            </Link>
+          </p>
+          <p className="text-xs text-charcoal-400">
+            {t('proLink')}{' '}
+            <Link
+              href={`/${locale}/seller/onboarding`}
+              className="font-medium text-charcoal-600 hover:underline"
+            >
+              {t('proLinkLabel')}
+            </Link>
+          </p>
+        </div>
+      </div>
     </form>
+  );
+}
+
+/* ─── Local atoms ──────────────────────────────────────────────── */
+
+function inputClass(hasError: boolean): string {
+  return [
+    'h-10 w-full rounded-md border bg-cream-50 px-3 text-sm text-charcoal-700 outline-none transition placeholder:text-charcoal-400',
+    'focus:border-brand-500 focus:ring-[3px] focus:ring-brand-500/20',
+    hasError ? 'border-error-500' : 'border-cream-300',
+  ].join(' ');
+}
+
+function Field({
+  id,
+  label,
+  error,
+  helper,
+  children,
+}: {
+  id: string;
+  label: string;
+  error?: string;
+  helper?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-[13px] font-semibold text-charcoal-600">
+        {label}
+      </label>
+      {children}
+      {error && (
+        <p role="alert" className="text-xs leading-snug text-error-500">
+          {error}
+        </p>
+      )}
+      {!error && helper && <p className="text-xs leading-snug text-charcoal-400">{helper}</p>}
+    </div>
+  );
+}
+
+function Separator({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.06em] text-charcoal-400">
+      <span className="h-px flex-1 bg-cream-300" />
+      <span>{label}</span>
+      <span className="h-px flex-1 bg-cream-300" />
+    </div>
+  );
+}
+
+function SocialButton({
+  provider,
+  label,
+  disabled,
+}: {
+  provider: 'google' | 'apple';
+  label: string;
+  disabled?: boolean;
+}) {
+  const glyph =
+    provider === 'google' ? (
+      <span className="font-display font-bold">G</span>
+    ) : (
+      <span className="text-base leading-none"></span>
+    );
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      title={disabled ? 'Story 1.4' : undefined}
+      className="inline-flex h-10 w-full items-center justify-center gap-2.5 rounded-md border border-cream-300 bg-cream-100 px-4 text-sm font-medium text-charcoal-700 transition-colors hover:bg-cream-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      <span className="inline-flex size-5 items-center justify-center rounded-[4px] border border-cream-300 bg-cream-50 text-xs text-charcoal-700">
+        {glyph}
+      </span>
+      {label}
+    </button>
+  );
+}
+
+function PasswordStrengthMeter({ strength }: { strength: PasswordStrength }) {
+  if (strength.level === 'empty') return null;
+  const colorByLevel = {
+    weak: 'text-error-500',
+    medium: 'text-warning-500',
+    strong: 'text-success-700',
+  } as const;
+  const dotColor =
+    strength.level === 'strong'
+      ? 'bg-success-500'
+      : strength.level === 'medium'
+        ? 'bg-warning-500'
+        : 'bg-error-500';
+  // Early-return above narrows the type to 'weak' | 'medium' | 'strong'.
+  const labelByLevel: Record<'weak' | 'medium' | 'strong', string> = {
+    weak: 'Faible',
+    medium: 'Moyen',
+    strong: 'Fort',
+  };
+  return (
+    <div className="flex items-center gap-1.5 text-xs">
+      <span className={`inline-block size-1.5 rounded-full ${dotColor}`} aria-hidden />
+      <span className={`font-medium ${colorByLevel[strength.level]}`}>
+        {labelByLevel[strength.level]}
+      </span>
+    </div>
   );
 }

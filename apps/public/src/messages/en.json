@@ -5,11 +5,17 @@
   },
   "auth": {
     "signup": {
-      "title": "Create an account",
-      "subtitle": "Join Tukio to book event services",
+      "kicker": "Create an account · customer",
+      "title": "Find the right pros for your event",
+      "subtitle": "30 seconds, no card required. You only pay when you book.",
+      "social": {
+        "google": "Continue with Google",
+        "apple": "Continue with Apple"
+      },
+      "separator": "or with email",
       "fields": {
         "email": {
-          "label": "Email address",
+          "label": "Email",
           "placeholder": "you@example.com"
         },
         "password": {
@@ -23,10 +29,10 @@
         },
         "lastName": {
           "label": "Last name",
-          "placeholder": "Renard"
+          "placeholder": "Renaud"
         },
         "acceptTerms": {
-          "label": "I accept the terms of service and privacy policy"
+          "label": "I accept the <terms>terms of service</terms> and <privacy>privacy policy</privacy>"
         },
         "acceptMarketing": {
           "label": "I would like to receive Tukio offers and news"
@@ -55,13 +61,57 @@
       "cta": "Create my account",
       "loading": "Creating account…",
       "loginLink": "Already have an account?",
-      "loginLinkLabel": "Sign in"
+      "loginLinkLabel": "Sign in",
+      "proLink": "Are you a professional?",
+      "proLinkLabel": "Become a pro on tukio",
+      "footer": {
+        "terms": "Terms of service",
+        "privacy": "Privacy policy",
+        "copyright": "© tukio.one · 2026"
+      },
+      "editorial": {
+        "kicker": "Pays de la Loire · 2026 pilot",
+        "quote": "“Our first booking came in three days after sign-up. The customer was 12 km away.”",
+        "author": {
+          "name": "Léa Martineau",
+          "role": "Atelier Tente Loire — pro since March 2026"
+        }
+      }
     },
     "verifyEmailRequired": {
-      "title": "Verify your email",
-      "description": "A confirmation email has been sent to you. Click the link to activate your account.",
-      "ctaResend": "Resend verification email",
-      "support": "Need help? Contact support."
+      "kicker": "Email verification · final step",
+      "title": "Check your inbox.",
+      "subtitleWithEmail": "We sent a link to {email}. Click it to activate your account.",
+      "subtitleWithoutEmail": "We sent a link to your inbox. Click it to activate your account.",
+      "confirmationCard": {
+        "titleWithEmail": "Email sent to {email}",
+        "titleWithoutEmail": "Email sent",
+        "subtitle": "The link expires in 24 h. Check your spam folder if needed."
+      },
+      "resend": {
+        "label": "Resend email",
+        "countdown": "(available in {seconds} s)",
+        "available": "Resend email",
+        "deferredNote": "Available with Story 1.6"
+      },
+      "help": {
+        "title": "Didn't get it?",
+        "body": "Delivery usually takes 30 s. If nothing arrives after 5 min, contact <support>support@tukio.one</support> or <change>change your email</change>."
+      },
+      "backToLogin": "← Back to sign in",
+      "footer": {
+        "terms": "Terms",
+        "privacy": "Privacy policy",
+        "copyright": "© tukio.one · 2026"
+      },
+      "editorial": {
+        "kicker": "Pays de la Loire · 2026 pilot",
+        "quote": "“We got our first request within a week — that's when it all kicked off.”",
+        "author": {
+          "name": "Marc Dubois",
+          "role": "Loire Réceptions — pro since February 2026"
+        }
+      }
     }
   }
 }

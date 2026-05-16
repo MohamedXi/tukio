@@ -52,6 +52,27 @@ async function bootstrap(): Promise<void> {
   const config = app.get(EnvironmentConfigService);
   const port = config.getPort();
 
+  // Browser-facing endpoints (POST /v1/auth/customer/register, …) are called
+  // from the Next.js apps with `withCredentials: true`. CORS spec disallows
+  // wildcard origins when credentials are sent, so list the exact frontends.
+  // Configurable via CORS_ORIGINS env (comma-separated). Dev defaults to the
+  // 3 local Next.js ports.
+  app.enableCors({
+    origin: config.getCorsOrigins(),
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'X-Tukio-Correlation-Id',
+      'X-Tukio-Locale',
+      'X-CSRF-Token',
+    ],
+    exposedHeaders: ['Retry-After', 'X-Tukio-Correlation-Id'],
+    maxAge: 86_400,
+  });
+
   await app.listen(port, '0.0.0.0');
 }
 

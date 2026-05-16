@@ -20,8 +20,12 @@ import {
   IdentitySvcValidationError,
 } from '../../../domain/ports/identity-svc.errors.js';
 
-/** Path on identity-svc that handles `POST /internal/customers` (Story 1.2b). */
-const REGISTER_CUSTOMER_PATH = '/internal/customers';
+/**
+ * Path on identity-svc that handles `POST /internal/customers` (Story 1.2b).
+ * Both gateway-api and identity-svc use Nest URI versioning (`/v1/...`),
+ * so the actual exposed route is `/v1/internal/customers`.
+ */
+const REGISTER_CUSTOMER_PATH = '/v1/internal/customers';
 
 interface ErrorEnvelopeBody {
   error?: {

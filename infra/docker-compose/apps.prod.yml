@@ -48,6 +48,12 @@ x-backend-env: &backend-env
   REDIS_URL: redis://${DATA_PRIV_IP}:6379
   MEILI_URL: http://${DATA_PRIV_IP}:7700
   MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+  # Story 1.2 — shared HMAC secret for InternalServiceGuard between
+  # gateway-api ↔ identity-svc (32+ bytes; validated by Zod env schema).
+  TUKIO_INTERNAL_SERVICE_SECRET: ${TUKIO_INTERNAL_SERVICE_SECRET}
+  # Public origin used by services to build absolute URLs (verify-email
+  # links, etc.). Apex domain in staging+prod.
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://tukio.one}
 
 x-backend-secrets: &backend-secrets
   - pg_user
@@ -86,6 +92,9 @@ services:
     environment:
       <<: *backend-env
       DB_NAME: tukio_identity # gateway-api proxies identity for auth checks
+      # Compose DNS — resolves to the identity-svc container on the
+      # tukio-apps bridge network (Story 1.2c BFF forwarder).
+      IDENTITY_SVC_URL: http://identity-svc:4001
     secrets: *backend-secrets
     networks: [tukio-apps]
 
@@ -95,6 +104,10 @@ services:
     environment:
       <<: *backend-env
       DB_NAME: tukio_identity
+      # Keycloak Admin API client secret used by KeycloakAdminService
+      # (Story 1.2b). Exported by SSH deploy step from
+      # /home/tukio/tukio/secrets/keycloak_client_secret_tukio_api.
+      KEYCLOAK_CLIENT_SECRET_TUKIO_API: ${KEYCLOAK_CLIENT_SECRET_TUKIO_API}
     secrets: *backend-secrets
     networks: [tukio-apps]
 
