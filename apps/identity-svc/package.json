@@ -21,6 +21,7 @@
     "test:integration:cov": "jest --config jest.integration.config.ts --coverage",
     "test:e2e": "jest --config test/jest-e2e.json",
     "test:e2e:cov": "jest --config test/jest-e2e.json --coverage",
+    "test:e2e:testcontainers": "jest --config jest.integration.config.ts test/customer-register.e2e-spec.ts",
     "migration:generate": "tsx ./node_modules/typeorm/cli.js migration:generate -d src/infrastructure/persistence/typeorm/data-source.ts",
     "migration:run": "tsx ./node_modules/typeorm/cli.js migration:run -d src/infrastructure/persistence/typeorm/data-source.ts",
     "migration:revert": "tsx ./node_modules/typeorm/cli.js migration:revert -d src/infrastructure/persistence/typeorm/data-source.ts"
