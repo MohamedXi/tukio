@@ -92,6 +92,10 @@ services:
     environment:
       <<: *backend-env
       DB_NAME: tukio_identity # gateway-api proxies identity for auth checks
+      # CORS allow-list for browser-facing endpoints. Wildcards forbidden when
+      # `credentials: true` (Fetch spec), so list the exact frontends. Override
+      # via repo secret if a new staging origin is added.
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://tukio.one,https://www.tukio.one,https://seller.tukio.one,https://admin.tukio.one}
       # Compose DNS — resolves to the identity-svc container on the
       # tukio-apps bridge network (Story 1.2c BFF forwarder).
       IDENTITY_SVC_URL: http://identity-svc:4001
