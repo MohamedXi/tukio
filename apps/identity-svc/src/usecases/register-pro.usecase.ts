@@ -5,7 +5,11 @@ import {
   IdentityErrorCodes,
   type IdentityErrorCode,
 } from '@tukio/contracts/types/error-codes';
-import { SYSTEM_ACTOR_USER_ID, type Actor } from '@tukio/contracts/types/Actor';
+import {
+  SYSTEM_ACTOR_USER_ID,
+  SYSTEM_ACTOR_ROLE,
+  type Actor,
+} from '@tukio/contracts/types/Actor';
 import type { ProRegisteredV1 } from '@tukio/contracts/events/identity/pro-registered.v1';
 import type { EmailSendV1 } from '@tukio/contracts/events/notification/email-send.v1';
 import { Email } from '../domain/model/email.value-object.js';
@@ -504,12 +508,9 @@ export class RegisterProUseCase {
     occurredAt: Date;
   }): ProRegisteredV1 {
     const { userProfile, proProfile, correlationId, occurredAt } = args;
-    // The pro-registered event narrows `actor.role` to the literal 'pro' for
-    // schema correctness, so we build the narrowed actor here directly rather
-    // than going through the generic `Actor` union.
     const actor = {
       userId: userProfile.id,
-      role: 'pro' as const,
+      role: UserRole.PRO,
       locale: userProfile.locale,
     };
     return {
@@ -563,7 +564,7 @@ export class RegisterProUseCase {
     const { userProfile, proProfile, correlationId, occurredAt } = args;
     const systemActor: Actor = {
       userId: SYSTEM_ACTOR_USER_ID,
-      role: 'system',
+      role: SYSTEM_ACTOR_ROLE,
       locale: userProfile.locale,
     };
     return {

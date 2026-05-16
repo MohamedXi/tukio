@@ -4,7 +4,11 @@ import {
   IdentityErrorCodes,
   type IdentityErrorCode,
 } from '@tukio/contracts/types/error-codes';
-import { type Actor, SYSTEM_ACTOR_USER_ID } from '@tukio/contracts/types/Actor';
+import {
+  type Actor,
+  SYSTEM_ACTOR_USER_ID,
+  SYSTEM_ACTOR_ROLE,
+} from '@tukio/contracts/types/Actor';
 import type { UserRegisteredV1 } from '@tukio/contracts/events/identity/user-registered.v1';
 import type { EmailSendV1 } from '@tukio/contracts/events/notification/email-send.v1';
 import { Email } from '../domain/model/email.value-object.js';
@@ -299,7 +303,7 @@ export class RegisterCustomerUseCase {
         email: userProfile.email.asString,
         firstName: userProfile.firstName,
         lastName: userProfile.lastName,
-        role: 'client',
+        role: UserRole.CLIENT,
         locale: userProfile.locale,
         acquisitionSource: userProfile.acquisition.source,
         acquisitionMedium: userProfile.acquisition.medium ?? null,
@@ -332,7 +336,7 @@ export class RegisterCustomerUseCase {
     // sentinel rather than the magic string 'system'.
     const systemActor: Actor = {
       userId: SYSTEM_ACTOR_USER_ID,
-      role: 'system',
+      role: SYSTEM_ACTOR_ROLE,
       locale: userProfile.locale,
     };
     // Review patch P15 — normalize publicBaseUrl trailing slash via the URL
