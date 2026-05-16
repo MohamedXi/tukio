@@ -12,7 +12,9 @@ describe('Health E2E', () => {
       userProfileRepo: {
         findById: jest.fn(),
         findByKeycloakUserId: jest.fn(),
+        findByEmail: jest.fn(),
         save: jest.fn(),
+        runInTransaction: jest.fn(),
       },
     });
   });

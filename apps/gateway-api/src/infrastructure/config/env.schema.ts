@@ -1,0 +1,83 @@
+import { z } from 'zod';
+
+export const EnvSchema = z
+  .object({
+    NODE_ENV: z
+      .enum(['development', 'test', 'production'])
+      .default('development'),
+    SERVICE_NAME: z.string().min(1).default('gateway-api'),
+    SERVICE_VERSION: z.string().min(1).default('0.0.0'),
+    PORT: z.coerce.number().int().positive().default(4000),
+    LOG_LEVEL: z
+      .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
+      .default('info'),
+    // Keycloak JWT validation (public client → no client secret needed; gateway
+    // only verifies tokens issued by other clients via JWKS).
+    KEYCLOAK_URL: z.string().url().min(1).default('http://localhost:8080'),
+    KEYCLOAK_REALM: z.string().min(1).default('tukio'),
+    KEYCLOAK_CLIENT_ID: z.string().min(1).default('tukio-api'),
+    KEYCLOAK_AUDIENCE: z.string().min(1).default('tukio-api'),
+    // Identity-svc downstream client (Story 1.2c — gateway forwards register).
+    IDENTITY_SVC_URL: z.string().url().min(1).default('http://localhost:4001'),
+    IDENTITY_SVC_TIMEOUT_MS: z.coerce.number().int().positive().default(5_000),
+    IDENTITY_SVC_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
+    // Upstash Redis URL — backs ThrottlerStorageRedis (Story 0.10 dev container).
+    REDIS_URL: z.string().min(1).default('redis://localhost:6379'),
+    // Throttler — 2 scopes (Architecture lines 703-708).
+    THROTTLER_DEFAULT_LIMIT: z.coerce.number().int().positive().default(60),
+    THROTTLER_DEFAULT_TTL_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(60_000),
+    THROTTLER_SENSITIVE_LIMIT: z.coerce.number().int().positive().default(5),
+    THROTTLER_SENSITIVE_TTL_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(60_000),
+    // HMAC-shared secret protecting `/internal/*` endpoints (Story 1.2b). Must
+    // match the value identity-svc has for `TUKIO_INTERNAL_SERVICE_SECRET`.
+    // Base64-encoded random bytes (≥ 32). No default in production.
+    TUKIO_INTERNAL_SERVICE_SECRET: z.string().min(32),
+    // Public apex (used by downstream services to build email-verify links).
+    PUBLIC_BASE_URL: z.string().url().min(1).default('http://localhost:3000'),
+  })
+  .passthrough();
+
+export type Env = z.infer<typeof EnvSchema>;
+
+const DEV_INTERNAL_SECRET = 'dev-internal-svc-secret-32-bytes!!';
+
+export const validateEnv = (raw: Record<string, unknown>): Env => {
+  const isNonProd = raw['NODE_ENV'] !== 'production';
+  const withDefaults: Record<string, unknown> = { ...raw };
+  if (!withDefaults['TUKIO_INTERNAL_SERVICE_SECRET'] && isNonProd) {
+    // Must match identity-svc dev fallback (env.schema P5 review patch) so the
+    // local docker-compose smoke test signs requests with the same key.
+    withDefaults['TUKIO_INTERNAL_SERVICE_SECRET'] = DEV_INTERNAL_SECRET;
+  }
+
+  const parsed = EnvSchema.safeParse(withDefaults);
+  if (!parsed.success) {
+    const issues = parsed.error.issues
+      .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
+      .join('\n');
+    throw new Error(`Invalid environment configuration:\n${issues}`);
+  }
+
+  // Mirror identity-svc Story 1.2b review patch P5 — refuse to boot in prod
+  // with the well-known dev fallback secret still in place. A misconfigured
+  // NODE_ENV would otherwise let gateway-api sign requests with a repo-checked
+  // secret → effective auth bypass against `/internal/*`.
+  if (parsed.data.NODE_ENV === 'production') {
+    if (parsed.data.TUKIO_INTERNAL_SERVICE_SECRET === DEV_INTERNAL_SECRET) {
+      throw new Error(
+        'Refusing to start in production with dev fallback for TUKIO_INTERNAL_SERVICE_SECRET. ' +
+          'Set explicit value via secret store before deploy.',
+      );
+    }
+  }
+
+  return parsed.data;
+};

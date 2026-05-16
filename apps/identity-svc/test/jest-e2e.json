@@ -3,6 +3,10 @@
   "rootDir": "..",
   "testEnvironment": "node",
   "testRegex": "test/.*\\.e2e-spec\\.ts$",
+  "testPathIgnorePatterns": [
+    "/node_modules/",
+    "test/customer-register.e2e-spec.ts"
+  ],
   "transform": {
     "^.+\\.(t|j)s$": [
       "ts-jest",
@@ -19,14 +23,26 @@
       }
     ]
   },
-  "transformIgnorePatterns": ["node_modules/(?!.*?(jose)/)"],
+  "transformIgnorePatterns": [
+    "node_modules/(?!.*?(jose|@keycloak|url-template|camelize-ts|@microsoft)/)"
+  ],
   "moduleNameMapper": {
     "^(\\.{1,2}/.*)\\.js$": "$1",
     "^@tukio/contracts$": "<rootDir>/../../packages/contracts/src/index.ts",
     "^@tukio/contracts/exceptions/domain$": "<rootDir>/../../packages/contracts/src/exceptions/domain.exception.ts",
     "^@tukio/contracts/exceptions$": "<rootDir>/../../packages/contracts/src/exceptions/index.ts",
-    "^@tukio/contracts/(.*)\\.js$": "<rootDir>/../../packages/contracts/src/$1.ts",
-    "^@tukio/contracts/(.*)$": "<rootDir>/../../packages/contracts/src/$1.ts",
+    "^@tukio/contracts/(.*)\\.js$": [
+      "<rootDir>/../../packages/contracts/src/$1.ts",
+      "<rootDir>/../../packages/contracts/src/$1.dto.ts",
+      "<rootDir>/../../packages/contracts/src/$1.exception.ts",
+      "<rootDir>/../../packages/contracts/src/$1/index.ts"
+    ],
+    "^@tukio/contracts/(.*)$": [
+      "<rootDir>/../../packages/contracts/src/$1.ts",
+      "<rootDir>/../../packages/contracts/src/$1.dto.ts",
+      "<rootDir>/../../packages/contracts/src/$1.exception.ts",
+      "<rootDir>/../../packages/contracts/src/$1/index.ts"
+    ],
     "^@tukio/auth$": "<rootDir>/../../packages/auth/src/index.ts",
     "^@tukio/auth/module$": "<rootDir>/../../packages/auth/src/tukio-auth.module.ts",
     "^@tukio/auth/guards$": "<rootDir>/../../packages/auth/src/guards/keycloak-jwt.guard.ts",

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tukio.one/schemas/identity/user-registered.v1.json",
+  "title": "UserRegisteredV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "correlationId",
+    "causationId",
+    "actor",
+    "aggregate",
+    "payload"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "type": "string", "const": "identity.user.registered.v1" },
+    "eventVersion": { "type": "string", "const": "v1" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": {
+      "anyOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }]
+    },
+    "actor": {
+      "type": "object",
+      "required": ["userId", "role", "locale"],
+      "additionalProperties": false,
+      "properties": {
+        "userId": { "type": "string" },
+        "role": {
+          "type": "string",
+          "enum": [
+            "client",
+            "pro",
+            "admin-support",
+            "admin-modo",
+            "admin-super",
+            "system",
+            "anonymous"
+          ]
+        },
+        "locale": { "type": "string", "enum": ["fr", "en"] }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "const": "user-profile" },
+        "id": { "type": "string", "format": "uuid" }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "userId",
+        "email",
+        "firstName",
+        "lastName",
+        "role",
+        "locale",
+        "acquisitionSource",
+        "marketingOptIn",
+        "registeredAt"
+      ],
+      "properties": {
+        "userId": { "type": "string", "format": "uuid" },
+        "email": { "type": "string", "format": "email" },
+        "firstName": { "type": "string", "minLength": 1 },
+        "lastName": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "const": "client" },
+        "locale": { "type": "string", "enum": ["fr", "en"] },
+        "acquisitionSource": {
+          "type": "string",
+          "enum": ["organic", "google_ads", "meta_ads", "referral", "direct", "partner", "unknown"]
+        },
+        "acquisitionMedium": { "type": ["string", "null"] },
+        "acquisitionCampaign": { "type": ["string", "null"] },
+        "acquisitionContent": { "type": ["string", "null"] },
+        "acquisitionTerm": { "type": ["string", "null"] },
+        "acquisitionReferralId": {
+          "anyOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }]
+        },
+        "marketingOptIn": { "type": "boolean" },
+        "registeredAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

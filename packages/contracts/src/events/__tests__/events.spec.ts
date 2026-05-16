@@ -193,6 +193,217 @@ describe('payment-intent-captured.v1', () => {
   });
 });
 
+describe('identity.user.registered.v1', () => {
+  const schema = loadSchema('identity/user-registered.v1.schema.json');
+  const validate = () => {
+    const v = ajv.compile(schema);
+    return v;
+  };
+
+  const validEvent = {
+    ...BASE_EVENT,
+    eventType: 'identity.user.registered.v1',
+    aggregate: {
+      type: 'user-profile',
+      id: 'd4e5f6a7-b8c9-4012-9ef0-123456789012',
+    },
+    payload: {
+      userId: 'd4e5f6a7-b8c9-4012-9ef0-123456789012',
+      email: 'alice@example.com',
+      firstName: 'Alice',
+      lastName: 'Martin',
+      role: 'client',
+      locale: 'fr',
+      acquisitionSource: 'google_ads',
+      acquisitionMedium: 'cpc',
+      acquisitionCampaign: 'spring2026',
+      acquisitionContent: 'banner_v2',
+      acquisitionTerm: 'event_marquees',
+      acquisitionReferralId: null,
+      marketingOptIn: true,
+      registeredAt: '2026-05-15T12:00:00Z',
+    },
+  };
+
+  it('validates a correct payload', () => {
+    const v = validate();
+    expect(v(validEvent)).toBe(true);
+  });
+
+  it('accepts null acquisition* fields (medium/campaign/content/term/referralId)', () => {
+    const v = validate();
+    const event = {
+      ...validEvent,
+      payload: {
+        ...validEvent.payload,
+        acquisitionMedium: null,
+        acquisitionCampaign: null,
+        acquisitionContent: null,
+        acquisitionTerm: null,
+        acquisitionReferralId: null,
+      },
+    };
+    expect(v(event)).toBe(true);
+  });
+
+  it('rejects empty firstName (minLength: 1) — review patch P7', () => {
+    const v = validate();
+    const event = {
+      ...validEvent,
+      payload: { ...validEvent.payload, firstName: '' },
+    };
+    expect(v(event)).toBe(false);
+  });
+
+  it('rejects missing firstName (now required) — review patch P7', () => {
+    const v = validate();
+    const payloadWithoutFirst: Record<string, unknown> = { ...validEvent.payload };
+    delete payloadWithoutFirst.firstName;
+    const event = { ...validEvent, payload: payloadWithoutFirst };
+    expect(v(event)).toBe(false);
+  });
+
+  it('rejects when role is not "client" (factory dédiée customer)', () => {
+    const v = validate();
+    const event = {
+      ...validEvent,
+      payload: { ...validEvent.payload, role: 'pro' },
+    };
+    expect(v(event)).toBe(false);
+  });
+
+  it('rejects when aggregate.type is not "user-profile"', () => {
+    const v = validate();
+    const event = {
+      ...validEvent,
+      aggregate: { type: 'user', id: validEvent.aggregate.id },
+    };
+    expect(v(event)).toBe(false);
+  });
+
+  it('rejects when acquisitionSource is not in the canonical enum', () => {
+    const v = validate();
+    const event = {
+      ...validEvent,
+      payload: { ...validEvent.payload, acquisitionSource: 'newsletter' },
+    };
+    expect(v(event)).toBe(false);
+  });
+
+  it('rejects when marketingOptIn is missing', () => {
+    const v = validate();
+    const payloadWithoutOptIn: Record<string, unknown> = { ...validEvent.payload };
+    delete payloadWithoutOptIn.marketingOptIn;
+    const event = { ...validEvent, payload: payloadWithoutOptIn };
+    expect(v(event)).toBe(false);
+  });
+});
+
+describe('notification.email.send.v1', () => {
+  const schema = loadSchema('notification/email-send.v1.schema.json');
+  const validate = () => ajv.compile(schema);
+
+  const validEvent = {
+    ...BASE_EVENT,
+    eventType: 'notification.email.send.v1',
+    aggregate: {
+      type: 'user-profile',
+      id: 'd4e5f6a7-b8c9-4012-9ef0-123456789012',
+    },
+    payload: {
+      templateId: 'email-verify',
+      locale: 'fr',
+      to: {
+        email: 'alice@example.com',
+        userId: 'd4e5f6a7-b8c9-4012-9ef0-123456789012',
+        name: 'Alice Martin',
+      },
+      params: {
+        firstName: 'Alice',
+        verifyUrl: 'https://tukio.one/fr/auth/email/verify?token=abc',
+        expiresAt: '2026-05-22T12:00:00Z',
+      },
+    },
+  };
+
+  it('validates a correct email-verify payload', () => {
+    const v = validate();
+    expect(v(validEvent)).toBe(true);
+  });
+
+  it('accepts to.userId = null and omitted name', () => {
+    const v = validate();
+    const event = {
+      ...validEvent,
+      payload: {
+        ...validEvent.payload,
+        to: { email: 'anonymous@example.com', userId: null },
+      },
+    };
+    expect(v(event)).toBe(true);
+  });
+
+  it('rejects an unknown templateId', () => {
+    const v = validate();
+    const event = {
+      ...validEvent,
+      payload: { ...validEvent.payload, templateId: 'marketing-blast' },
+    };
+    expect(v(event)).toBe(false);
+  });
+
+  it('rejects when locale is not fr/en', () => {
+    const v = validate();
+    const event = { ...validEvent, payload: { ...validEvent.payload, locale: 'de' } };
+    expect(v(event)).toBe(false);
+  });
+
+  it('rejects when to.email is missing', () => {
+    const v = validate();
+    const event = {
+      ...validEvent,
+      payload: {
+        ...validEvent.payload,
+        to: { userId: validEvent.payload.to.userId },
+      },
+    };
+    expect(v(event)).toBe(false);
+  });
+
+  it('accepts arbitrary params keys (additionalProperties: true)', () => {
+    const v = validate();
+    const event = {
+      ...validEvent,
+      payload: {
+        ...validEvent.payload,
+        params: { whateverKey: 'whateverValue', nested: { ok: true } },
+      },
+    };
+    expect(v(event)).toBe(true);
+  });
+
+  it('rejects non-UUID aggregate.id (review patch P9 — alignment with user-registered.v1)', () => {
+    const v = validate();
+    const event = {
+      ...validEvent,
+      aggregate: { type: 'user-profile', id: 'not-a-uuid' },
+    };
+    expect(v(event)).toBe(false);
+  });
+
+  it('rejects unknown aggregate.type (review patch P9)', () => {
+    const v = validate();
+    const event = {
+      ...validEvent,
+      aggregate: {
+        type: 'arbitrary',
+        id: 'd4e5f6a7-b8c9-4012-9ef0-123456789012',
+      },
+    };
+    expect(v(event)).toBe(false);
+  });
+});
+
 describe('admin-action-pro-verified.v1', () => {
   const schema = loadSchema('admin/admin-action-pro-verified.v1.schema.json');
 

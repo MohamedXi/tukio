@@ -13,6 +13,7 @@ export class ApiError extends Error {
     public readonly issues?: ValidationIssue[],
     public readonly correlationId?: string,
     public readonly instance?: string,
+    public readonly retryAfterSeconds?: number,
   ) {
     // Defensive: malformed envelopes can reach here with empty title/detail.
     // Avoid the eyesore `[X] undefined: undefined` in logs / Sentry.

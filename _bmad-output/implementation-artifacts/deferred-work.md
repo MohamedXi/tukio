@@ -1,5 +1,24 @@
 # Deferred Work
 
+## Deferred from: code review of 1-2c-gateway-api-pretre-forwarder (2026-05-16)
+
+- **D1** — Redis non validé au démarrage [`app.module.ts:62`] — `new Redis(url)` sans onModuleInit probe ; démarrage silencieux si Redis down. À corriger en V1.
+- **D2** — Timeout Redis non configuré [`app.module.ts:62`] — ioredis defaults sans `connectTimeout`/`commandTimeout` explicites ; potentiel ralentissement sous Redis lent. V1.
+- **D3** — HTTP 400 identity-svc mappé en IdentitySvcValidationError trop large [`identity-svc.client.ts:132`] — identity-svc n'émet que 422 pour la validation Zod ; le mapping 400→validation est défensif mais potentiellement trompeur.
+- **D4** — Pas de log sur les retries axios [`identity-svc.client.ts:49-58`] — faible observabilité prod sur les échecs identity-svc intermittents. V1 observability.
+- **D5** — Regex PII email trop large dans EnvelopeExceptionFilter [`envelope-exception.filter.ts:25`] — faux positifs possibles (pre-existing dans identity-svc aussi).
+- **D6** — Fallback `statusCode ?? 200` dans ResponseEnvelopeInterceptor [`response-envelope.interceptor.ts:50`] — latent si statusCode non défini par le framework.
+- **D7** — Unicode normalization non normalisée avant HMAC [`identity-svc.client.ts:68`] — risque théorique pour caractères composés/décomposés ; faible probabilité pratique.
+- **D8** — Config service alloue de nouveaux objets à chaque getXxxConfig() [`environment-config.service.ts:49+`] — pression GC mineure ; micro-optimisation V1.
+- **D9** — Pas de validation Content-Type sur les réponses identity-svc [`identity-svc.client.ts:77-87`] — axios parse JSON même si la réponse est text/html. V1.
+- **D10** — Collide timestamp HMAC (résolution 1 seconde) [`identity-svc.client.ts:70`] — mitigé par body hash (emails différents → hashes différents) + conflict 409 downstream.
+- **D11** — Longueur secret HMAC non re-validée dans le constructeur client [`identity-svc.client.ts:40`] — déjà validée par env.schema au boot ; redondance defense-in-depth optionnelle.
+- **D12** — Correlation ID inbound non validé (format non-UUID accepté) [`auth-customer.controller.ts:67`] — logs moins traçables si ID malformé ; impact faible.
+- **D13** — Fenêtre rate-limit off-by-one (comportement exact @nestjs/throttler) [`auth-customer.controller.ts:57`] — dépend de l'implémentation rolling window du throttler.
+- **D14** — Dérive schéma acquisition gateway vs identity-svc — les deux utilisent `@tukio/contracts`, dérive impossible à runtime mais non vérifiée par test dédié.
+- **D15** — Race condition timeout + retry [`identity-svc.client.ts:49-58`] — axios-retry gère via request-level timeout ; non bloquant en pratique.
+- **D16** — ThrottlerModule 1 scope vs 2 scopes spécifiés [`app.module.ts:55-60`] — choix pragmatique documenté dans Dev Notes ; V1 refactor 2-scopes avec @SkipThrottle planifié.
+
 ## Deferred from: code review of 1-1-provision-keycloak-realm-tukio-roles-clients-phasetwo (2026-05-16)
 
 - **D-1** — Account theme PF5 vs login PF4 CSS pipeline mismatch [`themes/tukio/account/theme.properties`]. Account theme inherits `keycloak.v3` (PatternFly v5 selectors `.pf-v5-c-*`), but the CSS copied from login targets v2/PF4 (`.pf-c-*`). Account console will render partially unstyled. Will be revisited in Story 1.8 (Profile management UI).
@@ -146,3 +165,34 @@
 - **Admin HEALTHCHECK root → 401/403 possible quand auth-gate active** — prévoir une route `/healthz` ou vérifier `/_next/static/` pour le healthcheck Dockerfile admin.
 - **`webpack.tukio.cjs` absent du template frontend dans gen-dockerfiles.sh** — inconsistance avec le template backend. Pas de risque immédiat (Next.js n'utilise pas ce fichier), mais à surveiller si des packages workspace utilisent webpack au build.
 - **sleep 20 insuffisant pour Next.js cold start CI** — remplacer par un poll (`until curl ... ; do sleep 5; done`) avec timeout de 60s.
+
+## Deferred from: code review of 1-2a-contracts-identity-domain-usecase (2026-05-15)
+
+- **`UserProfileTypeormRepository.runInTransaction` stub throws "Story 1.2b"** [`apps/identity-svc/src/infrastructure/persistence/typeorm/repositories/user-profile.typeorm.repository.ts:47`] — Real impl (TypeORM QueryRunner + shared with `OutboxPublisher` Story 0.7) is the explicit core deliverable of Story 1.2b. Production controllers must NOT be wired against this repository until 1.2b ships, else any register-customer request 500s. Add a boot-time assertion or controller gate before 1.2b lands.
+- **`TransactionContext.userProfileRepo` typed as `Pick<…, 'save'>` limits in-transaction reads** [`apps/identity-svc/src/domain/ports/user-profile.repository.port.ts:11`] — Deliberate narrowing to prevent leaky re-reads, but it means concurrent `register()` can't atomically re-check email uniqueness inside the txn. Race-safety today relies on Keycloak's unique-email constraint + Postgres unique index (1.2b migration). If a future scenario needs in-txn `findByEmail`, extend the `TransactionContext` shape in 1.2b alongside the real impl.
+- **`UserProfileMapper.toEntity` drops the 5 new aggregate fields on save (lossy round-trip)** [`apps/identity-svc/src/infrastructure/persistence/typeorm/mappers/user-profile.mapper.ts:55-73`] — Mapper still on Story 0.6 shape. The new `status`/`emailVerified`/`marketingOptIn`/`acceptTerms`/`acceptTermsAt` fields are silently dropped on `save()`. This MUST be sequenced as part of Story 1.2b's migration + mapper extension, BEFORE any controller wired to `RegisterCustomerUseCase` is enabled. Verify with an integration test that saves + reloads + asserts equality of the new fields.
+
+## Deferred from: code review patch E3 of 1-2a (2026-05-16)
+
+- **`acquisition_content` + `acquisition_term` DB columns + migration + mapper extension** — the contract layer (Zod DTO + AcquisitionContext type + event JSON schema) and domain layer (RegisterAcquisitionInput + UserProfile.register factory + use case event populate) all carry the two new fields end-to-end as of 1.2a. Story 1.2b must add the columns to `user_profiles` (alongside the 5 other new fields from `1715230000000-AddCustomerRegistrationFields`) and update `UserProfileMapper.toEntity`/`toDomain` to round-trip them. Without this, the persisted row drops both UTM fields silently — the published event still carries them (good for analytics V1 / Story 7.5 multi-touch attribution) but BI joins against the `user_profiles` table will see nulls.
+
+## Deferred from: code review of 1-2b (2026-05-16)
+
+- **Role cache TTL + invalidation** [`apps/identity-svc/src/infrastructure/external/keycloak/keycloak-admin.service.ts:104`] — Process-lifetime `Map<string, RoleRep>` cache without TTL. If realm rebootstrap (Story 1.1 re-import, ops mistake) recreates the role with a new id, cached lookup yields stale id → `addRealmRoleMappings` 404 → pod throw until restart. Acceptable for MVP (realm rebootstrap rare). V1+ : 5min TTL + refresh-on-404 retry.
+- **`publicBaseUrl` captured at module-init time in `REGISTER_CUSTOMER_USECASES_PROXY` factory** [`apps/identity-svc/src/infrastructure/usecases-proxy/usecases-proxy.module.ts:60`] — `config.getPublicBaseUrl()` evaluated once at boot. Env reload (Doppler push / secret rotation) leaves stale verify-URL until pod restart. Acceptable for MVP (no hot-reload story). V1+ : pass `() => config.getPublicBaseUrl()` thunk into use case constructor.
+
+## Deferred from: code review of 1-2d-frontend-signup-middleware-e2e-observability (2026-05-16)
+
+- **First-touch race condition entre tabs simultanés** — Deux tabs avec UTM différentes en parallèle peuvent racer sur l'écriture du cookie `tk_acq` ; la cohérence avec `tukio-acquisition` (multi-touch tracking) peut diverger. Acceptable pour MVP per K-04 first-touch wins "best effort". Story 7.5 multi-touch attribution pourra ajouter une stratégie déterministe.
+- **`document.cookie` non-déterministe avec deux `tk_acq` cross-domain** — Si deux cookies `tk_acq` existent (un sur apex `.tukio.one`, un sur subdomain), `.find()` sur `document.cookie.split('; ')` est implementation-defined. `Domain=.tukio.one` atténue ; risque réel uniquement si un subdomain rogue écrit son propre `tk_acq`. À surveiller si V1+ ajoute des subdomains pro/admin avec leur propre acquisition tracking.
+- **Locale split fallback "fr" pour paths malformés** [`apps/public/src/middleware/auth-gate.ts:35,45`] — `pathname.split('/')[1] ?? 'fr'` ne valide pas que le candidat est dans `LOCALES`. Defense-in-depth ; aucun path actuel sans locale prefix ne tombe dans le gate. Si Story 7.2 ajoute des paths neutres (`/sitemap.xml`, `/api/*`) le fallback "fr" devra être audité.
+- **`createTukioApiClient` + `QueryClient` re-instantiated per server render** [`apps/public/src/app/[locale]/auth/sign-up/page.tsx:431`] — Fresh instances par request ; à chaque navigation SPA le cache TanStack est perdu. Refactor architecture : hoist `QueryProvider` + `ApiClientProvider` au `[locale]/layout.tsx`. Hors scope 1.2d ; impact perf modeste pour le MVP (form unique). À reprendre quand plusieurs pages frontend partagent des queries (Stories 3.x catalog + 4.x bookings UI).
+- **Convention subpath casing `@tukio/ui/form-field` vs `@tukio/ui/components/Button`** — Les deux notations marchent (exports déclarés dans `packages/ui/package.json`) mais la convention `.agents/context/code-style.md` montre PascalCase sous `/components/`. À régler globalement dans une story de cleanup convention pour éviter de patcher au gré des PRs.
+- **File List story 1.2d manque `(authenticated)/layout.tsx`** — Le diff inclut ce fichier nouveau mais il n'est pas listé dans la section `### File List` de la story 1.2d. Paperwork ; à corriger à la passe finale d'update du story file post-merge.
+
+### Decisions from 1-2d code review escalated to defer (2026-05-16)
+
+- **AC8 metrics wiring → Story 1.10** — Les modules `registration.metrics.ts` (gateway-api) et `keycloak.metrics.ts` (identity-svc) sont créés mais leurs counters/histograms ne sont jamais incrémentés (controllers + use-cases pas instrumentés) et aucun endpoint `/metrics` Prometheus n'est exposé. Story 1.10 (`identity-svc-pretre-implementation` final) doit wirer l'instrumentation complète + exposer `/metrics` sur les deux services. Dashboard Grafana `identity-registration.json` shippé ne renverra des séries non-vides qu'après ce wiring.
+- **AC8 Slack alert + Prometheus AlertingRule → infra ops phase** — Dépend du wiring metrics (defer précédent) ET du déploiement Prometheus + Alertmanager + Slack receiver sur DO droplet (pas encore en place). À ship en story infra dédiée quand staging Prometheus est up (probablement post-Sprint 1).
+- **AC7 Playwright execution + CI workflow update → Ismael run avec docker:up** — Specs Playwright (9 tests) + helpers `e2e/helpers/test-user.ts` livrés mais non exécutés (require `pnpm docker:up` + `KEYCLOAK_CLIENT_SECRET_TUKIO_API` env var). Cohérent avec accord 1.2b/1.2c (Ismael run e2e/integration après livraison code). `.github/workflows/e2e.yml` à updater dans la même passe pour CI parallel chromium-fr + chromium-en. Story 1.2d marquée done sur le code ; validation AC7 "9/9 + axe-core 0 critical + NFR48 p90 ≤ 30s" à valider hors-revue.
+- **HMAC signature cookie `tk_acq` → ré-évaluer Story 7.6 (referral codes foundation)** — Cookie acquisition `tk_acq` est `httpOnly: false` (spec, lu par hook JS) et non-signé ; un attaquant peut forger `?utm_source=partner_evil` pour pollution analytics. Modèle de confiance MVP accepté car pas d'affiliation monétaire pré-Story 7.6 ; risque borné, atténué par normalisation source à l'enum `ACQUISITION_SOURCES` + clamp longueur (patch P2 du code-review 1.2d). Réévaluer signature HS256 + revalidation gateway quand Story 7.6 introduit la dimension financière des referrals.

@@ -5,6 +5,8 @@ export interface KeycloakUser {
   email?: string;
   firstName?: string;
   lastName?: string;
+  /** JWT claim `email_verified` — false until the user clicks the verification link (FR8/FR17). */
+  emailVerified: boolean;
 }
 
 export interface AuthError {

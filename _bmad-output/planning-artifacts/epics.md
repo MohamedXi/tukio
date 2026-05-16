@@ -1097,6 +1097,8 @@ Epic 0 (Sprint 0 Foundation)
 
 #### Story 1.2: Customer B2C registration (`POST /v1/auth/customer/register`)
 
+> 📌 **Décomposée 2026-05-15 via `/bmad-correct-course`** : voir sub-stories `1.2a` (contracts + identity-svc domain + use case unit), `1.2b` (identity-svc infrastructure + controller /internal/customers), `1.2c` (gateway-api Pretre + forwarder + Throttler Redis), `1.2d` (frontend sign-up + middleware + Playwright e2e + observability). Ce bloc ACs reste autorité fonctionnelle. Référence : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-15.md`.
+
 **As a** Visitor,
 **I want** to register as a Customer B2C with email + password in less than 30 seconds,
 **So that** I can start browsing and bookmarking events services.

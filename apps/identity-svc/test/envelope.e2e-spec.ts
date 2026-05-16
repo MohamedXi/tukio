@@ -25,7 +25,9 @@ describe('Envelope ADR-014 E2E', () => {
         return Promise.resolve(null);
       }),
       findByKeycloakUserId: jest.fn(),
+      findByEmail: jest.fn(),
       save: jest.fn(),
+      runInTransaction: jest.fn(),
     };
     app = await buildTestApp({ userProfileRepo: repo });
     adminJwt = generateTestJwt({

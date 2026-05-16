@@ -27,6 +27,27 @@ export function useAuthContext(): AuthContextValue {
   return useContext(AuthContext);
 }
 
+// Story 1.2d review patch P32 (D1) — keep middleware's `tukio-email-verified`
+// httpOnly cookie aligned with the JWT claim. The actual cookie write happens
+// server-side in `/api/auth/sync-email-verified` so JS in the browser cannot
+// tamper with it (see route handler for the trust-model discussion).
+const EMAIL_VERIFIED_SYNC_ENDPOINT = '/api/auth/sync-email-verified';
+
+async function syncEmailVerifiedCookie(emailVerified: boolean): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    await fetch(EMAIL_VERIFIED_SYNC_ENDPOINT, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emailVerified }),
+    });
+  } catch {
+    // Non-fatal: middleware will redirect to verify-email-required if the cookie
+    // never lands. The gateway-api JWT guard remains the source of truth.
+  }
+}
+
 export function AuthProvider({
   config,
   children,
@@ -48,14 +69,16 @@ export function AuthProvider({
       .then((authenticated) => {
         if (cancelled) return;
         if (authenticated) {
+          const user = kc.getUser();
           setState({
-            user: kc.getUser(),
+            user,
             role: kc.getRole(),
             locale: kc.getLocale(),
             isAuthenticated: true,
             isLoading: false,
             error: null,
           });
+          if (user) void syncEmailVerifiedCookie(user.emailVerified);
           const manager = new RefreshTokenRotationManager(kc);
           refreshManagerRef.current = manager;
           manager.start();

@@ -8,7 +8,7 @@ import { useRequireRole } from './use-require-role.js';
 import type { AuthState } from '../types/auth-state.js';
 
 const makeState = (overrides: Partial<AuthState> = {}): AuthState => ({
-  user: { userId: 'u1' },
+  user: { userId: 'u1', emailVerified: true },
   role: 'client',
   locale: 'fr',
   isAuthenticated: true,

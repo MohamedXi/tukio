@@ -13,3 +13,12 @@ version: 2
 secret:
   ignored-paths:
     - 'infra/keycloak/realm-export/tukio.realm.json'
+    # Test specs use intentional fixture passwords / mock client-secrets that
+    # never leave the test environment. They trip Generic Password / Secret
+    # heuristics. Real secrets must NEVER live in *.spec.ts — code review
+    # enforces this. The allowlist is path-based to avoid noisy inline
+    # `// ggshield-ignore` comments on every fixture.
+    - '**/*.spec.ts'
+    - '**/*.integration.spec.ts'
+    - '**/*.e2e-spec.ts'
+    - 'apps/public/e2e/**/*.ts'

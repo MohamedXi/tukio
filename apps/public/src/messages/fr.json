@@ -2,5 +2,66 @@
   "Home": {
     "title": "Tukio Design System",
     "subtitle": "Sprint 0 — composants atomiques actifs."
+  },
+  "auth": {
+    "signup": {
+      "title": "Créer un compte",
+      "subtitle": "Rejoignez Tukio pour réserver vos services d'événement",
+      "fields": {
+        "email": {
+          "label": "Adresse email",
+          "placeholder": "vous@exemple.fr"
+        },
+        "password": {
+          "label": "Mot de passe",
+          "placeholder": "12 caractères minimum",
+          "helper": "12+ caractères, majuscule, chiffre et caractère spécial"
+        },
+        "firstName": {
+          "label": "Prénom",
+          "placeholder": "Camille"
+        },
+        "lastName": {
+          "label": "Nom de famille",
+          "placeholder": "Renard"
+        },
+        "acceptTerms": {
+          "label": "J'accepte les conditions d'utilisation et la politique de confidentialité"
+        },
+        "acceptMarketing": {
+          "label": "Je souhaite recevoir les offres et actualités Tukio"
+        }
+      },
+      "errors": {
+        "generic": "Si un compte existe pour cet email, vérifiez votre boîte de réception.",
+        "unknown": "Veuillez vérifier ce champ.",
+        "serviceUnavailable": "Service momentanément indisponible. Réessayez dans quelques instants.",
+        "rateLimited": "Trop de tentatives. Réessayez dans {seconds} secondes.",
+        "emailInvalid": "Adresse email invalide.",
+        "emailTooLong": "L'adresse email est trop longue (254 caractères maximum).",
+        "passwordTooShort": "Le mot de passe doit comporter au moins 12 caractères.",
+        "passwordTooLong": "Le mot de passe est trop long (128 caractères maximum).",
+        "passwordNeedsLowercase": "Le mot de passe doit contenir une lettre minuscule.",
+        "passwordNeedsUppercase": "Le mot de passe doit contenir une lettre majuscule.",
+        "passwordNeedsDigit": "Le mot de passe doit contenir un chiffre.",
+        "passwordNeedsSpecial": "Le mot de passe doit contenir un caractère spécial.",
+        "passwordInvalid": "Mot de passe invalide.",
+        "firstNameRequired": "Le prénom est requis.",
+        "firstNameTooLong": "Le prénom est trop long (80 caractères maximum).",
+        "lastNameRequired": "Le nom est requis.",
+        "lastNameTooLong": "Le nom est trop long (80 caractères maximum).",
+        "acceptTermsRequired": "Vous devez accepter les conditions générales."
+      },
+      "cta": "Créer mon compte",
+      "loading": "Création en cours…",
+      "loginLink": "Déjà un compte ?",
+      "loginLinkLabel": "Se connecter"
+    },
+    "verifyEmailRequired": {
+      "title": "Vérifiez votre email",
+      "description": "Un email de confirmation vous a été envoyé. Cliquez sur le lien pour activer votre compte.",
+      "ctaResend": "Renvoyer l'email de vérification",
+      "support": "Besoin d'aide ? Contactez le support."
+    }
   }
 }

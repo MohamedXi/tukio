@@ -6,6 +6,10 @@ const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: 'src',
   testRegex: '.*\\.spec\\.ts$',
+  // Integration specs (testcontainers Keycloak/Postgres) live alongside unit
+  // specs under `src/` but require `pnpm docker:up:wait`. They're excluded
+  // from the default unit run and have their own `test:integration` script.
+  testPathIgnorePatterns: ['/node_modules/', '\\.integration\\.spec\\.ts$'],
   transform: {
     '^.+\\.(t|j)s$': [
       'ts-jest',
@@ -27,7 +31,9 @@ const config: Config = {
       },
     ],
   },
-  transformIgnorePatterns: ['/node_modules/(?!.*?(jose)/)'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!.*?(jose|@keycloak|url-template|camelize-ts|@microsoft)/)',
+  ],
   moduleNameMapper: {
     // Strip `.js` extension from relative imports (NodeNext ESM → ts-jest CJS).
     '^(\\.{1,2}/.*)\\.js$': '$1',
@@ -39,11 +45,13 @@ const config: Config = {
     //   3. <name>/index.ts             — barrel folder
     '^@tukio/contracts/(.*)\\.js$': [
       '<rootDir>/../../../packages/contracts/src/$1.ts',
+      '<rootDir>/../../../packages/contracts/src/$1.dto.ts',
       '<rootDir>/../../../packages/contracts/src/$1.exception.ts',
       '<rootDir>/../../../packages/contracts/src/$1/index.ts',
     ],
     '^@tukio/contracts/(.*)$': [
       '<rootDir>/../../../packages/contracts/src/$1.ts',
+      '<rootDir>/../../../packages/contracts/src/$1.dto.ts',
       '<rootDir>/../../../packages/contracts/src/$1.exception.ts',
       '<rootDir>/../../../packages/contracts/src/$1/index.ts',
     ],

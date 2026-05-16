@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm';
 import { UserProfileEntity } from './entities/user-profile.entity.js';
+import { EmailVerificationTokenEntity } from './entities/email-verification-token.entity.js';
 
 // Standalone DataSource for TypeORM CLI (migration:generate / run / revert).
 // Migrations glob is resolved relative to the CLI cwd (apps/identity-svc/).
@@ -34,7 +35,7 @@ const dataSource = new DataSource({
   username: process.env.DB_USER ?? 'tukio',
   password: dbPassword,
   database: process.env.DB_NAME ?? 'tukio_identity',
-  entities: [UserProfileEntity],
+  entities: [UserProfileEntity, EmailVerificationTokenEntity],
   migrations: ['src/infrastructure/persistence/typeorm/migrations/*.{ts,js}'],
   migrationsRun: false,
   synchronize: false,

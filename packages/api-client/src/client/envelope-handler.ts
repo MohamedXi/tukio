@@ -15,7 +15,11 @@ export function unwrapSuccessEnvelope<TData>(
 // Parses an ErrorEnvelope and throws a typed ApiError. Defensive: optional
 // chaining everywhere so a malformed envelope cannot turn into an opaque
 // TypeError that masks the original error.
-export function throwApiErrorFromEnvelope(envelope: ErrorEnvelope, correlationId?: string): never {
+export function throwApiErrorFromEnvelope(
+  envelope: ErrorEnvelope,
+  correlationId?: string,
+  retryAfterSeconds?: number,
+): never {
   throw new ApiError(
     envelope.error?.tukioCode ?? 'UNKNOWN-ERROR-001',
     envelope.code,
@@ -24,6 +28,7 @@ export function throwApiErrorFromEnvelope(envelope: ErrorEnvelope, correlationId
     envelope.error?.issues,
     correlationId ?? envelope.meta?.correlationId,
     envelope.error?.instance,
+    retryAfterSeconds,
   );
 }
 
