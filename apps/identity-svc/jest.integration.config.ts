@@ -31,7 +31,7 @@ const config: Config = {
     ],
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!.*?(jose|@keycloak|testcontainers)/)',
+    '/node_modules/(?!.*?(jose|@keycloak|url-template|camelize-ts|@microsoft/kiota|testcontainers)/)',
   ],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',

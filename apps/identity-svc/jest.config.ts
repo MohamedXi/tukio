@@ -31,7 +31,9 @@ const config: Config = {
       },
     ],
   },
-  transformIgnorePatterns: ['/node_modules/(?!.*?(jose|@keycloak)/)'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!.*?(jose|@keycloak|url-template|camelize-ts|@microsoft/kiota)/)',
+  ],
   moduleNameMapper: {
     // Strip `.js` extension from relative imports (NodeNext ESM → ts-jest CJS).
     '^(\\.{1,2}/.*)\\.js$': '$1',
