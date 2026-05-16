@@ -435,6 +435,23 @@ json.dump(d, open('$stripped', 'w'), indent=2)
     upsert_client "$client_file" "${KC_CONFIG_DIR}/clients/${client_file}.json"
   done
 
+  # ─── Grant realm-admin to tukio-api service account ──────────────────────
+  # identity-svc uses client_credentials against tukio-api to call the
+  # Keycloak Admin REST API (createUser, addRealmRoleMappings, …). Without
+  # realm-admin on the service account, every register-customer surfaces as
+  # `IDENTITY-EXTERNAL-001 — Keycloak unreachable` (403 from Admin API).
+  # `add-roles` is idempotent : Keycloak returns 204 even when the role is
+  # already mapped, so re-runs of the bootstrap are safe.
+  log_step "Granting realm-admin to service-account-tukio-api"
+  if kcadm add-roles -r tukio \
+      --uusername "service-account-tukio-api" \
+      --cclientid "realm-management" \
+      --rolename "realm-admin" >/dev/null 2>&1; then
+    log_info "realm-admin granted to service-account-tukio-api"
+  else
+    log_warn "Could not grant realm-admin to service-account-tukio-api — register-customer will surface IDENTITY-EXTERNAL-001 (403) until corrected manually"
+  fi
+
   # ─── Bind MFA flow to tukio-admin client ──────────────────────────────────
   log_step "Binding MFA flow to tukio-admin"
   ADMIN_CLIENT_UUID="$(get_client_uuid "tukio-admin")"
