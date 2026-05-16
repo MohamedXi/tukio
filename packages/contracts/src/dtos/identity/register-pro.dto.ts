@@ -43,12 +43,16 @@ const SiretSchema = z
   .refine(siretLuhnCheck, { message: 'Invalid SIRET (Luhn check failed)' });
 
 /**
- * French intracom VAT number. Normalised to uppercase before validation so
- * `'fr12345678901'` and `'FR12345678901'` are equivalent.
+ * French intracom VAT number (`FR` + 2-char check key + 9-digit SIREN).
+ * The check key is alphanumeric `[0-9A-HJ-NP-Z]` (I and O excluded per EU convention).
+ * Examples: `FR12345678901` (numeric key), `FRQU345678901` (alpha key).
+ * Normalised to uppercase before validation.
  */
 const VatNumberSchema = z.preprocess(
   (val) => (typeof val === 'string' ? val.trim().toUpperCase() : val),
-  z.string().regex(/^FR\d{11}$/, { message: 'VAT number must match FR followed by 11 digits' }),
+  z.string().regex(/^FR[0-9A-HJ-NP-Z]{2}\d{9}$/, {
+    message: 'VAT number must be FR + 2-char check key + 9-digit SIREN',
+  }),
 );
 
 /**

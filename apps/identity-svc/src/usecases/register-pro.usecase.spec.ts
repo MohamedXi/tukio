@@ -25,6 +25,7 @@ import {
 import {
   type IInseeSiretValidator,
   type InseeSiretSnapshot,
+  type InseeAdministrativeStatus,
   InseeSiretNotFoundError,
   InseeRateLimitError,
   InseeUnreachableError,
@@ -47,16 +48,10 @@ const FIXED_EMAIL_EVENT_ID = '88888888-8888-4888-8888-888888888888';
 const FIXED_CORRELATION_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 
 const VALID_INSEE: InseeSiretSnapshot = {
-  etatAdministratif: 'A',
-  denomination: 'LA POSTE',
-  dateCreation: '1991-01-01',
-  categorieJuridique: '5510',
-  address: {
-    street: '9 RUE DU COLONEL PIERRE AVIA',
-    postalCode: '75015',
-    city: 'PARIS',
-    country: 'FR',
-  },
+  administrativeStatus: 'active',
+  legalName: 'LA POSTE',
+  incorporationDate: '1991-01-01',
+  legalCategory: '5510',
 };
 
 const mkFile = (filename: string, contentType: string): RegisterProFile => ({
@@ -106,7 +101,8 @@ const existingPro = (): ProProfile =>
     }),
     contactPhone: PhoneNumber.create('+33611111111'),
     kyc: { idCardR2Key: 'k1', ribR2Key: 'k2', kbisR2Key: null },
-    insee: { denomination: null, dateCreation: null, categorieJuridique: null },
+    inseeAdministrativeStatus: 'active',
+    insee: { legalName: null, incorporationDate: null, legalCategory: null },
   });
 
 const existingUser = (): UserProfile =>
@@ -330,7 +326,7 @@ describe('RegisterProUseCase', () => {
     const m = buildMocks();
     m.insee.validate.mockResolvedValue({
       ...VALID_INSEE,
-      etatAdministratif: 'C',
+      administrativeStatus: 'ceased' as InseeAdministrativeStatus,
     });
     const uc = buildUseCase(m);
 
@@ -422,19 +418,34 @@ describe('RegisterProUseCase', () => {
     );
   });
 
-  it('falls back to the filename extension when MIME is unknown', async () => {
+  it('falls back to the filename extension when MIME is unknown (allowed extension)', async () => {
     const m = buildMocks();
     const uc = buildUseCase(m);
     const input = baseInput();
     input.files.idCard = {
       buffer: Buffer.from('x'),
       contentType: 'application/octet-stream', // not in the MIME whitelist
-      originalName: 'mystery-doc.tiff',
+      originalName: 'mystery-doc.png', // .png is in the allowed extensions list
     };
 
     await uc.execute(input);
     const keys = m.media.upload.mock.calls.map(([c]) => c.key);
-    expect(keys).toContain(`pro/${FIXED_USER_ID}/id-card.tiff`);
+    expect(keys).toContain(`pro/${FIXED_USER_ID}/id-card.png`);
+  });
+
+  it('strips disallowed extensions (e.g. .tiff, .exe) and stores the file with no extension (D4)', async () => {
+    const m = buildMocks();
+    const uc = buildUseCase(m);
+    const input = baseInput();
+    input.files.idCard = {
+      buffer: Buffer.from('x'),
+      contentType: 'application/octet-stream',
+      originalName: 'mystery-doc.tiff', // .tiff is NOT in the allowlist
+    };
+
+    await uc.execute(input);
+    const keys = m.media.upload.mock.calls.map(([c]) => c.key);
+    expect(keys).toContain(`pro/${FIXED_USER_ID}/id-card`); // no extension
   });
 
   it('rejects when Keycloak is unreachable', async () => {
@@ -476,10 +487,11 @@ describe('RegisterProUseCase', () => {
     expect(m.media.delete).toHaveBeenCalledTimes(3);
   });
 
-  it('translates a Postgres 23505 unique violation on SIRET into a 409 + compensation', async () => {
+  it('translates a Postgres 23505 unique violation on SIRET into CONFLICT_SIRET_EXISTS + compensation', async () => {
     const m = buildMocks();
     const pgError = Object.assign(new Error('unique_violation'), {
       code: '23505',
+      constraint: 'uq_pro_profiles_siret',
     });
     m.proProfileRepo.runInTransaction.mockRejectedValue(pgError);
     const uc = buildUseCase(m);
@@ -492,6 +504,21 @@ describe('RegisterProUseCase', () => {
     });
     expect(m.keycloak.deleteUser).toHaveBeenCalled();
     expect(m.media.delete).toHaveBeenCalled();
+  });
+
+  it('translates a Postgres 23505 on the email column into CONFLICT_EMAIL_EXISTS (race condition)', async () => {
+    const m = buildMocks();
+    const pgError = Object.assign(new Error('unique_violation'), {
+      code: '23505',
+      constraint: 'uq_user_profiles_email',
+    });
+    m.proProfileRepo.runInTransaction.mockRejectedValue(pgError);
+    const uc = buildUseCase(m);
+
+    await expect(uc.execute(baseInput())).rejects.toMatchObject({
+      tukioCode: 'IDENTITY-CONFLICT-001',
+    });
+    expect(m.keycloak.deleteUser).toHaveBeenCalled();
   });
 
   it('accepts the registration when vatNumber is omitted', async () => {
@@ -529,5 +556,24 @@ describe('RegisterProUseCase', () => {
 
     await expect(uc.execute(input)).rejects.toThrow('DB explodes');
     expect(m.media.delete).toHaveBeenCalledTimes(2);
+  });
+
+  it('logs a warning and does not rethrow when Keycloak compensation deleteUser fails (D4)', async () => {
+    const m = buildMocks();
+    // deleteUser rejects — exercises the catch+warn branch in compensateKeycloak.
+    m.keycloak.deleteUser.mockRejectedValue(
+      new Error('Keycloak compensation rejected'),
+    );
+    m.proProfileRepo.runInTransaction.mockRejectedValue(
+      new Error('DB explodes'),
+    );
+    const uc = buildUseCase(m);
+
+    // The saga re-throws the original DB error, not the compensation error.
+    await expect(uc.execute(baseInput())).rejects.toThrow('DB explodes');
+    expect(m.logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Keycloak rollback compensation failed'),
+      expect.objectContaining({ keycloakUserId: KC_USER_ID }),
+    );
   });
 });

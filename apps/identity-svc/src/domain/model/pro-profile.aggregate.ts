@@ -3,7 +3,7 @@ import { Address, type AddressProps } from './address.value-object.js';
 import { PhoneNumber } from './phone-number.value-object.js';
 import { Siret } from './siret.value-object.js';
 import { VatNumber } from './vat-number.value-object.js';
-import { KycStatus } from './kyc-status.enum.js';
+import { KycStatus, isKycStatus } from './kyc-status.enum.js';
 import { InvalidProProfileException } from '../exception/invalid-pro-profile.exception.js';
 
 const COMPANY_NAME_MIN = 1;
@@ -13,11 +13,16 @@ const COMPANY_NAME_MAX = 200;
  * INSEE snapshot fields captured at registration time. Stored alongside the
  * aggregate so the admin queue (Story 2.3-2.4) can audit what INSEE returned
  * when the Pro signed up, even if the legal entity is later modified or ceased.
+ *
+ * Field names are English mappings of the INSEE SIRENE V3.11 wire format:
+ *   denominationUniteLegale → legalName
+ *   dateCreationUniteLegale → incorporationDate
+ *   categorieJuridiqueUniteLegale → legalCategory
  */
 export interface ProInseeSnapshot {
-  denomination: string | null;
-  dateCreation: string | null;
-  categorieJuridique: string | null;
+  legalName: string | null;
+  incorporationDate: string | null;
+  legalCategory: string | null;
 }
 
 /**
@@ -56,6 +61,12 @@ export interface RegisterProProps {
   address: Address;
   contactPhone: PhoneNumber;
   kyc: ProKycRefs;
+  /**
+   * Administrative status from the INSEE SIRENE register at registration time.
+   * Only `'active'` is accepted — the factory throws `InvalidProProfileException`
+   * if any other value is passed (domain invariant: you cannot register an inactive SIRET).
+   */
+  inseeAdministrativeStatus: 'active' | 'ceased';
   insee: ProInseeSnapshot;
   /** Override for tests; defaults to `randomUUID()` at call time. */
   id?: string;
@@ -98,7 +109,7 @@ export class ProProfile {
     ProProfile.assertNonEmptyId(props.id, 'id');
     ProProfile.assertNonEmptyId(props.userProfileId, 'userProfileId');
     ProProfile.assertCompanyName(props.companyName);
-    if (!Object.values(KycStatus).includes(props.kycStatus)) {
+    if (!isKycStatus(props.kycStatus)) {
       throw new InvalidProProfileException(
         `Invalid kycStatus: ${String(props.kycStatus)}`,
       );
@@ -113,17 +124,23 @@ export class ProProfile {
 
   /**
    * Pro-specific factory used by `RegisterProUseCase` (Story 1.3a). Always
-   * produces:
-   *   - kycStatus = `pending_review` (admin verification queue, Story 2.x)
+   * produces kycStatus = `pending_review` (admin verification queue, Story 2.x).
    *
-   * The caller is responsible for having already :
-   *   1. Validated the SIRET against INSEE and confirmed `etatAdministratif='A'`.
-   *   2. Uploaded the three (or two when `kbisOrInsee` is omitted) KYC files
-   *      to R2 and computed their keys.
-   *   3. Persisted the matching `UserProfile` row with
-   *      `status=pending_admin_review` so the FK reference resolves.
+   * Domain invariant: `inseeAdministrativeStatus` must be `'active'`. The use
+   * case validates this against INSEE before calling this factory, but the
+   * aggregate also self-protects to prevent bypassing the use case.
+   *
+   * The caller is responsible for having already:
+   *   1. Validated the SIRET against INSEE (administrativeStatus = 'active').
+   *   2. Uploaded KYC files to R2 and computed their keys.
+   *   3. Persisted the matching `UserProfile` row before the transaction commits.
    */
   static register(props: RegisterProProps): ProProfile {
+    if (props.inseeAdministrativeStatus !== 'active') {
+      throw new InvalidProProfileException(
+        `SIRET must be administratively active at registration (got: ${props.inseeAdministrativeStatus})`,
+      );
+    }
     const now = props.now ?? new Date();
     const id = props.id ?? randomUUID();
 
@@ -142,9 +159,9 @@ export class ProProfile {
         kbisR2Key: props.kyc.kbisR2Key,
       },
       insee: {
-        denomination: props.insee.denomination,
-        dateCreation: props.insee.dateCreation,
-        categorieJuridique: props.insee.categorieJuridique,
+        legalName: props.insee.legalName,
+        incorporationDate: props.insee.incorporationDate,
+        legalCategory: props.insee.legalCategory,
       },
       createdAt: now,
       updatedAt: now,

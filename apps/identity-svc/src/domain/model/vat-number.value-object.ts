@@ -1,16 +1,16 @@
 import { IdentityValidationException } from '../exception/identity-validation.exception.js';
 import { IdentityErrorCodes } from '@tukio/contracts/types/error-codes';
 
-const FR_VAT_REGEX = /^FR\d{11}$/;
-
 /**
- * French intracom VAT number (`FR` followed by 11 digits). Optional on Pro
- * registration since some small structures (micro-entreprises) are not
- * VAT-registered.
+ * French intracom VAT number: `FR` + 2-char check key + 9-digit SIREN.
+ * The check key is `[0-9A-HJ-NP-Z]` (I and O excluded per EU convention).
+ * Examples: `FR12345678901` (numeric key `12`), `FRQU345678901` (alpha key `QU`).
+ * Optional on Pro registration since micro-entreprises may not be VAT-registered.
  *
- * Normalisation trims surrounding whitespace and uppercases the `FR` prefix
- * so `'fr12345678901'` and `' FR12345678901 '` are equivalent.
+ * Normalisation trims whitespace and uppercases the prefix so `'fr12...'` and
+ * `' FR12... '` are equivalent.
  */
+const FR_VAT_REGEX = /^FR[0-9A-HJ-NP-Z]{2}\d{9}$/;
 export class VatNumber {
   private readonly value: string;
 
@@ -29,7 +29,7 @@ export class VatNumber {
     if (!FR_VAT_REGEX.test(normalized)) {
       throw new IdentityValidationException(
         IdentityErrorCodes.VALIDATION_INPUT_INVALID,
-        'VAT number must match the FR + 11 digits pattern',
+        'VAT number must be FR + 2-char check key + 9-digit SIREN (e.g. FR12345678901)',
       );
     }
     return new VatNumber(normalized);

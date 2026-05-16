@@ -1,14 +1,5 @@
 import { DomainException } from './domain.exception.js';
-import {
-  IdentityErrorCodes,
-  type IdentityErrorCode,
-} from '@tukio/contracts/types/error-codes';
-
-const VALIDATION_CODES: readonly IdentityErrorCode[] = [
-  IdentityErrorCodes.VALIDATION_INPUT_INVALID,
-  IdentityErrorCodes.VALIDATION_SIRET_INVALID,
-  IdentityErrorCodes.VALIDATION_SIRET_INACTIVE,
-];
+import { type IdentityErrorCode } from '@tukio/contracts/types/error-codes';
 
 /**
  * Business-rule validation failure (HTTP 422). Used for inputs that pass the
@@ -27,11 +18,6 @@ export class IdentityValidationException extends DomainException {
 
   constructor(code: IdentityErrorCode, message: string) {
     super(message);
-    if (!VALIDATION_CODES.includes(code)) {
-      throw new Error(
-        `IdentityValidationException: code ${code} is not a registered validation code`,
-      );
-    }
     this.tukioCode = code;
   }
 }

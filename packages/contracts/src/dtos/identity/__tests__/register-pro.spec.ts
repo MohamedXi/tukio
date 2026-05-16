@@ -42,9 +42,14 @@ describe('RegisterProInputSchema', () => {
     expect(result.acceptMarketing).toBe(false);
   });
 
-  it('accepts an optional vatNumber (FR + 11 digits)', () => {
+  it('accepts an optional vatNumber with a numeric check key (FR12345678901)', () => {
     const result = RegisterProInputSchema.parse({ ...validInput, vatNumber: 'FR12345678901' });
     expect(result.vatNumber).toBe('FR12345678901');
+  });
+
+  it('accepts a vatNumber with an alphabetic check key (FRQU345678901)', () => {
+    const result = RegisterProInputSchema.parse({ ...validInput, vatNumber: 'FRQU345678901' });
+    expect(result.vatNumber).toBe('FRQU345678901');
   });
 
   it('normalises vatNumber to uppercase', () => {
@@ -52,7 +57,7 @@ describe('RegisterProInputSchema', () => {
     expect(result.vatNumber).toBe('FR12345678901');
   });
 
-  it('rejects a vatNumber that does not match the FR + 11-digit pattern', () => {
+  it('rejects a vatNumber that does not match the FR + check key + SIREN pattern', () => {
     const result = RegisterProInputSchema.safeParse({ ...validInput, vatNumber: 'DE1234567890' });
     expect(result.success).toBe(false);
     if (!result.success) {

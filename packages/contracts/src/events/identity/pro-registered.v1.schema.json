@@ -71,7 +71,10 @@
         "companyName": { "type": "string", "minLength": 1, "maxLength": 200 },
         "siret": { "type": "string", "pattern": "^\\d{14}$" },
         "vatNumber": {
-          "anyOf": [{ "type": "string", "pattern": "^FR\\d{11}$" }, { "type": "null" }]
+          "anyOf": [
+            { "type": "string", "pattern": "^FR[0-9A-HJ-NP-Z]{2}\\d{9}$" },
+            { "type": "null" }
+          ]
         },
         "address": {
           "type": "object",
@@ -90,11 +93,11 @@
         },
         "kycStatus": { "type": "string", "const": "pending_review" },
         "tukioStatus": { "type": "string", "const": "pending_admin_review" },
-        "inseeDenomination": { "type": ["string", "null"] },
-        "inseeDateCreation": {
+        "inseeLegalName": { "type": ["string", "null"] },
+        "inseeIncorporationDate": {
           "anyOf": [{ "type": "string", "format": "date" }, { "type": "null" }]
         },
-        "inseeCategorieJuridique": { "type": ["string", "null"] },
+        "inseeLegalCategory": { "type": ["string", "null"] },
         "acquisitionSource": {
           "type": "string",
           "enum": ["organic", "google_ads", "meta_ads", "referral", "direct", "partner", "unknown"]

@@ -1,5 +1,4 @@
 import type { Siret } from '../model/siret.value-object.js';
-import type { AddressProps } from '../model/address.value-object.js';
 
 /**
  * Domain-level error types thrown by `IInseeSiretValidator` implementations.
@@ -36,22 +35,21 @@ export class InseeUnreachableError extends Error {
 }
 
 /**
- * `etatAdministratifUniteLegale` from the INSEE SIRENE V3.11 schema. `'A'`
- * means active (declared and not ceased); `'C'` means ceased. Pro
- * registration accepts only `'A'`.
+ * Administrative status of a legal entity in the INSEE SIRENE register.
+ * Mapped from the raw French API value `etatAdministratifUniteLegale`:
+ *   `'A'` (actif) → `'active'`, `'C'` (cessé) → `'ceased'`.
+ * Pro registration only accepts `'active'`.
  */
-export type InseeEtatAdministratif = 'A' | 'C';
+export type InseeAdministrativeStatus = 'active' | 'ceased';
 
 export interface InseeSiretSnapshot {
-  etatAdministratif: InseeEtatAdministratif;
-  /** Legal company name returned by INSEE (`denominationUniteLegale`). */
-  denomination: string | null;
-  /** ISO date `YYYY-MM-DD` when the legal entity was created. */
-  dateCreation: string | null;
-  /** INSEE legal category code (e.g. `'5710'` = SAS). */
-  categorieJuridique: string | null;
-  /** Canonical address as returned by INSEE — used to seed the Pro profile. */
-  address: AddressProps;
+  administrativeStatus: InseeAdministrativeStatus;
+  /** Legal company name (`denominationUniteLegale`). Null if not available. */
+  legalName: string | null;
+  /** ISO date `YYYY-MM-DD` when the legal entity was incorporated (`dateCreationUniteLegale`). */
+  incorporationDate: string | null;
+  /** INSEE legal category code e.g. `'5710'` = SAS (`categorieJuridiqueUniteLegale`). */
+  legalCategory: string | null;
 }
 
 /**
@@ -60,6 +58,9 @@ export interface InseeSiretSnapshot {
  * Implementations are responsible for transport-level concerns (auth header,
  * timeout, retry on transient 5xx) and for translating wire errors to the
  * domain errors declared above.
+ *
+ * INSEE auth: `X-INSEE-Api-Key-Integration` header (apiKey, not OAuth2).
+ * Rate limit: 30 req/min on the integration endpoint.
  */
 export interface IInseeSiretValidator {
   validate(siret: Siret): Promise<InseeSiretSnapshot>;

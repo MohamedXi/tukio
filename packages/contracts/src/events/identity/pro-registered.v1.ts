@@ -23,9 +23,9 @@ export interface ProRegisteredV1Payload {
   kycStatus: 'pending_review';
   tukioStatus: 'pending_admin_review';
   /** INSEE SIRENE V3.11 snapshot at registration time (Story 1.3b). */
-  inseeDenomination: string | null;
-  inseeDateCreation: string | null;
-  inseeCategorieJuridique: string | null;
+  inseeLegalName: string | null;
+  inseeIncorporationDate: string | null;
+  inseeLegalCategory: string | null;
   acquisitionSource: AcquisitionSource;
   acquisitionMedium: string | null;
   acquisitionCampaign: string | null;

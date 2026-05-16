@@ -17,19 +17,26 @@ describe('VatNumber value object', () => {
     expect(v.asString).toBe('FR12345678901');
   });
 
+  it('accepts a VAT number with an alphabetic check key (e.g. FRQU345678901)', () => {
+    const v = VatNumber.create('FRQU345678901');
+    expect(v.asString).toBe('FRQU345678901');
+  });
+
   it('rejects a non-FR VAT number', () => {
     expect(() => VatNumber.create('DE12345678901')).toThrow(
       IdentityValidationException,
     );
   });
 
-  it('rejects a VAT number with the wrong digit count', () => {
+  it('rejects a VAT number with the wrong digit count in the SIREN part', () => {
+    // FR + 2-char key + 8 digits (too short)
     expect(() => VatNumber.create('FR1234567890')).toThrow(
       IdentityValidationException,
-    ); // 10 digits
+    );
+    // FR + 2-char key + 10 digits (too long)
     expect(() => VatNumber.create('FR123456789012')).toThrow(
       IdentityValidationException,
-    ); // 12 digits
+    );
   });
 
   it('rejects a non-string input', () => {

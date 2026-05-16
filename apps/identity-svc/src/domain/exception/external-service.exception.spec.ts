@@ -12,12 +12,12 @@ describe('ExternalServiceException', () => {
     expect(ex.title).toBe('External service unavailable');
   });
 
-  it('accepts EXTERNAL_INSEE_DOWN code', () => {
+  it('accepts EXTERNAL_INSEE_UNREACHABLE code', () => {
     expect(
       () =>
         new ExternalServiceException(
-          IdentityErrorCodes.EXTERNAL_INSEE_DOWN,
-          'INSEE down',
+          IdentityErrorCodes.EXTERNAL_INSEE_UNREACHABLE,
+          'INSEE unreachable',
         ),
     ).not.toThrow();
   });

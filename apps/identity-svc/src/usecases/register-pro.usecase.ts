@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Locale } from '@tukio/contracts/types/Locale';
+import type { AcquisitionSource } from '@tukio/contracts/types/Acquisition';
 import {
   IdentityErrorCodes,
   type IdentityErrorCode,
@@ -14,6 +15,7 @@ import { Address } from '../domain/model/address.value-object.js';
 import { PhoneNumber } from '../domain/model/phone-number.value-object.js';
 import { UserProfile } from '../domain/model/user-profile.aggregate.js';
 import { ProProfile } from '../domain/model/pro-profile.aggregate.js';
+import { KycStatus } from '../domain/model/kyc-status.enum.js';
 import { UserRole } from '../domain/model/user-role.enum.js';
 import { UserStatus } from '../domain/model/user-status.enum.js';
 import type { IUserProfileRepository } from '../domain/ports/user-profile.repository.port.js';
@@ -41,6 +43,9 @@ import { ExternalServiceException } from '../domain/exception/external-service.e
 
 const PG_UNIQUE_VIOLATION_CODE = '23505';
 const COMPENSATION_TIMEOUT_MS = 5_000;
+// Constraint names set in Story 1.2b (user_profiles.email) and Story 1.3b
+// (pro_profiles.siret) migrations. Used to disambiguate 23505 violations.
+const PG_EMAIL_UNIQUE_CONSTRAINT = 'uq_user_profiles_email';
 
 /**
  * One uploaded KYC document. The use case is agnostic to the multer / fastify
@@ -76,14 +81,7 @@ export interface RegisterProUseCaseInput {
   contactPhone: string;
   // Cross-cutting
   acquisition?: {
-    source?:
-      | 'organic'
-      | 'google_ads'
-      | 'meta_ads'
-      | 'referral'
-      | 'direct'
-      | 'partner'
-      | 'unknown';
+    source?: AcquisitionSource;
     medium?: string;
     campaign?: string;
     content?: string;
@@ -182,19 +180,19 @@ export class RegisterProUseCase {
       }
       if (err instanceof InseeRateLimitError) {
         throw this.external(
-          IdentityErrorCodes.EXTERNAL_INSEE_DOWN,
+          IdentityErrorCodes.EXTERNAL_INSEE_UNREACHABLE,
           `INSEE rate limit reached, retry after ${err.retryAfterMs} ms`,
         );
       }
       if (err instanceof InseeUnreachableError) {
         throw this.external(
-          IdentityErrorCodes.EXTERNAL_INSEE_DOWN,
+          IdentityErrorCodes.EXTERNAL_INSEE_UNREACHABLE,
           'INSEE service unreachable',
         );
       }
       throw err;
     }
-    if (inseeSnapshot.etatAdministratif !== 'A') {
+    if (inseeSnapshot.administrativeStatus !== 'active') {
       throw this.validation(
         IdentityErrorCodes.VALIDATION_SIRET_INACTIVE,
         'SIRET is not administratively active at INSEE',
@@ -248,32 +246,41 @@ export class RegisterProUseCase {
     //    Story 1.10 reconciliation job).
     const userProfileId = this.newUuid();
     const proProfileId = this.newUuid();
+    // Track keys as each upload completes so partial failures can be compensated.
     const uploadedKeys: UploadedKycKeys = {
       idCardR2Key: '',
       ribR2Key: '',
       kbisR2Key: null,
     };
     try {
-      const [idCardKey, ribKey, kbisKey] = await Promise.all([
+      await Promise.all([
         this.uploadKyc(
           userProfileId,
           'id-card',
           input.files.idCard,
           correlationId,
-        ),
-        this.uploadKyc(userProfileId, 'rib', input.files.rib, correlationId),
+        ).then((key) => {
+          uploadedKeys.idCardR2Key = key;
+        }),
+        this.uploadKyc(
+          userProfileId,
+          'rib',
+          input.files.rib,
+          correlationId,
+        ).then((key) => {
+          uploadedKeys.ribR2Key = key;
+        }),
         input.files.kbisOrInsee
           ? this.uploadKyc(
               userProfileId,
               'kbis-or-insee',
               input.files.kbisOrInsee,
               correlationId,
-            )
-          : Promise.resolve(null),
+            ).then((key) => {
+              uploadedKeys.kbisR2Key = key;
+            })
+          : Promise.resolve(),
       ]);
-      uploadedKeys.idCardR2Key = idCardKey;
-      uploadedKeys.ribR2Key = ribKey;
-      uploadedKeys.kbisR2Key = kbisKey;
     } catch (err) {
       // Compensate Keycloak before bubbling the R2 error to the caller; any
       // partial uploads that completed before the failure are deleted in
@@ -303,9 +310,9 @@ export class RegisterProUseCase {
         now,
       });
 
-      // Override the role / status fields after register() since the Customer
-      // factory hard-codes role=client / status=active. Until 1.2b ships a Pro
-      // factory directly on UserProfile, we patch via UserProfile.create.
+      // TODO(Story 1.2b): Add UserProfile.registerPro() factory to avoid this
+      // two-step pattern. Until then, register() produces role=CLIENT/status=ACTIVE
+      // and we override via create() to produce the correct PRO/PENDING_ADMIN_REVIEW state.
       const userProfilePro = UserProfile.create({
         ...userProfile,
         role: UserRole.PRO,
@@ -325,10 +332,11 @@ export class RegisterProUseCase {
           ribR2Key: uploadedKeys.ribR2Key,
           kbisR2Key: uploadedKeys.kbisR2Key,
         },
+        inseeAdministrativeStatus: inseeSnapshot.administrativeStatus,
         insee: {
-          denomination: inseeSnapshot.denomination,
-          dateCreation: inseeSnapshot.dateCreation,
-          categorieJuridique: inseeSnapshot.categorieJuridique,
+          legalName: inseeSnapshot.legalName,
+          incorporationDate: inseeSnapshot.incorporationDate,
+          legalCategory: inseeSnapshot.legalCategory,
         },
         now,
       });
@@ -364,6 +372,13 @@ export class RegisterProUseCase {
       if (isPgUniqueViolation(err)) {
         await this.compensateR2(uploadedKeys, correlationId);
         await this.compensateKeycloak(keycloakUserId, correlationId);
+        const constraint = (err as { constraint?: string }).constraint ?? '';
+        if (constraint === PG_EMAIL_UNIQUE_CONSTRAINT) {
+          throw this.conflict(
+            IdentityErrorCodes.CONFLICT_EMAIL_EXISTS,
+            'Email already registered (concurrent registration)',
+          );
+        }
         throw this.conflict(
           IdentityErrorCodes.CONFLICT_SIRET_EXISTS,
           'SIRET already registered to an active Pro account',
@@ -426,11 +441,12 @@ export class RegisterProUseCase {
     keycloakUserId: string,
     correlationId: string,
   ): Promise<void> {
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
     try {
       await Promise.race([
         this.keycloakAdmin.deleteUser(keycloakUserId),
-        new Promise<never>((_resolve, reject) =>
-          setTimeout(
+        new Promise<never>((_resolve, reject) => {
+          timeoutHandle = setTimeout(
             () =>
               reject(
                 new Error(
@@ -438,8 +454,8 @@ export class RegisterProUseCase {
                 ),
               ),
             COMPENSATION_TIMEOUT_MS,
-          ),
-        ),
+          );
+        }),
       ]);
     } catch (compensationErr) {
       const errMessage =
@@ -455,6 +471,8 @@ export class RegisterProUseCase {
           drift: 'R8',
         },
       );
+    } finally {
+      clearTimeout(timeoutHandle);
     }
   }
 
@@ -519,11 +537,11 @@ export class RegisterProUseCase {
           country: proProfile.address.country,
         },
         contactPhone: proProfile.contactPhone.asString,
-        kycStatus: 'pending_review',
-        tukioStatus: 'pending_admin_review',
-        inseeDenomination: proProfile.insee.denomination,
-        inseeDateCreation: proProfile.insee.dateCreation,
-        inseeCategorieJuridique: proProfile.insee.categorieJuridique,
+        kycStatus: KycStatus.PENDING_REVIEW,
+        tukioStatus: UserStatus.PENDING_ADMIN_REVIEW,
+        inseeLegalName: proProfile.insee.legalName,
+        inseeIncorporationDate: proProfile.insee.incorporationDate,
+        inseeLegalCategory: proProfile.insee.legalCategory,
         acquisitionSource: userProfile.acquisition.source,
         acquisitionMedium: userProfile.acquisition.medium ?? null,
         acquisitionCampaign: userProfile.acquisition.campaign ?? null,
@@ -590,13 +608,17 @@ const EXT_BY_MIME: Record<string, string> = {
   'application/pdf': '.pdf',
 };
 
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.pdf']);
+
 function inferExtension(filename: string, contentType: string): string {
   const fromMime = EXT_BY_MIME[contentType.toLowerCase()];
   if (fromMime) return fromMime;
-  // Fallback: take the existing extension from the upload name if any.
+  // Fallback: take the extension from the filename only if it's in the allowlist.
+  // Reject unknown extensions (e.g. .exe, .php) to prevent R2 namespace pollution.
   const idx = filename.lastIndexOf('.');
   if (idx >= 0 && idx < filename.length - 1) {
-    return filename.slice(idx).toLowerCase();
+    const ext = filename.slice(idx).toLowerCase();
+    if (ALLOWED_EXTENSIONS.has(ext)) return ext;
   }
   return '';
 }

@@ -26,10 +26,11 @@ const baseRegisterProps: RegisterProProps = {
     ribR2Key: 'pro/00000000-0000-4000-8000-000000000001/rib.pdf',
     kbisR2Key: 'pro/00000000-0000-4000-8000-000000000001/kbis.pdf',
   },
+  inseeAdministrativeStatus: 'active' as const,
   insee: {
-    denomination: 'LA POSTE',
-    dateCreation: '1991-01-01',
-    categorieJuridique: '5510',
+    legalName: 'LA POSTE',
+    incorporationDate: '1991-01-01',
+    legalCategory: '5510',
   },
   now: new Date('2026-05-16T10:00:00.000Z'),
 };
@@ -52,7 +53,7 @@ describe('ProProfile.register', () => {
     expect(p.contactPhone.equals(PHONE)).toBe(true);
     expect(p.vatNumber).toBeNull();
     expect(p.kyc.idCardR2Key).toBe(baseRegisterProps.kyc.idCardR2Key);
-    expect(p.insee.denomination).toBe('LA POSTE');
+    expect(p.insee.legalName).toBe('LA POSTE');
   });
 
   it('accepts an optional VAT number', () => {
@@ -100,6 +101,15 @@ describe('ProProfile.register', () => {
     });
     expect(p.companyName).toBe('Acme SAS');
   });
+
+  it('throws InvalidProProfileException when inseeAdministrativeStatus is not active (D1 invariant)', () => {
+    expect(() =>
+      ProProfile.register({
+        ...baseRegisterProps,
+        inseeAdministrativeStatus: 'ceased',
+      }),
+    ).toThrow(InvalidProProfileException);
+  });
 });
 
 describe('ProProfile.create (invariants)', () => {
@@ -118,9 +128,9 @@ describe('ProProfile.create (invariants)', () => {
       kbisR2Key: null,
     },
     insee: {
-      denomination: null,
-      dateCreation: null,
-      categorieJuridique: null,
+      legalName: null,
+      incorporationDate: null,
+      legalCategory: null,
     },
     createdAt: new Date('2026-05-16T10:00:00.000Z'),
     updatedAt: new Date('2026-05-16T10:00:00.000Z'),
