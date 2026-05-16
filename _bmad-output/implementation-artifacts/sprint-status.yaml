@@ -90,7 +90,7 @@ development_status:
   # Story 1.3 décomposée en 4 sous-stories atomiques (correct-course 2026-05-16)
   # cf. _bmad-output/planning-artifacts/sprint-change-proposal-2026-05-16.md
   1-3-pro-registration-pending-admin-review: done  # split umbrella — voir 1.3a-d ci-dessous
-  1-3a-contracts-pro-domain-usecase: ready-for-dev
+  1-3a-contracts-pro-domain-usecase: review
   1-3b-identity-svc-infrastructure-insee-r2-controller: ready-for-dev
   1-3c-gateway-api-pro-register-multipart-forwarder: ready-for-dev
   1-3d-frontend-wizard-seller-middleware-e2e-observability: ready-for-dev

@@ -6,6 +6,15 @@ export {
 } from './register-customer.dto.js';
 
 export {
+  ProAddressSchema,
+  type ProAddressDto,
+  RegisterProInputSchema,
+  type RegisterProInputDto,
+  RegisterProResponseSchema,
+  type RegisterProResponseDto,
+} from './register-pro.dto.js';
+
+export {
   AcquisitionSourceSchema,
   AcquisitionInputSchema,
   type AcquisitionInputDto,

@@ -7,6 +7,7 @@ import {
 const EXTERNAL_CODES: readonly IdentityErrorCode[] = [
   IdentityErrorCodes.EXTERNAL_KEYCLOAK_DOWN,
   IdentityErrorCodes.EXTERNAL_INSEE_DOWN,
+  IdentityErrorCodes.EXTERNAL_R2_UPLOAD_FAILED,
 ];
 
 export class ExternalServiceException extends DomainException {
