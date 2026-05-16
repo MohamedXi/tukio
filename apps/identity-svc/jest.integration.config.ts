@@ -38,11 +38,13 @@ const config: Config = {
     '^@tukio/contracts$': '<rootDir>/../../../packages/contracts/src/index.ts',
     '^@tukio/contracts/(.*)\\.js$': [
       '<rootDir>/../../../packages/contracts/src/$1.ts',
+      '<rootDir>/../../../packages/contracts/src/$1.dto.ts',
       '<rootDir>/../../../packages/contracts/src/$1.exception.ts',
       '<rootDir>/../../../packages/contracts/src/$1/index.ts',
     ],
     '^@tukio/contracts/(.*)$': [
       '<rootDir>/../../../packages/contracts/src/$1.ts',
+      '<rootDir>/../../../packages/contracts/src/$1.dto.ts',
       '<rootDir>/../../../packages/contracts/src/$1.exception.ts',
       '<rootDir>/../../../packages/contracts/src/$1/index.ts',
     ],

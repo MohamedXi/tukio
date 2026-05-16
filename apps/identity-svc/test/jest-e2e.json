@@ -27,8 +27,18 @@
     "^@tukio/contracts$": "<rootDir>/../../packages/contracts/src/index.ts",
     "^@tukio/contracts/exceptions/domain$": "<rootDir>/../../packages/contracts/src/exceptions/domain.exception.ts",
     "^@tukio/contracts/exceptions$": "<rootDir>/../../packages/contracts/src/exceptions/index.ts",
-    "^@tukio/contracts/(.*)\\.js$": "<rootDir>/../../packages/contracts/src/$1.ts",
-    "^@tukio/contracts/(.*)$": "<rootDir>/../../packages/contracts/src/$1.ts",
+    "^@tukio/contracts/(.*)\\.js$": [
+      "<rootDir>/../../packages/contracts/src/$1.ts",
+      "<rootDir>/../../packages/contracts/src/$1.dto.ts",
+      "<rootDir>/../../packages/contracts/src/$1.exception.ts",
+      "<rootDir>/../../packages/contracts/src/$1/index.ts"
+    ],
+    "^@tukio/contracts/(.*)$": [
+      "<rootDir>/../../packages/contracts/src/$1.ts",
+      "<rootDir>/../../packages/contracts/src/$1.dto.ts",
+      "<rootDir>/../../packages/contracts/src/$1.exception.ts",
+      "<rootDir>/../../packages/contracts/src/$1/index.ts"
+    ],
     "^@tukio/auth$": "<rootDir>/../../packages/auth/src/index.ts",
     "^@tukio/auth/module$": "<rootDir>/../../packages/auth/src/tukio-auth.module.ts",
     "^@tukio/auth/guards$": "<rootDir>/../../packages/auth/src/guards/keycloak-jwt.guard.ts",
