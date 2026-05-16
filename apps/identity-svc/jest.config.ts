@@ -32,7 +32,7 @@ const config: Config = {
     ],
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!.*?(jose|@keycloak|url-template|camelize-ts|@microsoft/kiota)/)',
+    '/node_modules/(?!.*?(jose|@keycloak|url-template|camelize-ts|@microsoft)/)',
   ],
   moduleNameMapper: {
     // Strip `.js` extension from relative imports (NodeNext ESM → ts-jest CJS).
