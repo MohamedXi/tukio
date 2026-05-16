@@ -1,6 +1,18 @@
 # Story 1.3: Pro registration with `pending_admin_review` status (`POST /v1/auth/pro/register`)
 
-Status: ready-for-dev
+Status: superseded-split-2026-05-16
+
+> ⚠️ **Cette story a été décomposée en 4 sub-stories le 2026-05-16** via `/bmad-correct-course`.
+> Voir `_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-16.md`.
+> Implémentation dans :
+> - `1-3a-contracts-pro-domain-usecase` (DTOs + Luhn util + ProProfile domain + use case unit)
+> - `1-3b-identity-svc-infrastructure-insee-r2-controller` (INSEE apiKey + R2 S3 + TypeORM + migration + controller internal)
+> - `1-3c-gateway-api-pro-register-multipart-forwarder` (endpoint public + multer + throttle + forwarder)
+> - `1-3d-frontend-wizard-seller-middleware-e2e-observability` (wizard 3 steps + seller middleware + Playwright + Grafana + runbooks)
+>
+> Ce fichier reste source-of-truth des ACs/Dev Notes complets — les sub-stories y pointent pour les détails.
+>
+> **⚠️ Deviation INSEE auth (flag critique 1.3b)** : la spec ligne 768 mentionne `OAuth2 client_credentials + cache token + parse V3.11 response`. **Faux après test live 2026-05-16** sur `GET https://api.insee.fr/api-sirene/3.11/siret/35600000000048` : l'API utilise un apiKey simple via header `X-INSEE-Api-Key-Integration: <key>`. Sub-story 1.3b dévie sur ce point — pas de `InseeTokenCacheService`, pas d'OAuth2 endpoint, pas de refresh logic.
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

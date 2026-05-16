@@ -1116,6 +1116,8 @@ Epic 0 (Sprint 0 Foundation)
 
 #### Story 1.3: Pro registration with `pending_admin_review` status (`POST /v1/auth/pro/register`)
 
+> 🧩 **Décomposée en 4 sous-stories le 2026-05-16** via `/bmad-correct-course` (sprint-change-proposal-2026-05-16.md) : `1-3a-contracts-pro-domain-usecase` + `1-3b-identity-svc-infrastructure-insee-r2-controller` (deviation INSEE auth: apiKey direct au lieu d'OAuth2) + `1-3c-gateway-api-pro-register-multipart-forwarder` + `1-3d-frontend-wizard-seller-middleware-e2e-observability`. Pattern identique à Story 1.2 splittée 2026-05-15. Les ACs ci-dessous restent valides — la décomposition affecte uniquement la granularité d'exécution.
+
 **As a** Visitor (futur Pro),
 **I want** to register as a Pro by submitting my company info (SIRET, raison sociale) + RIB + ID card, with my account flagged `pending_admin_review`,
 **So that** I can start the verification process and not bypass admin gating.
