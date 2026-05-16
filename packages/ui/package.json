@@ -37,6 +37,7 @@
     "./spinner": "./src/components/Spinner/index.ts",
     "./stars": "./src/components/Stars/index.ts",
     "./toast": "./src/components/Toast/index.ts",
+    "./typography": "./src/components/Typography/index.ts",
     "./utils/cn": "./src/utils/cn.ts",
     "./availability-calendar": "./src/patterns/AvailabilityCalendar/index.ts",
     "./conversation-thread": "./src/patterns/ConversationThread/index.ts",

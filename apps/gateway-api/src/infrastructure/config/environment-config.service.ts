@@ -33,6 +33,13 @@ export class EnvironmentConfigService implements IConfigService {
     return this.get('PORT');
   }
 
+  getCorsOrigins(): string[] {
+    return this.get('CORS_ORIGINS')
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean);
+  }
+
   getLogLevel(): 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' {
     return this.get('LOG_LEVEL');
   }

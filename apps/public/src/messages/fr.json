@@ -5,11 +5,17 @@
   },
   "auth": {
     "signup": {
-      "title": "Créer un compte",
-      "subtitle": "Rejoignez Tukio pour réserver vos services d'événement",
+      "kicker": "Créer un compte · client",
+      "title": "Trouvez les bons pros pour votre événement",
+      "subtitle": "30 secondes, pas de carte bancaire. Vous payez uniquement quand vous réservez.",
+      "social": {
+        "google": "Continuer avec Google",
+        "apple": "Continuer avec Apple"
+      },
+      "separator": "ou par email",
       "fields": {
         "email": {
-          "label": "Adresse email",
+          "label": "Email",
           "placeholder": "vous@exemple.fr"
         },
         "password": {
@@ -22,11 +28,11 @@
           "placeholder": "Camille"
         },
         "lastName": {
-          "label": "Nom de famille",
-          "placeholder": "Renard"
+          "label": "Nom",
+          "placeholder": "Renaud"
         },
         "acceptTerms": {
-          "label": "J'accepte les conditions d'utilisation et la politique de confidentialité"
+          "label": "J'accepte les <terms>CGU</terms> et la <privacy>politique de confidentialité</privacy>"
         },
         "acceptMarketing": {
           "label": "Je souhaite recevoir les offres et actualités Tukio"
@@ -55,13 +61,57 @@
       "cta": "Créer mon compte",
       "loading": "Création en cours…",
       "loginLink": "Déjà un compte ?",
-      "loginLinkLabel": "Se connecter"
+      "loginLinkLabel": "Se connecter",
+      "proLink": "Vous êtes professionnel ?",
+      "proLinkLabel": "Devenir pro sur tukio",
+      "footer": {
+        "terms": "CGU",
+        "privacy": "Politique de confidentialité",
+        "copyright": "© tukio.one · 2026"
+      },
+      "editorial": {
+        "kicker": "Pays de la Loire · pilote 2026",
+        "quote": "« Notre première location s'est faite trois jours après l'inscription. Le client était à 12 km. »",
+        "author": {
+          "name": "Léa Martineau",
+          "role": "Atelier Tente Loire — pro depuis mars 2026"
+        }
+      }
     },
     "verifyEmailRequired": {
-      "title": "Vérifiez votre email",
-      "description": "Un email de confirmation vous a été envoyé. Cliquez sur le lien pour activer votre compte.",
-      "ctaResend": "Renvoyer l'email de vérification",
-      "support": "Besoin d'aide ? Contactez le support."
+      "kicker": "Vérification email · étape finale",
+      "title": "Vérifiez votre boîte mail.",
+      "subtitleWithEmail": "Nous avons envoyé un lien à {email}. Cliquez dessus pour activer votre compte.",
+      "subtitleWithoutEmail": "Nous avons envoyé un lien à votre adresse. Cliquez dessus pour activer votre compte.",
+      "confirmationCard": {
+        "titleWithEmail": "Email envoyé à {email}",
+        "titleWithoutEmail": "Email envoyé",
+        "subtitle": "Le lien expire dans 24 h. Pensez à vérifier vos spams."
+      },
+      "resend": {
+        "label": "Renvoyer l'email",
+        "countdown": "(disponible dans {seconds} s)",
+        "available": "Renvoyer l'email",
+        "deferredNote": "Disponible avec Story 1.6"
+      },
+      "help": {
+        "title": "Pas reçu ?",
+        "body": "Le délai est en général de 30 s. Si rien après 5 min, contactez <support>support@tukio.one</support> ou <change>changez d'email</change>."
+      },
+      "backToLogin": "← Retour à la connexion",
+      "footer": {
+        "terms": "CGU",
+        "privacy": "Politique de confidentialité",
+        "copyright": "© tukio.one · 2026"
+      },
+      "editorial": {
+        "kicker": "Pays de la Loire · pilote 2026",
+        "quote": "« On a reçu notre première demande dans la semaine, ça a tout déclenché. »",
+        "author": {
+          "name": "Marc Dubois",
+          "role": "Loire Réceptions — pro depuis février 2026"
+        }
+      }
     }
   }
 }

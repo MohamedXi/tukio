@@ -42,6 +42,17 @@ export const EnvSchema = z
     TUKIO_INTERNAL_SERVICE_SECRET: z.string().min(32),
     // Public apex (used by downstream services to build email-verify links).
     PUBLIC_BASE_URL: z.string().url().min(1).default('http://localhost:3000'),
+    // CORS allowlist — comma-separated origins. Frontend apps (public/seller/admin)
+    // make `withCredentials` XHRs to gateway-api, so the browser requires an
+    // explicit `Access-Control-Allow-Origin` echo (no wildcard with creds).
+    // In dev defaults to the 3 local Next.js dev ports. In prod must list the
+    // exact public origins (tukio.one + subdomains).
+    CORS_ORIGINS: z
+      .string()
+      .min(1)
+      .default(
+        'http://localhost:3000,http://localhost:3002,http://localhost:3003',
+      ),
   })
   .passthrough();
 

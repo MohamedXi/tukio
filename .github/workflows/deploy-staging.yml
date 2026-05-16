@@ -108,6 +108,12 @@ jobs:
             export DB_USER=\$(cat /home/tukio/tukio/secrets/pg_user)
             export DB_PASSWORD=\$(cat /home/tukio/tukio/secrets/pg_password)
             export MEILI_MASTER_KEY=\$(cat /home/tukio/tukio/secrets/meili_key)
+            # Story 1.2 — shared HMAC secret (gateway-api ↔ identity-svc) +
+            # Keycloak Admin client_credentials secret consumed by
+            # KeycloakAdminService. Both required at boot under NODE_ENV=production.
+            export TUKIO_INTERNAL_SERVICE_SECRET=\$(cat /home/tukio/tukio/secrets/internal_service_secret)
+            export KEYCLOAK_CLIENT_SECRET_TUKIO_API=\$(cat /home/tukio/tukio/secrets/keycloak_client_secret_tukio_api)
+            export PUBLIC_BASE_URL=\$(cat /home/tukio/tukio/secrets/public_base_url 2>/dev/null || echo "https://tukio.one")
             export IMAGE_TAG="${IMAGE_TAG}"
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
@@ -150,6 +156,9 @@ jobs:
             export DB_USER=\$(cat /home/tukio/tukio/secrets/pg_user)
             export DB_PASSWORD=\$(cat /home/tukio/tukio/secrets/pg_password)
             export MEILI_MASTER_KEY=\$(cat /home/tukio/tukio/secrets/meili_key)
+            export TUKIO_INTERNAL_SERVICE_SECRET=\$(cat /home/tukio/tukio/secrets/internal_service_secret)
+            export KEYCLOAK_CLIENT_SECRET_TUKIO_API=\$(cat /home/tukio/tukio/secrets/keycloak_client_secret_tukio_api)
+            export PUBLIC_BASE_URL=\$(cat /home/tukio/tukio/secrets/public_base_url 2>/dev/null || echo "https://tukio.one")
             export IMAGE_TAG="${PREV_TAG}"
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
