@@ -1,5 +1,16 @@
 # Deferred Work
 
+## Deferred from: code review of 1-3a-contracts-pro-domain-usecase (2026-05-16)
+
+- **W1** — `ProTransactionContext` port design n'enforce pas le QueryRunner partagé — Story 1.3b implémentation doit garantir que `userProfileRepo` et `proProfileRepo` utilisent le même `QueryRunner` (documentation-only dans le port). Si mal implémenté → writes non atomiques sans erreur visible.
+- **W2** — `InseeSiretSnapshot.address` (adresse INSEE authoritative) ignorée, adresse user-supplied utilisée à la place — un pro peut enregistrer un SIRET d'une vraie entreprise avec une adresse différente. À comparer dans le KYC admin (Stories 2.3-2.4).
+- **W3** — `etatAdministratif !== 'A'` magic string — définir `InseeEtatAdministratif.ACTIF = 'A'` / `CESSE = 'C'` dans le port pour éviter la dérive si INSEE ajoute un nouveau code. Story 1.3b.
+- **W4** — Fixtures SIRET : seul `35600000000048` (La Poste) vérifié live contre INSEE. Les 5 autres sont des composites Luhn calculés algorithmiquement. Acceptable (Luhn est la règle locale, existence = 1.3b), mais le spec AC1 demandait "5+ SIRETs réels". Documentation quality.
+- **W5** — `retryAfter` / `retryAfterMs` non propagé comme champ typé dans `ExternalServiceException` — actuellement embedé dans le message string seulement. L'implémentation HTTP en 1.3b (gateway-api forwarder) doit lire le header `Retry-After` et le retransmettre côté client.
+- **W6** — UUID queue fragilité dans les tests — `register-pro.usecase.spec.ts` utilise un tableau `queue.shift()` qui peut s'épuiser dans des tests double-`execute()`. Test fragility, non bloquant prod.
+- **W7** — `PhoneNumber` regex accepte `08xx` (numéros surtaxés) — `/^(?:\+33|0)[1-9]\d{8}$/` matches `080...`/`089...`. Acceptable MVP (nombres légaux), mais `08xx` inadaptés à la réception de SMS. À restreindre à `[1-79]` si contact SMS planifié en V1.
+- **W8** — `input.acceptTerms` non lu dans le use case — `UserProfile.register()` hard-code `acceptTerms: true`. Le literal type `acceptTerms: true` enforced par TS suffit. Si le type est relâché à `boolean` dans un refactor, la vérification deviendra silencieuse.
+
 ## Deferred from: code review of 1-2c-gateway-api-pretre-forwarder (2026-05-16)
 
 - **D1** — Redis non validé au démarrage [`app.module.ts:62`] — `new Redis(url)` sans onModuleInit probe ; démarrage silencieux si Redis down. À corriger en V1.

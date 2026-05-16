@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tukio.one/schemas/identity/pro-registered.v1.json",
+  "title": "ProRegisteredV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "correlationId",
+    "causationId",
+    "actor",
+    "aggregate",
+    "payload"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "type": "string", "const": "identity.pro.registered.v1" },
+    "eventVersion": { "type": "string", "const": "v1" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": {
+      "anyOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }]
+    },
+    "actor": {
+      "type": "object",
+      "required": ["userId", "role", "locale"],
+      "additionalProperties": false,
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string", "const": "pro" },
+        "locale": { "type": "string", "enum": ["fr", "en"] }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "const": "pro-profile" },
+        "id": { "type": "string", "format": "uuid" }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "userProfileId",
+        "proProfileId",
+        "email",
+        "firstName",
+        "lastName",
+        "companyName",
+        "siret",
+        "address",
+        "contactPhone",
+        "kycStatus",
+        "tukioStatus",
+        "acquisitionSource",
+        "marketingOptIn",
+        "registeredAt"
+      ],
+      "properties": {
+        "userProfileId": { "type": "string", "format": "uuid" },
+        "proProfileId": { "type": "string", "format": "uuid" },
+        "email": { "type": "string", "format": "email" },
+        "firstName": { "type": "string", "minLength": 1 },
+        "lastName": { "type": "string", "minLength": 1 },
+        "companyName": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "siret": { "type": "string", "pattern": "^\\d{14}$" },
+        "vatNumber": {
+          "anyOf": [
+            { "type": "string", "pattern": "^FR[0-9A-HJ-NP-Z]{2}\\d{9}$" },
+            { "type": "null" }
+          ]
+        },
+        "address": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["street", "postalCode", "city", "country"],
+          "properties": {
+            "street": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "postalCode": { "type": "string", "pattern": "^\\d{5}$" },
+            "city": { "type": "string", "minLength": 1, "maxLength": 100 },
+            "country": { "type": "string", "const": "FR" }
+          }
+        },
+        "contactPhone": {
+          "type": "string",
+          "pattern": "^\\+33[1-9]\\d{8}$"
+        },
+        "kycStatus": { "type": "string", "const": "pending_review" },
+        "tukioStatus": { "type": "string", "const": "pending_admin_review" },
+        "inseeLegalName": { "type": ["string", "null"] },
+        "inseeIncorporationDate": {
+          "anyOf": [{ "type": "string", "format": "date" }, { "type": "null" }]
+        },
+        "inseeLegalCategory": { "type": ["string", "null"] },
+        "acquisitionSource": {
+          "type": "string",
+          "enum": ["organic", "google_ads", "meta_ads", "referral", "direct", "partner", "unknown"]
+        },
+        "acquisitionMedium": { "type": ["string", "null"] },
+        "acquisitionCampaign": { "type": ["string", "null"] },
+        "acquisitionContent": { "type": ["string", "null"] },
+        "acquisitionTerm": { "type": ["string", "null"] },
+        "acquisitionReferralId": {
+          "anyOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }]
+        },
+        "marketingOptIn": { "type": "boolean" },
+        "registeredAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

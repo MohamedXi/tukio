@@ -22,6 +22,7 @@ import { LISTING_PUBLISHED_V1_TYPE } from '../events/catalog/listing-published.v
 import { PAYMENT_INTENT_CAPTURED_V1_TYPE } from '../events/payment/payment-intent-captured.v1.js';
 import { ADMIN_ACTION_PRO_VERIFIED_V1_TYPE } from '../events/admin/admin-action-pro-verified.v1.js';
 import { USER_REGISTERED_V1_TYPE } from '../events/identity/user-registered.v1.js';
+import { PRO_REGISTERED_V1_TYPE } from '../events/identity/pro-registered.v1.js';
 import { EMAIL_SEND_V1_TYPE, EMAIL_TEMPLATE_IDS } from '../events/notification/email-send.v1.js';
 
 import { DomainException } from '../exceptions/domain.exception.js';
@@ -53,6 +54,10 @@ describe('event _TYPE constants', () => {
     expect(USER_REGISTERED_V1_TYPE).toBe('identity.user.registered.v1');
   });
 
+  it('PRO_REGISTERED_V1_TYPE matches the canonical event name', () => {
+    expect(PRO_REGISTERED_V1_TYPE).toBe('identity.pro.registered.v1');
+  });
+
   it('EMAIL_SEND_V1_TYPE matches the canonical event name', () => {
     expect(EMAIL_SEND_V1_TYPE).toBe('notification.email.send.v1');
   });
@@ -61,7 +66,8 @@ describe('event _TYPE constants', () => {
     expect(EMAIL_TEMPLATE_IDS).toContain('email-verify');
     expect(EMAIL_TEMPLATE_IDS).toContain('password-reset');
     expect(EMAIL_TEMPLATE_IDS).toContain('booking-confirmed');
-    expect(EMAIL_TEMPLATE_IDS.length).toBeGreaterThanOrEqual(9);
+    expect(EMAIL_TEMPLATE_IDS).toContain('pro-pending-admin-review');
+    expect(EMAIL_TEMPLATE_IDS.length).toBeGreaterThanOrEqual(10);
   });
 
   it('all event types follow the <domain>.<entity>.<verb>.v<n> convention', () => {
@@ -72,6 +78,7 @@ describe('event _TYPE constants', () => {
       PAYMENT_INTENT_CAPTURED_V1_TYPE,
       ADMIN_ACTION_PRO_VERIFIED_V1_TYPE,
       USER_REGISTERED_V1_TYPE,
+      PRO_REGISTERED_V1_TYPE,
       EMAIL_SEND_V1_TYPE,
     ];
     const NATS_NAMING = /^[a-z]+(?:\.[a-z][a-z0-9-]*)+\.v\d+$/;

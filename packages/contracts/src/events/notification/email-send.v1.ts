@@ -9,6 +9,7 @@ export const EMAIL_TEMPLATE_IDS = [
   'booking-refused',
   'booking-cancelled',
   'review-request',
+  'pro-pending-admin-review',
   'pro-verified',
   'pro-rejected',
 ] as const;
