@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tukio.one/schemas/notification/email-send.v1.json",
+  "title": "EmailSendV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "correlationId",
+    "causationId",
+    "actor",
+    "aggregate",
+    "payload"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "type": "string", "const": "notification.email.send.v1" },
+    "eventVersion": { "type": "string", "const": "v1" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": {
+      "anyOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }]
+    },
+    "actor": {
+      "type": "object",
+      "required": ["userId", "role", "locale"],
+      "additionalProperties": false,
+      "properties": {
+        "userId": { "type": "string" },
+        "role": {
+          "type": "string",
+          "enum": [
+            "client",
+            "pro",
+            "admin-support",
+            "admin-modo",
+            "admin-super",
+            "system",
+            "anonymous"
+          ]
+        },
+        "locale": { "type": "string", "enum": ["fr", "en"] }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["user-profile", "booking", "order", "payment-intent", "listing", "review"]
+        },
+        "id": { "type": "string", "format": "uuid" }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["templateId", "locale", "to", "params"],
+      "properties": {
+        "templateId": {
+          "type": "string",
+          "enum": [
+            "email-verify",
+            "password-reset",
+            "booking-confirmed",
+            "booking-accepted",
+            "booking-refused",
+            "booking-cancelled",
+            "review-request",
+            "pro-verified",
+            "pro-rejected"
+          ]
+        },
+        "locale": { "type": "string", "enum": ["fr", "en"] },
+        "to": {
+          "type": "object",
+          "required": ["email"],
+          "additionalProperties": false,
+          "properties": {
+            "email": { "type": "string", "format": "email" },
+            "userId": {
+              "anyOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }]
+            },
+            "name": { "type": "string" }
+          }
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

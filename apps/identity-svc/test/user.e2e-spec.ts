@@ -46,7 +46,9 @@ describe('User E2E', () => {
         Promise.resolve(id === FOUND_ID ? sampleProfile : null),
       ),
       findByKeycloakUserId: jest.fn(),
+      findByEmail: jest.fn(),
       save: jest.fn(),
+      runInTransaction: jest.fn(),
     };
     app = await buildTestApp({ userProfileRepo: repo });
   });

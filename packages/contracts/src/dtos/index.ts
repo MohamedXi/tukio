@@ -1,6 +1,16 @@
 export { RegisterCustomerSchema, type RegisterCustomerDto } from './auth.js';
 
 export {
+  RegisterCustomerInputSchema,
+  type RegisterCustomerInputDto,
+  RegisterCustomerResponseSchema,
+  type RegisterCustomerResponseDto,
+  AcquisitionSourceSchema,
+  AcquisitionInputSchema,
+  type AcquisitionInputDto,
+} from './identity/index.js';
+
+export {
   CreateBookingSchema,
   type CreateBookingDto,
   BookingResponseSchema,

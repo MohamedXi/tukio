@@ -6,6 +6,10 @@ const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: 'src',
   testRegex: '.*\\.spec\\.ts$',
+  // Integration specs (testcontainers Keycloak/Postgres) live alongside unit
+  // specs under `src/` but require `pnpm docker:up:wait`. They're excluded
+  // from the default unit run and have their own `test:integration` script.
+  testPathIgnorePatterns: ['/node_modules/', '\\.integration\\.spec\\.ts$'],
   transform: {
     '^.+\\.(t|j)s$': [
       'ts-jest',

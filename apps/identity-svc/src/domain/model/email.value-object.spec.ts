@@ -35,4 +35,15 @@ describe('Email (value object)', () => {
     const huge = `${'a'.repeat(250)}@bar.io`;
     expect(() => Email.create(huge)).toThrow(InvalidEmailException);
   });
+
+  // Story 1.2b review patch B11 — case-sensitivity contract assertion.
+  // The `findByEmail` repository normalizes (`trim().toLowerCase()`) and the
+  // DB has a unique index on `lower(email)`. This test pins the Email VO
+  // behavior so a future "preserve case for display" change can't silently
+  // break the persistence-layer lookup invariant.
+  it('asString returns the lowercased normalized value (matches DB lower(email) index)', () => {
+    const email = Email.create('Alice@Example.COM');
+    expect(email.asString).toBe('alice@example.com');
+    expect(email.toString()).toBe('alice@example.com');
+  });
 });

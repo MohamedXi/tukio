@@ -88,6 +88,8 @@ export class KeycloakClient {
       email: t['email'] as string | undefined,
       firstName: t['given_name'] as string | undefined,
       lastName: t['family_name'] as string | undefined,
+      // AC6 Story 1.2d — exposed for FR17 (block transactional paths for unverified users).
+      emailVerified: (t['email_verified'] as boolean | undefined) ?? false,
     };
   }
 

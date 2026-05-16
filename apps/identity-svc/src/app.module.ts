@@ -8,6 +8,8 @@ import { LoggerModule } from './infrastructure/logger/logger.module.js';
 import { HttpModule } from './infrastructure/http/http.module.js';
 import { UseCasesProxyModule } from './infrastructure/usecases-proxy/usecases-proxy.module.js';
 import { UserProfileEntity } from './infrastructure/persistence/typeorm/entities/user-profile.entity.js';
+import { EmailVerificationTokenEntity } from './infrastructure/persistence/typeorm/entities/email-verification-token.entity.js';
+import { OutboxEntity } from '@tukio/messaging/outbox/entity';
 import { TukioAuthModule } from '@tukio/auth/module';
 import { KeycloakJwtGuard } from '@tukio/auth/guards';
 import { EnvironmentConfigService } from './infrastructure/config/environment-config.service.js';
@@ -46,7 +48,18 @@ import { EnvironmentConfigService } from './infrastructure/config/environment-co
           username: db.username,
           password: db.password,
           database: db.database,
-          entities: [UserProfileEntity],
+          // CRITICAL : explicit entity list — `forFeature` does NOT add entities
+          // to the DataSource metadata in @nestjs/typeorm v11 without
+          // `autoLoadEntities: true`. Missing `EmailVerificationTokenEntity`
+          // here caused a runtime `EntityMetadataNotFoundError` on first token
+          // insert (review patch 1.2b CRITICAL). OutboxEntity included as
+          // defense-in-depth so OutboxPublisher's `manager.getRepository(OutboxEntity)`
+          // never falls back to the parent DataSource alone.
+          entities: [
+            UserProfileEntity,
+            EmailVerificationTokenEntity,
+            OutboxEntity,
+          ],
           synchronize: false,
           migrationsRun: false,
           logging: db.verbose

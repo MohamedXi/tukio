@@ -1,6 +1,8 @@
 # Story 1.2: Customer B2C registration (`POST /v1/auth/customer/register`)
 
-Status: ready-for-dev
+Status: superseded-split-2026-05-15
+
+> ⚠️ **Story décomposée 2026-05-15 via `/bmad-correct-course`** : ce fichier reste document source-of-truth des ACs/Dev Notes complets. L'**implémentation** est répartie sur les 4 sous-stories `1-2a-contracts-identity-domain-usecase` → `1-2b-identity-svc-infrastructure-controller` → `1-2c-gateway-api-pretre-forwarder` → `1-2d-frontend-signup-middleware-e2e-observability` (séquentielles, dépendances chaînées). Voir Sprint Change Proposal : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-15.md`. Le sprint-status.yaml marque 1.2 = `done` (umbrella) ; les 4 sub-stories portent les status réels.
 
 > ⚠️ **ADR-016 / Story 0.14 (2026-05-15) — frontend topology pivot**
 > `apps/customer` a été mergé dans `apps/public`. Toute référence ci-dessous à

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type {
   DatabaseConfig,
   IConfigService,
+  KeycloakAdminConfig,
   KeycloakConfig,
   NatsConfig,
 } from '../../domain/ports/config.port.js';
@@ -54,6 +55,23 @@ export class EnvironmentConfigService implements IConfigService {
       clientId: this.get('KEYCLOAK_CLIENT_ID'),
       audience: this.get('KEYCLOAK_AUDIENCE'),
     };
+  }
+
+  getKeycloakAdminConfig(): KeycloakAdminConfig {
+    return {
+      url: this.get('KEYCLOAK_URL'),
+      realm: this.get('KEYCLOAK_REALM'),
+      clientId: this.get('KEYCLOAK_CLIENT_ID'),
+      clientSecret: this.get('KEYCLOAK_CLIENT_SECRET_TUKIO_API'),
+    };
+  }
+
+  getInternalServiceSecret(): string {
+    return this.get('TUKIO_INTERNAL_SERVICE_SECRET');
+  }
+
+  getPublicBaseUrl(): string {
+    return this.get('PUBLIC_BASE_URL');
   }
 
   getNatsConfig(): NatsConfig {

@@ -28,7 +28,9 @@ describe('GetUserProfileByIdUseCase', () => {
     repo = {
       findById: jest.fn(),
       findByKeycloakUserId: jest.fn(),
+      findByEmail: jest.fn(),
       save: jest.fn(),
+      runInTransaction: jest.fn(),
     };
     useCase = new GetUserProfileByIdUseCase(repo);
   });

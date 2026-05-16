@@ -1,8 +1,18 @@
 import { type DynamicModule, Module } from '@nestjs/common';
+import type { IConfigService } from '../../domain/ports/config.port.js';
+import type { IKeycloakAdmin } from '../../domain/ports/keycloak-admin.port.js';
+import type { ILogger } from '../../domain/ports/logger.port.js';
 import type { IUserProfileRepository } from '../../domain/ports/user-profile.repository.port.js';
-import { USER_PROFILE_REPOSITORY } from '../../domain/ports/tokens.js';
+import {
+  CONFIG_SERVICE,
+  KEYCLOAK_ADMIN,
+  LOGGER,
+  USER_PROFILE_REPOSITORY,
+} from '../../domain/ports/tokens.js';
 import { GetUserProfileByIdUseCase } from '../../usecases/get-user-profile.usecase.js';
+import { RegisterCustomerUseCase } from '../../usecases/register-customer.usecase.js';
 import { ConfigurationModule } from '../config/config.module.js';
+import { KeycloakAdminModule } from '../external/keycloak/keycloak-admin.module.js';
 import { KeycloakModule } from '../external/keycloak/keycloak.module.js';
 import { LoggerModule } from '../logger/logger.module.js';
 import { NatsPublisherModule } from '../messaging/nats/nats-publisher.module.js';
@@ -16,6 +26,7 @@ import { UseCaseProxy } from './usecases-proxy.js';
 @Module({})
 export class UseCasesProxyModule {
   static GET_USER_PROFILE_USECASES_PROXY = 'GET_USER_PROFILE_USECASES_PROXY';
+  static REGISTER_CUSTOMER_USECASES_PROXY = 'REGISTER_CUSTOMER_USECASES_PROXY';
 
   static register(): DynamicModule {
     return {
@@ -27,6 +38,7 @@ export class UseCasesProxyModule {
         TypeormRepositoriesModule,
         NatsPublisherModule,
         KeycloakModule,
+        KeycloakAdminModule,
       ],
       providers: [
         {
@@ -35,8 +47,34 @@ export class UseCasesProxyModule {
           useFactory: (userProfileRepo: IUserProfileRepository) =>
             new UseCaseProxy(new GetUserProfileByIdUseCase(userProfileRepo)),
         },
+        {
+          inject: [
+            USER_PROFILE_REPOSITORY,
+            KEYCLOAK_ADMIN,
+            LOGGER,
+            CONFIG_SERVICE,
+          ],
+          provide: UseCasesProxyModule.REGISTER_CUSTOMER_USECASES_PROXY,
+          useFactory: (
+            userProfileRepo: IUserProfileRepository,
+            keycloakAdmin: IKeycloakAdmin,
+            logger: ILogger,
+            config: IConfigService,
+          ) =>
+            new UseCaseProxy(
+              new RegisterCustomerUseCase(
+                userProfileRepo,
+                keycloakAdmin,
+                logger,
+                config.getPublicBaseUrl(),
+              ),
+            ),
+        },
       ],
-      exports: [UseCasesProxyModule.GET_USER_PROFILE_USECASES_PROXY],
+      exports: [
+        UseCasesProxyModule.GET_USER_PROFILE_USECASES_PROXY,
+        UseCasesProxyModule.REGISTER_CUSTOMER_USECASES_PROXY,
+      ],
     };
   }
 }

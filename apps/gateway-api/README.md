@@ -1,98 +1,112 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# gateway-api — Public BFF for the Tukio marketplace
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+`gateway-api` is the **public REST gateway** for tukio.one. It sits in front of
+the internal microservices (identity-svc, catalog-svc, booking-svc, …) and is
+the only service exposed to the public internet.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Pattern Pretre — BFF flavour
 
-## Description
+This service follows Pattern Pretre (Clean Architecture — `.agents/context/pretre-pattern.md`)
+with one twist : as a Backend-for-Frontend, gateway-api **does not own
+aggregates or persistence**. Its domain layer describes the contracts of the
+downstream services it forwards to.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ pnpm install
+```
+src/
+├─ main.ts                                  Fastify + interceptor + filter + cookies + correlation
+├─ app.module.ts                            DI root — TukioAuthModule + ThrottlerModule + HttpModule
+├─ domain/
+│  ├─ exception/                            DomainException sub-classes (envelope filter targets)
+│  └─ ports/
+│     ├─ tokens.ts                          DI Symbol tokens (LOGGER, IDENTITY_SVC_CLIENT…)
+│     ├─ config.port.ts                     IConfigService — env getters
+│     ├─ logger.port.ts                     ILogger port
+│     ├─ identity-svc.port.ts               IIdentitySvcClient interface
+│     └─ identity-svc.errors.ts             Library-level errors thrown by the port impl
+├─ usecases/
+│  └─ register-customer.forwarder.ts        Validation + downstream call + error mapping
+└─ infrastructure/
+   ├─ config/                               Zod-validated env + NestConfig wiring
+   ├─ logger/                               Pino adapter
+   ├─ external/identity-svc/                axios + axios-retry + HMAC signing
+   ├─ http/
+   │  ├─ controllers/                       HealthController, AuthCustomerController
+   │  ├─ filters/                           EnvelopeExceptionFilter (DomainException, ZodError, 429)
+   │  ├─ interceptors/                      ResponseEnvelopeInterceptor (ADR-014)
+   │  ├─ envelope/                          Envelope build helpers
+   │  ├─ utils/                              merge-acquisition (first-touch wins)
+   │  ├─ decorators/                        @Cookies()
+   │  └─ dtos/                              nestjs-zod DTO wrappers
+   └─ usecases-proxy/                       Pretre UseCaseProxy wiring (global)
 ```
 
-## Compile and run the project
+The boundaries are enforced by `eslint-plugin-boundaries` (see `eslint.config.mjs`).
+`domain/` may not import `@nestjs/*`, `axios`, `ioredis`, or any I/O lib.
+
+## Endpoints
+
+| Method | Path                         | Story | Notes                                                                                       |
+| ------ | ---------------------------- | ----- | ------------------------------------------------------------------------------------------- |
+| GET    | `/health`                    | 0.6   | Liveness — `@Public()`                                                                      |
+| GET    | `/ready`                     | 0.6   | Readiness — `@Public()`                                                                     |
+| POST   | `/v1/auth/customer/register` | 1.2c  | Public B2C registration — `@Public()` + `@Throttle({ default: { limit: 5, ttl: 60_000 } })` |
+
+Every response is wrapped in the canonical REST envelope
+(`{ method, code, data | error, pagination?, meta }` — ADR-014).
+
+## Cross-cutting concerns
+
+- **Auth**. `TukioAuthModule` (from `@tukio/auth`) installs `KeycloakJwtGuard`
+  globally — every route requires a valid Bearer token unless decorated with
+  `@Public()`. JWKS keys are cached for 10 minutes.
+- **Rate limiting**. `@nestjs/throttler` with Upstash Redis storage
+  (`@nest-lab/throttler-storage-redis`). One named scope `default` (60/min/IP);
+  sensitive routes opt in to a stricter limit via per-handler `@Throttle`
+  overrides (5/min/IP for register, login, password-reset, payments — NFR10).
+- **Correlation**. `@tukio/messaging/correlation/middleware` extracts the
+  `X-Tukio-Correlation-Id` inbound header (or mints a fresh uuid), pins it to
+  `request.correlationId`, and runs the rest of the request in
+  `AsyncLocalStorage` so any code in the request tree can fetch it via
+  `correlationContext.getCorrelationId()`.
+- **Cookies**. `@fastify/cookie` is registered in `main.ts`. Param decorator
+  `@Cookies('name')` returns the cookie value (or `undefined`).
+- **HMAC signing for `/internal/*` calls**. When the gateway forwards a
+  request to a backend `/internal/*` endpoint (Story 1.2b
+  `InternalServiceGuard`), it signs the canonical
+  `${timestamp}.${METHOD}.${path}.${sha256(body)}` string with HMAC-SHA256 over
+  `TUKIO_INTERNAL_SERVICE_SECRET` and sends three headers:
+  `X-Internal-Service-Token`, `X-Internal-Service-Timestamp`,
+  `X-Internal-Service-Body-Sha256`.
+
+## Local dev
 
 ```bash
-# development
-$ pnpm run start
+pnpm docker:up:wait                       # postgres + keycloak + nats + redis up
+pnpm --filter=identity-svc start:dev      # in another shell — required for /v1/auth/customer/register
+pnpm --filter=gateway-api start:dev       # serves on :4000
 
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+# Smoke test the register endpoint
+curl -X POST http://localhost:4000/v1/auth/customer/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"a@b.com","password":"StrongPass-2026!","firstName":"A","lastName":"B","locale":"fr","acceptTerms":true,"acceptMarketing":false}'
 ```
 
-## Run tests
+## Testing
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm --filter=gateway-api test            # unit specs (jest, in-package config)
+pnpm --filter=gateway-api test:e2e        # supertest/fastify-inject E2E specs with mock IIdentitySvcClient
+pnpm --filter=gateway-api lint            # eslint incl. boundaries plugin
+pnpm --filter=gateway-api typecheck       # tsc --noEmit
 ```
 
-## Deployment
+E2E specs in `test/` build a `Test.createTestingModule` app with the
+`IIdentitySvcClient` replaced by a Jest mock — no Postgres / Keycloak / Redis
+required (throttler falls back to in-memory storage).
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## References
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Story 1.2c — `_bmad-output/implementation-artifacts/1-2c-gateway-api-pretre-forwarder.md`
+- Pattern Pretre — `.agents/context/pretre-pattern.md`
+- REST envelope (ADR-014) — `.agents/context/rest-envelope.md`
+- Architecture API security — `_bmad-output/planning-artifacts/architecture.md` §API Security

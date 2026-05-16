@@ -25,6 +25,10 @@ export interface AcquisitionContext {
   source: AcquisitionSource;
   medium?: string;
   campaign?: string;
+  /** UTM content = ad creative variant (Story 1.2a review : preserved for BI). */
+  content?: string;
+  /** UTM term = paid search keyword (Story 1.2a review : preserved for BI). */
+  term?: string;
   referralId?: string;
   firstTouch: string; // ISO 8601
   lastTouch: string; // ISO 8601

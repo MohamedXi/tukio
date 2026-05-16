@@ -1,6 +1,6 @@
 # Story 1.1: Provision Keycloak realm `tukio` with 5 roles + 4 clients + Phasetwo extension
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

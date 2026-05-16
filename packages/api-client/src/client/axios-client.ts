@@ -78,6 +78,7 @@ export function createTukioApiClient(config: AxiosClientConfig): AxiosInstance {
       const responseData = error.response?.data;
       const isRetryable = !status || status === 0 || status >= 500;
       const cfg = error.config as (typeof error.config & RetryConfig) | undefined;
+      const retryAfterSeconds = parseRetryAfter(error.response?.headers);
 
       if (isRetryable) {
         if (cfg) {
@@ -93,14 +94,14 @@ export function createTukioApiClient(config: AxiosClientConfig): AxiosInstance {
         // Retries exhausted (or no config to retry with): if envelope-shaped,
         // throw typed ApiError; else propagate raw axios error.
         if (isErrorEnvelope(responseData)) {
-          throwApiErrorFromEnvelope(responseData);
+          throwApiErrorFromEnvelope(responseData, undefined, retryAfterSeconds);
         }
         throw error;
       }
 
       // 4xx (or non-retryable status): convert to ApiError if envelope-shaped.
       if (isErrorEnvelope(responseData)) {
-        throwApiErrorFromEnvelope(responseData);
+        throwApiErrorFromEnvelope(responseData, undefined, retryAfterSeconds);
       }
       throw error;
     },
@@ -111,4 +112,24 @@ export function createTukioApiClient(config: AxiosClientConfig): AxiosInstance {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// RFC 7231 Retry-After: delta-seconds OR HTTP-date. Returns seconds or
+// undefined when the header is missing/unparseable. axios normalises header
+// names to lowercase but tolerates either casing on the raw headers object.
+function parseRetryAfter(headers: unknown): number | undefined {
+  if (!headers || typeof headers !== 'object') return undefined;
+  const h = headers as Record<string, unknown>;
+  const raw = h['retry-after'] ?? h['Retry-After'];
+  if (typeof raw !== 'string' && typeof raw !== 'number') return undefined;
+  const value = String(raw).trim();
+  if (value === '') return undefined;
+  if (/^\d+$/.test(value)) {
+    const n = Number(value);
+    return n > 0 ? n : undefined;
+  }
+  const epochMs = Date.parse(value);
+  if (Number.isNaN(epochMs)) return undefined;
+  const delta = Math.ceil((epochMs - Date.now()) / 1000);
+  return delta > 0 ? delta : undefined;
 }

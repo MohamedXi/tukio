@@ -2,5 +2,66 @@
   "Home": {
     "title": "Tukio Design System",
     "subtitle": "Sprint 0 — atomic components live."
+  },
+  "auth": {
+    "signup": {
+      "title": "Create an account",
+      "subtitle": "Join Tukio to book event services",
+      "fields": {
+        "email": {
+          "label": "Email address",
+          "placeholder": "you@example.com"
+        },
+        "password": {
+          "label": "Password",
+          "placeholder": "At least 12 characters",
+          "helper": "12+ characters with uppercase, digit and special character"
+        },
+        "firstName": {
+          "label": "First name",
+          "placeholder": "Camille"
+        },
+        "lastName": {
+          "label": "Last name",
+          "placeholder": "Renard"
+        },
+        "acceptTerms": {
+          "label": "I accept the terms of service and privacy policy"
+        },
+        "acceptMarketing": {
+          "label": "I would like to receive Tukio offers and news"
+        }
+      },
+      "errors": {
+        "generic": "If an account exists for this email, check your inbox.",
+        "unknown": "Please check this field.",
+        "serviceUnavailable": "Service temporarily unavailable. Please try again shortly.",
+        "rateLimited": "Too many attempts. Please retry in {seconds} seconds.",
+        "emailInvalid": "Invalid email address.",
+        "emailTooLong": "Email address is too long (254 characters maximum).",
+        "passwordTooShort": "Password must be at least 12 characters.",
+        "passwordTooLong": "Password is too long (128 characters maximum).",
+        "passwordNeedsLowercase": "Password must contain a lowercase letter.",
+        "passwordNeedsUppercase": "Password must contain an uppercase letter.",
+        "passwordNeedsDigit": "Password must contain a digit.",
+        "passwordNeedsSpecial": "Password must contain a special character.",
+        "passwordInvalid": "Invalid password.",
+        "firstNameRequired": "First name is required.",
+        "firstNameTooLong": "First name is too long (80 characters maximum).",
+        "lastNameRequired": "Last name is required.",
+        "lastNameTooLong": "Last name is too long (80 characters maximum).",
+        "acceptTermsRequired": "You must accept the terms and conditions."
+      },
+      "cta": "Create my account",
+      "loading": "Creating account…",
+      "loginLink": "Already have an account?",
+      "loginLinkLabel": "Sign in"
+    },
+    "verifyEmailRequired": {
+      "title": "Verify your email",
+      "description": "A confirmation email has been sent to you. Click the link to activate your account.",
+      "ctaResend": "Resend verification email",
+      "support": "Need help? Contact support."
+    }
   }
 }

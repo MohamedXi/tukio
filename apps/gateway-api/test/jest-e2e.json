@@ -1,9 +1,68 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "..",
   "testEnvironment": "node",
-  "testRegex": ".e2e-spec.ts$",
+  "testRegex": "test/.*\\.e2e-spec\\.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": {
+          "module": "commonjs",
+          "moduleResolution": "node",
+          "esModuleInterop": true,
+          "experimentalDecorators": true,
+          "emitDecoratorMetadata": true,
+          "resolvePackageJsonExports": false,
+          "allowJs": true
+        }
+      }
+    ]
+  },
+  "transformIgnorePatterns": ["node_modules/(?!.*?(jose)/)"],
+  "moduleNameMapper": {
+    "^(\\.{1,2}/.*)\\.js$": "$1",
+    "^@tukio/contracts$": "<rootDir>/../../packages/contracts/src/index.ts",
+    "^@tukio/contracts/exceptions/domain$": "<rootDir>/../../packages/contracts/src/exceptions/domain.exception.ts",
+    "^@tukio/contracts/exceptions$": "<rootDir>/../../packages/contracts/src/exceptions/index.ts",
+    "^@tukio/contracts/(.*)\\.js$": [
+      "<rootDir>/../../packages/contracts/src/$1.ts",
+      "<rootDir>/../../packages/contracts/src/$1.dto.ts",
+      "<rootDir>/../../packages/contracts/src/$1.exception.ts",
+      "<rootDir>/../../packages/contracts/src/$1/index.ts"
+    ],
+    "^@tukio/contracts/(.*)$": [
+      "<rootDir>/../../packages/contracts/src/$1.ts",
+      "<rootDir>/../../packages/contracts/src/$1.dto.ts",
+      "<rootDir>/../../packages/contracts/src/$1.exception.ts",
+      "<rootDir>/../../packages/contracts/src/$1/index.ts"
+    ],
+    "^@tukio/auth$": "<rootDir>/../../packages/auth/src/index.ts",
+    "^@tukio/auth/module$": "<rootDir>/../../packages/auth/src/tukio-auth.module.ts",
+    "^@tukio/auth/guards$": "<rootDir>/../../packages/auth/src/guards/keycloak-jwt.guard.ts",
+    "^@tukio/auth/guards/roles$": "<rootDir>/../../packages/auth/src/guards/roles.guard.ts",
+    "^@tukio/auth/decorators$": "<rootDir>/../../packages/auth/src/decorators/roles.decorator.ts",
+    "^@tukio/auth/decorators/public$": "<rootDir>/../../packages/auth/src/decorators/public.decorator.ts",
+    "^@tukio/auth/decorators/current-actor$": "<rootDir>/../../packages/auth/src/decorators/current-actor.decorator.ts",
+    "^@tukio/auth/exceptions$": "<rootDir>/../../packages/auth/src/exceptions/index.ts",
+    "^@tukio/messaging/correlation$": "<rootDir>/../../packages/messaging/src/correlation/correlation-context.module.ts",
+    "^@tukio/messaging/correlation/context$": "<rootDir>/../../packages/messaging/src/correlation/correlation-context.ts",
+    "^@tukio/messaging/correlation/middleware$": "<rootDir>/../../packages/messaging/src/correlation/correlation.middleware.ts"
+  },
+  "collectCoverageFrom": [
+    "src/infrastructure/**/*.ts",
+    "src/usecases/**/*.ts",
+    "src/domain/**/*.ts",
+    "!src/infrastructure/**/*.module.ts",
+    "!src/main.ts"
+  ],
+  "coverageDirectory": "coverage-e2e",
+  "coverageThreshold": {
+    "global": {
+      "lines": 50,
+      "functions": 50,
+      "branches": 45,
+      "statements": 50
+    }
   }
 }

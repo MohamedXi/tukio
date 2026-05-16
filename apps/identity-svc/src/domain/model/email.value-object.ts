@@ -29,6 +29,11 @@ export class Email {
     return this.value;
   }
 
+  /** Plain string accessor for serialization (event payloads, log fields). */
+  get asString(): string {
+    return this.value;
+  }
+
   equals(other: Email): boolean {
     return other instanceof Email && other.value === this.value;
   }
