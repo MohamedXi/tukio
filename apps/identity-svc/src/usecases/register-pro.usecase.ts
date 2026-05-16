@@ -459,6 +459,9 @@ export class RegisterProUseCase {
               ),
             COMPENSATION_TIMEOUT_MS,
           );
+          // unref so the timer does not prevent Jest / Node from exiting
+          // when all other work is done (e.g. in tests or graceful shutdown).
+          timeoutHandle.unref();
         }),
       ]);
     } catch (compensationErr) {

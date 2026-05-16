@@ -68,6 +68,11 @@ const config: Config = {
   ],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
+  // Force Jest to exit after all tests complete. ts-jest + NestJS DI containers
+  // leave open handles (EventEmitters, module refs) that prevent clean exit in
+  // coverage mode. forceExit ensures CI doesn't fail with exit code 1 on worker
+  // process timeout.
+  forceExit: true,
   coverageThreshold: {
     global: {
       lines: 80,
