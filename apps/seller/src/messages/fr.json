@@ -201,8 +201,7 @@
       "pending": {
         "kicker": "Dossier en revue",
         "title": "Votre dossier est entre les mains d'un admin tukio.",
-        "subtitle": "Délai habituel : {strong}. Vous recevrez un email dès que votre compte sera vérifié.",
-        "subtitleStrong": "moins de 24 h ouvrées",
+        "subtitle": "Délai habituel : <strong>moins de 24 h ouvrées</strong>. Vous recevrez un email dès que votre compte sera vérifié.",
         "tasksTitle": "Pendant ce temps, vous pouvez préparer votre vitrine :",
         "tasks": {
           "listing": "Brouillon de fiche service",
@@ -212,7 +211,7 @@
           "policy": "Politique d'annulation",
           "policyDesc": "Souple, standard ou stricte — selon votre activité"
         },
-        "support": "Une question ? Contactez-nous à {email}",
+        "support": "Une question ? Contactez-nous à <email>support@tukio.one</email>",
         "signOut": "Se déconnecter",
         "copyright": "© tukio.one · 2026"
       }

@@ -201,8 +201,7 @@
       "pending": {
         "kicker": "Application under review",
         "title": "Your application is in the hands of a tukio admin.",
-        "subtitle": "Usual turnaround: {strong}. You will receive an email as soon as your account is verified.",
-        "subtitleStrong": "less than 24 business hours",
+        "subtitle": "Usual turnaround: <strong>less than 24 business hours</strong>. You will receive an email as soon as your account is verified.",
         "tasksTitle": "In the meantime, you can prepare your storefront:",
         "tasks": {
           "listing": "Draft a service listing",
@@ -212,7 +211,7 @@
           "policy": "Cancellation policy",
           "policyDesc": "Flexible, standard or strict — depending on your business"
         },
-        "support": "Any questions? Contact us at {email}",
+        "support": "Any questions? Contact us at <email>support@tukio.one</email>",
         "signOut": "Sign out",
         "copyright": "© tukio.one · 2026"
       }
