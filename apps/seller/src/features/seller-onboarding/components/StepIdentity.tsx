@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Alert } from '@tukio/ui/components/Alert';
+import { Checkbox } from '@tukio/ui/components/Checkbox';
 import { Input } from '@tukio/ui/components/Input';
 import { FormField } from '@tukio/ui/components/FormField';
 import type { IdentityStepValues } from '../wizard-state';
@@ -154,20 +155,15 @@ export function StepIdentity({ initialValues, onSubmit }: StepIdentityProps) {
         />
       </FormField>
 
-      <label className="flex cursor-pointer items-start gap-3 text-sm text-charcoal-600">
-        <input
-          type="checkbox"
-          className="mt-0.5 accent-brand-500"
-          checked={acceptMarketing}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setAcceptMarketing(e.target.checked)
-          }
-          data-testid="checkbox-acceptMarketing"
-        />
-        <span>{t('acceptMarketing')}</span>
-      </label>
+      <Checkbox
+        checked={acceptMarketing}
+        onChange={(e) => setAcceptMarketing(e.target.checked)}
+        data-testid="checkbox-acceptMarketing"
+      >
+        {t('acceptMarketing')}
+      </Checkbox>
 
-      <Alert variant="info">{tCommon('rgpd')}</Alert>
+      <Alert variant="brand">{tCommon('rgpd')}</Alert>
 
       {/* Hidden submit trigger — OnbShell footer button calls handleContinue via ref alternative */}
       <button

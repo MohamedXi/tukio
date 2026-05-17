@@ -28,7 +28,6 @@ import {
   InseeSiretNotFoundError,
   InseeRateLimitError,
   InseeUnreachableError,
-  InseeAuthFailedError,
 } from '../domain/ports/insee-siret-validator.port.js';
 import {
   type IMediaStorage,
@@ -336,6 +335,46 @@ describe('ConvertCustomerToProUseCase', () => {
       const up = mocks.savedUserProfiles[0]!;
       expect(up.role).toBe(UserRole.PRO);
       expect(up.status).toBe(UserStatus.PENDING_ADMIN_REVIEW);
+    });
+
+    it('persists wizard-submitted identity values on UserProfile (D1 wizard-wins)', async () => {
+      const { useCase, mocks } = buildUseCaseWithMocks();
+      // baseInput uses jean.dupont.pro@example.com (wizard) while the KC user
+      // and existing UserProfile carry jean.dupont@example.com. After conversion
+      // the saved row must reflect the wizard value, not the KC one.
+      await useCase.execute(
+        baseInput({
+          email: 'lea.contact@ateliertenteloire.fr',
+          firstName: 'Léa',
+          lastName: 'Martineau',
+        }),
+      );
+
+      const up = mocks.savedUserProfiles[0]!;
+      expect(up.email.asString).toBe('lea.contact@ateliertenteloire.fr');
+      expect(up.firstName).toBe('Léa');
+      expect(up.lastName).toBe('Martineau');
+
+      const proRegistered = mocks.publishedEvents[0] as {
+        payload: { email: string; firstName: string; lastName: string };
+      };
+      expect(proRegistered.payload.email).toBe(
+        'lea.contact@ateliertenteloire.fr',
+      );
+      expect(proRegistered.payload.firstName).toBe('Léa');
+      expect(proRegistered.payload.lastName).toBe('Martineau');
+
+      const emailSend = mocks.publishedEvents[1] as {
+        payload: {
+          to: { email: string; name: string };
+          params: { firstName: string };
+        };
+      };
+      expect(emailSend.payload.to.email).toBe(
+        'lea.contact@ateliertenteloire.fr',
+      );
+      expect(emailSend.payload.to.name).toBe('Léa');
+      expect(emailSend.payload.params.firstName).toBe('Léa');
     });
 
     it('saves ProProfile with conversion fields', async () => {

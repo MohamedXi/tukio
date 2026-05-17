@@ -1,6 +1,6 @@
 'use client';
 import { forwardRef } from 'react';
-import { CheckCircle, AlertTriangle, XCircle, Info, X } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, Info, Shield, X } from 'lucide-react';
 import { cva } from 'class-variance-authority';
 import { cn } from '../../utils/cn';
 import type { AlertProps } from './Alert.types';
@@ -12,6 +12,7 @@ export const alertVariants = cva('flex items-start gap-3 p-4 rounded-lg border',
       warning: 'bg-warning-50 border-warning-500 text-warning-700',
       error: 'bg-error-50 border-error-500 text-error-700',
       info: 'bg-info-50 border-info-500 text-info-700',
+      brand: 'bg-brand-50 border-brand-100 text-brand-700',
     },
   },
   defaultVariants: { variant: 'info' },
@@ -22,15 +23,26 @@ const IconMap = {
   warning: AlertTriangle,
   error: XCircle,
   info: Info,
+  brand: Shield,
 } as const;
 
 export const Alert = forwardRef<HTMLDivElement, AlertProps>(
   (
-    { className, variant = 'info', title, children, onDismiss, dismissLabel = 'Dismiss', ...props },
+    {
+      className,
+      variant = 'info',
+      title,
+      children,
+      icon,
+      onDismiss,
+      dismissLabel = 'Dismiss',
+      ...props
+    },
     ref,
   ) => {
-    const Icon = IconMap[variant ?? 'info'];
+    const DefaultIcon = IconMap[variant ?? 'info'];
     const isAlert = variant === 'error' || variant === 'warning';
+    const bodyTextClass = variant === 'brand' ? 'text-brand-700' : 'text-charcoal-600';
 
     return (
       <div
@@ -39,10 +51,16 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(
         role={isAlert ? 'alert' : 'status'}
         {...props}
       >
-        <Icon size={20} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
+        {icon !== undefined ? (
+          <span className="flex-shrink-0 mt-0.5" aria-hidden="true">
+            {icon}
+          </span>
+        ) : (
+          <DefaultIcon size={20} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
+        )}
         <div className="flex-1 min-w-0">
           {title && <p className="font-semibold text-base mb-1">{title}</p>}
-          {children && <div className="text-sm text-charcoal-600">{children}</div>}
+          {children && <div className={cn('text-sm', bodyTextClass)}>{children}</div>}
         </div>
         {onDismiss && (
           <button

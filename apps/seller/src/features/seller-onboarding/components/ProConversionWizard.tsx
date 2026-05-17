@@ -2,13 +2,16 @@
 
 import { useReducer, useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { OnbShell } from './OnbShell';
-import { OnbStepperBand } from './OnbStepperBand';
+import { Logo } from '@tukio/ui/patterns/Logo';
+import { WizardShell } from '@tukio/ui/patterns/WizardShell';
+import { WizardStepperBand } from '@tukio/ui/patterns/WizardStepperBand';
 import { StepIdentity } from './StepIdentity';
 import { StepActivity } from './StepActivity';
 import { StepDocuments } from './StepDocuments';
 import { StepReview } from './StepReview';
 import {
+  STEP_KEYS,
+  TOTAL_STEPS,
   initialWizardState,
   wizardReducer,
   type IdentityStepValues,
@@ -20,11 +23,18 @@ import { classifyConversionError } from '../services/conversion.service';
 import { useRegisterProMutation } from '../hooks/use-register-pro-mutation';
 
 const SELLER_BASE_FALLBACK = 'http://localhost:3002';
+const PUBLIC_BASE_FALLBACK = 'http://localhost:3000';
 
 function resolveSellerBaseUrl(): string {
   const raw = process.env['NEXT_PUBLIC_SELLER_BASE_URL'];
   if (raw && raw.length > 0) return raw;
   return SELLER_BASE_FALLBACK;
+}
+
+function resolvePublicBaseUrl(): string {
+  const raw = process.env['NEXT_PUBLIC_PUBLIC_BASE_URL'];
+  if (raw && raw.length > 0) return raw;
+  return PUBLIC_BASE_FALLBACK;
 }
 
 function resolveLocale(locale: string): 'fr' | 'en' {
@@ -38,6 +48,7 @@ interface ProConversionWizardProps {
 
 export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWizardProps) {
   const resolvedLocale = resolveLocale(locale);
+  const tCommon = useTranslations('seller.onboarding.common');
   const tReview = useTranslations('seller.onboarding.review');
   const mutation = useRegisterProMutation();
 
@@ -89,6 +100,13 @@ export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWi
 
   function handleEditStep(step: WizardStep) {
     dispatch({ type: 'GO_TO', step });
+  }
+
+  function handleCancel() {
+    const target = `${resolvePublicBaseUrl()}/${locale}/account/dashboard`;
+    if (typeof window !== 'undefined') {
+      window.location.assign(target);
+    }
   }
 
   function validateDocuments(): boolean {
@@ -168,15 +186,38 @@ export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWi
     );
   }
 
+  const stepLabels = STEP_KEYS.map((k) => tCommon(`steps.${k}`));
+  const currentStepLabel = stepLabels[state.currentStep - 1] ?? '';
+
   return (
-    <OnbShell
+    <WizardShell
       step={state.currentStep}
-      locale={locale}
-      band={<OnbStepperBand step={state.currentStep} />}
+      totalSteps={TOTAL_STEPS}
+      logo={<Logo size={22} />}
+      band={
+        <WizardStepperBand
+          steps={stepLabels}
+          current={state.currentStep - 1}
+          counterLabel={tCommon('stepCounter', {
+            n: state.currentStep,
+            total: TOTAL_STEPS,
+          })}
+        />
+      }
       onBack={state.currentStep > 1 ? handleBack : undefined}
       onContinue={handleContinue}
+      onCancel={handleCancel}
       isContinueLoading={mutation.isPending}
       isContinueDisabled={mutation.isPending}
+      labels={{
+        back: tCommon('back'),
+        continue: tCommon('continue'),
+        submit: tCommon('submit'),
+        cancel: tCommon('cancel'),
+        continueLater: tCommon('continueLater'),
+        draftSaved: tCommon('draftSaved', { n: 1 }),
+        stepLabel: tCommon('stepLabel', { n: state.currentStep, label: currentStepLabel }),
+      }}
     >
       <div ref={bannerRef} tabIndex={-1} style={{ outline: 'none' }}>
         {state.currentStep === 1 && (
@@ -206,6 +247,6 @@ export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWi
           />
         )}
       </div>
-    </OnbShell>
+    </WizardShell>
   );
 }

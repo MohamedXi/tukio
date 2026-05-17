@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Input } from '@tukio/ui/components/Input';
 import { FormField } from '@tukio/ui/components/FormField';
+import { Select } from '@tukio/ui/components/Select';
 import { siretLuhnCheck } from '@tukio/contracts/utils/siret';
 import type { LegalForm, VatStatus, Category } from '@tukio/contracts/dtos/identity/register-pro';
 import type { ActivityStepValues } from '../wizard-state';
@@ -157,23 +158,17 @@ export function StepActivity({ initialValues, onSubmit, serverSiretError }: Step
       </FormField>
 
       <FormField label={t('legalForm')} required error={errors['legalForm']}>
-        <select
+        <Select
           value={legalForm}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-            setLegalForm(e.target.value as LegalForm)
-          }
-          className="h-10 w-full rounded-md border border-cream-300 bg-cream-50 px-3 text-sm text-charcoal-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          onChange={(e) => setLegalForm(e.target.value as LegalForm)}
+          placeholder={t('legalFormPlaceholder')}
+          error={Boolean(errors['legalForm'])}
           data-testid="select-legalForm"
-        >
-          <option value="" disabled>
-            {t('legalFormPlaceholder')}
-          </option>
-          {LEGAL_FORM_OPTIONS.map((lf) => (
-            <option key={lf} value={lf}>
-              {t(`legalForms.${lf}`)}
-            </option>
-          ))}
-        </select>
+          options={LEGAL_FORM_OPTIONS.map((lf) => ({
+            value: lf,
+            label: t(`legalForms.${lf}`),
+          }))}
+        />
       </FormField>
 
       <fieldset>
@@ -275,20 +270,15 @@ export function StepActivity({ initialValues, onSubmit, serverSiretError }: Step
             />
           </FormField>
           <FormField label={t('serviceZoneRadius')} required>
-            <select
+            <Select
               value={zoneRadius}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setZoneRadius(Number(e.target.value))
-              }
-              className="h-10 w-full rounded-md border border-cream-300 bg-cream-50 px-3 text-sm text-charcoal-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+              onChange={(e) => setZoneRadius(Number(e.target.value))}
               data-testid="select-serviceZoneRadius"
-            >
-              {RADIUS_OPTIONS.map((r) => (
-                <option key={r} value={r}>
-                  {t(`serviceZoneRadiusOptions.${r}`)}
-                </option>
-              ))}
-            </select>
+              options={RADIUS_OPTIONS.map((r) => ({
+                value: String(r),
+                label: t(`serviceZoneRadiusOptions.${r}`),
+              }))}
+            />
           </FormField>
         </div>
       </fieldset>

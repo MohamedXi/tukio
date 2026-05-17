@@ -25,6 +25,7 @@
     "./badge": "./src/components/Badge/index.ts",
     "./button": "./src/components/Button/index.ts",
     "./card": "./src/components/Card/index.ts",
+    "./checkbox": "./src/components/Checkbox/index.ts",
     "./divider": "./src/components/Divider/index.ts",
     "./form-field": "./src/components/FormField/index.ts",
     "./helper": "./src/components/Helper/index.ts",
@@ -33,6 +34,7 @@
     "./modal": "./src/components/Modal/index.ts",
     "./placeholder": "./src/components/Placeholder/index.ts",
     "./progress-bar": "./src/components/ProgressBar/index.ts",
+    "./select": "./src/components/Select/index.ts",
     "./skeleton": "./src/components/Skeleton/index.ts",
     "./spinner": "./src/components/Spinner/index.ts",
     "./stars": "./src/components/Stars/index.ts",
@@ -41,6 +43,7 @@
     "./utils/cn": "./src/utils/cn.ts",
     "./availability-calendar": "./src/patterns/AvailabilityCalendar/index.ts",
     "./conversation-thread": "./src/patterns/ConversationThread/index.ts",
+    "./document-upload": "./src/patterns/DocumentUpload/index.ts",
     "./empty-state": "./src/patterns/EmptyState/index.ts",
     "./error-page": "./src/patterns/ErrorPage/index.ts",
     "./file-upload": "./src/patterns/FileUpload/index.ts",
@@ -51,7 +54,10 @@
     "./pricing-display": "./src/patterns/PricingDisplay/index.ts",
     "./reviews-display": "./src/patterns/ReviewsDisplay/index.ts",
     "./step-indicator": "./src/patterns/StepIndicator/index.ts",
-    "./top-bar": "./src/patterns/TopBar/index.ts"
+    "./summary-list": "./src/patterns/SummaryList/index.ts",
+    "./top-bar": "./src/patterns/TopBar/index.ts",
+    "./wizard-shell": "./src/patterns/WizardShell/index.ts",
+    "./wizard-stepper-band": "./src/patterns/WizardStepperBand/index.ts"
   },
   "scripts": {
     "test": "vitest run",

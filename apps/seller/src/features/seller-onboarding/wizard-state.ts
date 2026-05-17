@@ -34,6 +34,11 @@ export interface DocumentsState {
 
 export type WizardStep = 1 | 2 | 3 | 4;
 
+/** Ordered i18n key for each step — single source of truth for the wizard's structure. */
+export const STEP_KEYS = ['identity', 'activity', 'documents', 'review'] as const;
+export const TOTAL_STEPS = STEP_KEYS.length;
+export type StepKey = (typeof STEP_KEYS)[number];
+
 export interface WizardState {
   currentStep: WizardStep;
   identity: IdentityStepValues | null;

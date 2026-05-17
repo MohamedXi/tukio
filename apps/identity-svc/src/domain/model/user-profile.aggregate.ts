@@ -259,20 +259,37 @@ export class UserProfile {
    * status=`pending_admin_review`. Called by `ConvertCustomerToProUseCase`
    * (Story 1.3b-bis) inside the atomic DB transaction so the local user_profiles
    * row stays in sync with Keycloak's realm-role assignment.
+   *
+   * Decision D1 (2026-05-17 review): the Pro wizard exposes identity fields
+   * (email, firstName, lastName) as editable so the Pro can use a business
+   * email distinct from the personal Customer login email. When `options`
+   * carries these fields, the wizard values take precedence over the existing
+   * (Keycloak-sourced) values for DB persistence and downstream events.
+   * Note: the Keycloak login email is intentionally NOT updated — it remains
+   * the authentication identity; the persisted UserProfile.email becomes the
+   * Pro contact email used for booking notifications.
    */
-  convertToPro(now: Date, marketingOptIn?: boolean): UserProfile {
+  convertToPro(
+    now: Date,
+    options?: {
+      email?: Email;
+      firstName?: string;
+      lastName?: string;
+      marketingOptIn?: boolean;
+    },
+  ): UserProfile {
     return UserProfile.create({
       id: this.id,
       keycloakUserId: this.keycloakUserId,
-      email: this.email,
-      firstName: this.firstName,
-      lastName: this.lastName,
+      email: options?.email ?? this.email,
+      firstName: options?.firstName ?? this.firstName,
+      lastName: options?.lastName ?? this.lastName,
       role: UserRole.PRO,
       locale: this.locale,
       acquisition: this.acquisition,
       status: UserStatus.PENDING_ADMIN_REVIEW,
       emailVerified: this.emailVerified,
-      marketingOptIn: marketingOptIn ?? this.marketingOptIn,
+      marketingOptIn: options?.marketingOptIn ?? this.marketingOptIn,
       acceptTerms: this.acceptTerms,
       acceptTermsAt: this.acceptTermsAt,
       createdAt: this.createdAt,

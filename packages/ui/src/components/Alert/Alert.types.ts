@@ -6,6 +6,8 @@ export interface AlertProps
   extends Omit<HTMLAttributes<HTMLDivElement>, 'title'>, VariantProps<typeof alertVariants> {
   title?: string;
   children?: ReactNode;
+  /** Override the default lucide icon for the chosen variant. */
+  icon?: ReactNode;
   onDismiss?: () => void;
   dismissLabel?: string;
 }

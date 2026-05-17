@@ -1,5 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
+import { Card } from '@tukio/ui/components/Card';
+import { Logo } from '@tukio/ui/patterns/Logo';
 
 export async function generateMetadata({
   params,
@@ -44,9 +46,8 @@ export default async function OnboardingPendingPage({
 
   return (
     <main className="flex min-h-screen flex-col bg-cream-50 text-charcoal-700">
-      {/* Simple header */}
       <header className="flex items-center justify-between border-b border-cream-200 px-6 py-4">
-        <span className="font-display text-xl font-semibold text-brand-700">tukio</span>
+        <Logo size={22} />
         <a
           href={`/${locale}/auth/sign-out`}
           className="text-sm text-charcoal-500 hover:text-charcoal-700"
@@ -56,7 +57,6 @@ export default async function OnboardingPendingPage({
       </header>
 
       <section className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-8 px-6 py-12">
-        {/* Icon + kicker */}
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-warning-50 text-3xl">
             ⏳
@@ -79,21 +79,29 @@ export default async function OnboardingPendingPage({
           </p>
         </div>
 
-        {/* Pending tasks */}
-        <div className="rounded-2xl border border-cream-200 bg-white p-6">
-          <p className="mb-5 text-sm font-semibold text-charcoal-700">{t('tasksTitle')}</p>
-          <ul className="flex flex-col gap-5">
-            <PendingTask
-              icon="📋"
-              title={t('tasks.listing')}
-              description={t('tasks.listingDesc')}
-            />
-            <PendingTask icon="📸" title={t('tasks.photos')} description={t('tasks.photosDesc')} />
-            <PendingTask icon="🗂️" title={t('tasks.policy')} description={t('tasks.policyDesc')} />
-          </ul>
-        </div>
+        <Card className="rounded-2xl">
+          <Card.Body className="p-6">
+            <p className="mb-5 text-sm font-semibold text-charcoal-700">{t('tasksTitle')}</p>
+            <ul className="flex flex-col gap-5">
+              <PendingTask
+                icon="📋"
+                title={t('tasks.listing')}
+                description={t('tasks.listingDesc')}
+              />
+              <PendingTask
+                icon="📸"
+                title={t('tasks.photos')}
+                description={t('tasks.photosDesc')}
+              />
+              <PendingTask
+                icon="🗂️"
+                title={t('tasks.policy')}
+                description={t('tasks.policyDesc')}
+              />
+            </ul>
+          </Card.Body>
+        </Card>
 
-        {/* Support link — email rendered by rich text from i18n key */}
         <p className="text-center text-sm text-charcoal-500">
           {t.rich('support', {
             email: (chunks) => (

@@ -15,6 +15,7 @@ import { Siret } from '../domain/model/siret.value-object.js';
 import { VatNumber } from '../domain/model/vat-number.value-object.js';
 import { Address } from '../domain/model/address.value-object.js';
 import { PhoneNumber } from '../domain/model/phone-number.value-object.js';
+import { Email } from '../domain/model/email.value-object.js';
 import { UserProfile } from '../domain/model/user-profile.aggregate.js';
 import { ProProfile } from '../domain/model/pro-profile.aggregate.js';
 import { KycStatus } from '../domain/model/kyc-status.enum.js';
@@ -326,11 +327,16 @@ export class ConvertCustomerToProUseCase {
 
     // 7. Atomic DB transaction: update UserProfile role+status, save ProProfile, publish events.
     try {
-      // Pass wizard-submitted acceptMarketing (may differ from current KC value).
-      const updatedUserProfile = userProfile.convertToPro(
-        now,
-        input.acceptMarketing,
-      );
+      // D1 decision (2026-05-17 review): wizard values take precedence over the
+      // existing Keycloak values for email/firstName/lastName so the persisted
+      // UserProfile becomes the Pro contact identity. The Keycloak login email
+      // is intentionally left untouched (it remains the authentication identity).
+      const updatedUserProfile = userProfile.convertToPro(now, {
+        email: Email.create(input.email),
+        firstName: input.firstName,
+        lastName: input.lastName,
+        marketingOptIn: input.acceptMarketing,
+      });
 
       const proProfile = ProProfile.register({
         id: proProfileId,
@@ -366,14 +372,11 @@ export class ConvertCustomerToProUseCase {
         await txn.userProfileRepo.save(updatedUserProfile);
         await txn.proProfileRepo.save(proProfile);
 
-        // Use wizard-submitted identity values (D1 decision, 2026-05-17 review):
-        // the user may have edited email/name in the wizard (pro contact details).
+        // The updatedUserProfile now carries the wizard-submitted identity values
+        // (D1) — events can read directly from it without extra parameters.
         const proRegisteredEvent = this.buildProRegisteredEvent({
           userProfile: updatedUserProfile,
           proProfile,
-          kcEmail: input.email,
-          kcFirstName: input.firstName,
-          kcLastName: input.lastName,
           correlationId,
           occurredAt: now,
         });
@@ -382,8 +385,6 @@ export class ConvertCustomerToProUseCase {
         const emailSendEvent = this.buildEmailSendEvent({
           userProfile: updatedUserProfile,
           proProfile,
-          kcEmail: input.email,
-          kcFirstName: input.firstName,
           correlationId,
           occurredAt: now,
         });
@@ -588,21 +589,10 @@ export class ConvertCustomerToProUseCase {
   private buildProRegisteredEvent(args: {
     userProfile: UserProfile;
     proProfile: ProProfile;
-    kcEmail: string;
-    kcFirstName: string;
-    kcLastName: string;
     correlationId: string;
     occurredAt: Date;
   }): ProRegisteredV1 {
-    const {
-      userProfile,
-      proProfile,
-      kcEmail,
-      kcFirstName,
-      kcLastName,
-      correlationId,
-      occurredAt,
-    } = args;
+    const { userProfile, proProfile, correlationId, occurredAt } = args;
     const actor = {
       userId: userProfile.id,
       role: UserRole.PRO,
@@ -620,9 +610,9 @@ export class ConvertCustomerToProUseCase {
       payload: {
         userProfileId: userProfile.id,
         proProfileId: proProfile.id,
-        email: kcEmail,
-        firstName: kcFirstName,
-        lastName: kcLastName,
+        email: userProfile.email.asString,
+        firstName: userProfile.firstName,
+        lastName: userProfile.lastName,
         companyName: proProfile.companyName,
         siret: proProfile.siret.asString,
         vatNumber: proProfile.vatNumber?.asString ?? null,
@@ -654,19 +644,10 @@ export class ConvertCustomerToProUseCase {
   private buildEmailSendEvent(args: {
     userProfile: UserProfile;
     proProfile: ProProfile;
-    kcEmail: string;
-    kcFirstName: string;
     correlationId: string;
     occurredAt: Date;
   }): EmailSendV1 {
-    const {
-      userProfile,
-      proProfile,
-      kcEmail,
-      kcFirstName,
-      correlationId,
-      occurredAt,
-    } = args;
+    const { userProfile, proProfile, correlationId, occurredAt } = args;
     const systemActor: Actor = {
       userId: SYSTEM_ACTOR_USER_ID,
       role: SYSTEM_ACTOR_ROLE,
@@ -685,12 +666,12 @@ export class ConvertCustomerToProUseCase {
         templateId: 'pro-pending-admin-review',
         locale: userProfile.locale,
         to: {
-          email: kcEmail,
+          email: userProfile.email.asString,
           userId: userProfile.id,
-          name: kcFirstName,
+          name: userProfile.firstName,
         },
         params: {
-          firstName: kcFirstName,
+          firstName: userProfile.firstName,
           companyName: proProfile.companyName,
           siret: proProfile.siret.asString,
         },
