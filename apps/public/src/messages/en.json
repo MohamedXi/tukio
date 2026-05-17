@@ -115,5 +115,16 @@
         }
       }
     }
+  },
+  "errors": {
+    "auth": {
+      "invalidState": "Session expired. Please try again.",
+      "invalidCode": "Invalid or expired sign-in link. Please try again.",
+      "csrfMismatch": "Session expired. Please reload the page.",
+      "refreshInvalid": "Invalid session. Please sign in again.",
+      "refreshExpired": "Session expired. Please sign in again.",
+      "refreshReused": "Security issue detected. Please sign in again and change your password.",
+      "external": "Authentication service temporarily unavailable. Please try again shortly."
+    }
   }
 }

@@ -25,6 +25,7 @@
     "./events/admin/admin-action-pro-verified.v1": "./src/events/admin/admin-action-pro-verified.v1.ts",
     "./events/identity/user-registered.v1": "./src/events/identity/user-registered.v1.ts",
     "./events/identity/pro-registered.v1": "./src/events/identity/pro-registered.v1.ts",
+    "./events/identity/user-logged-in.v1": "./src/events/identity/user-logged-in.v1.ts",
     "./events/notification/email-send.v1": "./src/events/notification/email-send.v1.ts",
     "./dtos": "./src/dtos/index.ts",
     "./dtos/auth": "./src/dtos/auth.ts",
@@ -35,6 +36,7 @@
     "./dtos/identity/register-customer": "./src/dtos/identity/register-customer.dto.ts",
     "./dtos/identity/register-pro": "./src/dtos/identity/register-pro.dto.ts",
     "./dtos/identity/acquisition": "./src/dtos/identity/acquisition.dto.ts",
+    "./dtos/identity/whoami-response": "./src/dtos/identity/whoami-response.dto.ts",
     "./utils/siret": "./src/utils/siret.ts"
   },
   "scripts": {
