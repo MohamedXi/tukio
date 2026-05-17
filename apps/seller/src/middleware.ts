@@ -9,6 +9,9 @@ const i18nMiddleware = createTukioI18nMiddleware();
 // 1. pendingAdminReviewRedirect — bounces Pros with tukio:status=pending_admin_review
 //    to /seller/onboarding/pending for all non-whitelisted /seller paths (Story 1.3d).
 // 2. i18n middleware — locale routing/redirect (Story 1.3d v2).
+//    Always returned when defined: carries x-next-intl-locale header that the App
+//    Router needs to resolve the [locale] dynamic segment. Without this the router
+//    can't fill [locale] and returns 404 on all locale-prefixed routes.
 // 3. acquisitionCookieMiddleware — sets tukio-acquisition cookie (Story 0.13).
 export default async function middleware(request: NextRequest) {
   const pendingRedirect = pendingAdminReviewRedirect(request);
@@ -20,12 +23,7 @@ export default async function middleware(request: NextRequest) {
   const i18nResponse = await i18nMiddleware(
     request as unknown as Parameters<typeof i18nMiddleware>[0],
   );
-  if (
-    i18nResponse &&
-    (i18nResponse.status !== 200 || i18nResponse.headers.has('x-middleware-rewrite'))
-  ) {
-    return i18nResponse;
-  }
+  if (i18nResponse) return i18nResponse;
 
   return acquisitionCookieMiddleware(request);
 }
