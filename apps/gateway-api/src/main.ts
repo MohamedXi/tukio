@@ -6,6 +6,7 @@ import {
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import fastifyCookie from '@fastify/cookie';
+import multipart from '@fastify/multipart';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { correlationMiddleware } from '@tukio/messaging/correlation/middleware';
 import { AppModule } from './app.module.js';
@@ -26,6 +27,20 @@ async function bootstrap(): Promise<void> {
 
   const fastify = app.getHttpAdapter().getInstance();
   await fastify.register(fastifyCookie);
+  // Story 1.3c — register @fastify/multipart for `POST /v1/auth/pro/register`.
+  // Caps mirror identity-svc Story 1.3b main.ts so over-size requests fail at
+  // the gateway boundary before forwarding (defense in depth + early reject):
+  //   - throwFileSizeLimit: explicit 413 on >5 MB (no silent truncation)
+  //   - 3 files / 5 parts / 1 MB fieldSize → bounds DoS via request inflation.
+  await fastify.register(multipart, {
+    throwFileSizeLimit: true,
+    limits: {
+      fileSize: 5 * 1024 * 1024,
+      files: 3,
+      parts: 5,
+      fieldSize: 1 * 1024 * 1024,
+    },
+  });
   // Story 0.7 correlation propagation — sets request.correlationId from
   // `X-Tukio-Correlation-Id` (or mints a uuid) and wraps the request lifecycle
   // in AsyncLocalStorage so downstream code can grab it without explicit

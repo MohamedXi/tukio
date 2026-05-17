@@ -28,9 +28,14 @@ export interface RedisConfig {
 }
 
 /**
- * Two throttler scopes (Architecture lines 703-708 + Story 1.2c AC3):
+ * Throttler scopes (Architecture lines 703-708 + Story 1.2c AC3):
  *  - `default` 60/min/IP for anonymous traffic
  *  - `sensitive` 5/min/IP for register/login/password-reset/payment endpoints
+ *
+ * Note: `POST /v1/auth/pro/register` applies a per-route override of the
+ * `default` scope (3/min via `@Throttle({ default: { limit: 3, ttl: 60_000 } })`
+ * in `AuthProController`). This value is intentionally hardcoded at the
+ * controller level (same pattern as `AuthCustomerController` sensitive limit).
  */
 export interface ThrottlerConfig {
   defaultLimit: number;

@@ -19,7 +19,12 @@ export const EnvSchema = z
     KEYCLOAK_AUDIENCE: z.string().min(1).default('tukio-api'),
     // Identity-svc downstream client (Story 1.2c — gateway forwards register).
     IDENTITY_SVC_URL: z.string().url().min(1).default('http://localhost:4001'),
-    IDENTITY_SVC_TIMEOUT_MS: z.coerce.number().int().positive().default(5_000),
+    // Timeout covers DNS + TLS + full request body upload + identity-svc
+    // processing. Story 1.3c uploads up to 16 MB (3 × 5 MB KYC files + JSON
+    // payload + multipart framing). At 100 Mbit/s intra-DC = ~1.3 s for the
+    // upload alone; identity-svc then runs Keycloak + DB + R2. 30 s is the
+    // safe default; override downward in dev where payload sizes are tiny.
+    IDENTITY_SVC_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
     IDENTITY_SVC_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
     // Upstash Redis URL — backs ThrottlerStorageRedis (Story 0.10 dev container).
     REDIS_URL: z.string().min(1).default('redis://localhost:6379'),

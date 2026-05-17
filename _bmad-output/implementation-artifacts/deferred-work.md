@@ -1,5 +1,12 @@
 # Deferred Work
 
+## Deferred from: code review of 1-3c-gateway-api-pro-register-multipart-forwarder (2026-05-17)
+
+- **W1** — Throttler keyed sur proxy IP (`trustProxy` absent) [`main.ts:FastifyAdapter`] — `FastifyAdapter({ logger: false })` sans `trustProxy: true` : `req.ip` = IP Caddy reverse proxy en prod, pas l'IP client réelle. Limite 3/min partagée par tous derrière le proxy. Pre-existing depuis Story 1.2c (affecte aussi `/v1/auth/customer/register`). Fix : ajouter `trustProxy: true` à `FastifyAdapter`.
+- **W2** — POST retry sur erreurs réseau/5xx potentiellement non-idempotent [`identity-svc.client.ts:axiosRetry`] — Retries sur `err.response.status >= 500` pour POST registerPro. Si identity-svc crée Keycloak user puis échoue avant commit DB, la compensation saga de 1.3a annule normalement. Mitigé par contraintes DB uniqueness (email/SIRET). Pre-existing pattern 1.2c. Fix propre : idempotency key header — V1.
+- **W3** — Validation MIME par Content-Type client seul, pas magic bytes [`parse-multipart-pro-register.ts:ALLOWED_MIME_TYPES`] — Un exécutable avec `Content-Type: image/jpeg` passe la whitelist. Risk limité si R2 KYC non servi publiquement. Magic byte validation V1 hardening via npm `file-type`.
+- **W4** — `form.getBuffer()` double le pic mémoire (~32 MB/requête) [`identity-svc.client.ts:registerPro`] — `toBuffer()` matérialise 3 × 5 MB ; `form.getBuffer()` concat en un second buffer. Optimisation V1 : passer `form` comme stream body axios (streamed multipart send, pas de copy).
+
 ## Deferred from: code review of 1-3b-identity-svc-infrastructure-insee-r2-controller (2026-05-17)
 
 - **W1** — R2 `delete()` n'a pas de `correlationId` dans la signature de port — orphan compensation logs perdent le lien de trace. Story 1.10 reconciliation job aura besoin de retrouver "quel register a généré quel orphan blob". Étendre `DeleteInput` avec correlationId optionnel et logger côté adapter.
