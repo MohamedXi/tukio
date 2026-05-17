@@ -7,6 +7,7 @@ import {
   InseeSiretNotFoundError,
   InseeRateLimitError,
   InseeUnreachableError,
+  InseeAuthFailedError,
 } from '../../../domain/ports/insee-siret-validator.port.js';
 import type { Siret } from '../../../domain/model/siret.value-object.js';
 import type { IConfigService } from '../../../domain/ports/config.port.js';
@@ -20,6 +21,7 @@ interface InseeEtablissementResponse {
       denominationUniteLegale: string | null;
       dateCreationUniteLegale: string | null;
       categorieJuridiqueUniteLegale: string | null;
+      activitePrincipaleUniteLegale: string | null;
     };
   };
 }
@@ -60,18 +62,24 @@ export class InseeSiretValidatorService implements IInseeSiretValidator {
     }
 
     if (response.status === 429) {
+      // Review P15 — INSEE documents `x-rate-limit-reset` as a Unix-ms epoch.
+      // If the header is missing, malformed, or yields a non-finite number,
+      // fall back to a conservative 60-second retry-after instead of NaN.
       const resetHeader = response.headers.get('x-rate-limit-reset');
-      const resetMs = resetHeader
-        ? parseInt(resetHeader, 10)
-        : Date.now() + 60_000;
-      const retryAfterMs = Math.max(0, resetMs - Date.now());
-      throw new InseeRateLimitError(retryAfterMs);
+      const fallbackMs = 60_000;
+      const parsed = resetHeader ? parseInt(resetHeader, 10) : NaN;
+      const retryAfterMs = Number.isFinite(parsed)
+        ? Math.max(0, parsed - Date.now())
+        : fallbackMs;
+      throw new InseeRateLimitError(
+        retryAfterMs > 0 ? retryAfterMs : fallbackMs,
+      );
     }
 
+    // Review P5 — distinct error type for auth failures so ops alerting can
+    // page on "INSEE creds bad" without it being conflated with outage noise.
     if (response.status === 401 || response.status === 403) {
-      throw new InseeUnreachableError(
-        `INSEE SIRENE API authentication failed (status ${response.status})`,
-      );
+      throw new InseeAuthFailedError(response.status);
     }
 
     if (response.status >= 500) {
@@ -80,7 +88,10 @@ export class InseeSiretValidatorService implements IInseeSiretValidator {
       );
     }
 
-    if (!response.ok) {
+    // Review P16 — explicit 200-only check. 2xx-but-not-200 (204 No Content,
+    // 206 Partial) would otherwise fall through to `response.json()` which
+    // throws on empty body and gets wrapped as InseeUnreachableError.
+    if (response.status !== 200) {
       throw new InseeUnreachableError(
         `INSEE SIRENE API unexpected status ${response.status}`,
       );
@@ -105,6 +116,7 @@ export class InseeSiretValidatorService implements IInseeSiretValidator {
       legalName: uniteLegale.denominationUniteLegale ?? null,
       incorporationDate: uniteLegale.dateCreationUniteLegale ?? null,
       legalCategory: uniteLegale.categorieJuridiqueUniteLegale ?? null,
+      naf: uniteLegale.activitePrincipaleUniteLegale ?? null,
     };
   }
 }

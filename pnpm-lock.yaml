@@ -495,9 +495,6 @@ importers:
       '@tukio/messaging':
         specifier: workspace:*
         version: link:../../packages/messaging
-      multer:
-        specifier: ^2.1.1
-        version: 2.1.1
       nestjs-pino:
         specifier: ^4.6.1
         version: 4.6.1(@nestjs/common@11.1.19(reflect-metadata@0.2.2)(rxjs@7.8.2))(pino-http@11.0.0)(pino@10.3.1)(rxjs@7.8.2)
@@ -553,9 +550,6 @@ importers:
       '@types/jest':
         specifier: ^30.0.0
         version: 30.0.0
-      '@types/multer':
-        specifier: ^2.1.0
-        version: 2.1.0
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.18
@@ -4452,9 +4446,6 @@ packages:
 
   '@types/minimist@1.2.5':
     resolution: {integrity: sha512-hov8bUuiLiyFPGyFPE1lwWhmzYbirOXQNNo40+y3zow8aFVTeyn3VWL0VFFfdNddA8S4Vf0Tc062rzyNr7Paag==}
-
-  '@types/multer@2.1.0':
-    resolution: {integrity: sha512-zYZb0+nJhOHtPpGDb3vqPjwpdeGlGC157VpkqNQL+UU2qwoacoQ7MpsAmUptI/0Oa127X32JzWDqQVEXp2RcIA==}
 
   '@types/nock@11.1.0':
     resolution: {integrity: sha512-jI/ewavBQ7X5178262JQR0ewicPAcJhXS/iFaNJl0VHLfyosZ/kwSrsa6VNQNSO8i9d8SqdRgOtZSOKJ/+iNMw==}
@@ -12379,10 +12370,6 @@ snapshots:
   '@types/methods@1.1.4': {}
 
   '@types/minimist@1.2.5': {}
-
-  '@types/multer@2.1.0':
-    dependencies:
-      '@types/express': 5.0.6
 
   '@types/nock@11.1.0':
     dependencies:

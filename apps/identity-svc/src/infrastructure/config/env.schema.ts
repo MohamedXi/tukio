@@ -100,6 +100,26 @@ export const validateEnv = (raw: Record<string, unknown>): Env => {
           'Set explicit values via secret store before deploy.',
       );
     }
+
+    // Story 1.3b review P6 — INSEE_API_KEY and R2 KYC credentials are marked
+    // optional in the schema for dev/test convenience, but production cannot
+    // accept registration requests without them. Fail-fast at boot so ops
+    // get a clear signal instead of silently 502-ing every pro registration.
+    const REQUIRED_IN_PROD: Array<keyof typeof parsed.data> = [
+      'INSEE_API_KEY',
+      'R2_KYC_ENDPOINT',
+      'R2_KYC_ACCESS_KEY_ID',
+      'R2_KYC_SECRET_ACCESS_KEY',
+    ];
+    const missing = REQUIRED_IN_PROD.filter(
+      (key) => parsed.data[key] === undefined || parsed.data[key] === '',
+    );
+    if (missing.length > 0) {
+      throw new Error(
+        `Refusing to start in production without required pro-registration secret(s): ${missing.join(', ')}. ` +
+          'Provision via secret store (Story 1.3b Task 5.1).',
+      );
+    }
   }
 
   return parsed.data;

@@ -13,10 +13,7 @@ import type {
   SignedUrlInput,
   DeleteInput,
 } from '../../../domain/ports/media-storage.port.js';
-import {
-  MediaStorageUploadError,
-  MediaStorageNotFoundError,
-} from '../../../domain/ports/media-storage.port.js';
+import { MediaStorageUploadError } from '../../../domain/ports/media-storage.port.js';
 import type { IConfigService } from '../../../domain/ports/config.port.js';
 import { CONFIG_SERVICE } from '../../../domain/ports/tokens.js';
 
@@ -63,6 +60,11 @@ export class R2MediaStorageService implements IMediaStorage {
   }
 
   async getSignedUrl(input: SignedUrlInput): Promise<string> {
+    // P14 — `getSignedUrl` from `@aws-sdk/s3-request-presigner` signs locally,
+    // it does NOT make any network call. NoSuchKey detection only happens when
+    // the caller fetches the pre-signed URL. The previous NotFound branch was
+    // dead code. If we need head-object NotFound detection here, call
+    // `s3.send(new HeadObjectCommand(...))` before signing.
     const command = new GetObjectCommand({
       Bucket: input.bucket,
       Key: input.key,
@@ -72,13 +74,6 @@ export class R2MediaStorageService implements IMediaStorage {
         expiresIn: input.ttlSeconds,
       });
     } catch (err) {
-      // S3 SDK throws NoSuchKey when the object does not exist.
-      const code =
-        (err as { name?: string; Code?: string }).name ??
-        (err as { Code?: string }).Code;
-      if (code === 'NoSuchKey' || code === 'NotFound') {
-        throw new MediaStorageNotFoundError(input.key);
-      }
       throw new MediaStorageUploadError(
         `Failed to generate signed URL for R2 object: ${input.key}`,
         err,

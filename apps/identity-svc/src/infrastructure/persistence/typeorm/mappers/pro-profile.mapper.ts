@@ -7,6 +7,36 @@ import { isKycStatus } from '../../../../domain/model/kyc-status.enum.js';
 import { CorruptedDataException } from '../../../../domain/exception/corrupted-data.exception.js';
 import { ProProfileEntity } from '../entities/pro-profile.entity.js';
 
+interface AddressJsonbShape {
+  street: string;
+  postalCode: string;
+  city: string;
+  country: string;
+}
+
+function assertAddressJsonb(
+  value: unknown,
+): asserts value is AddressJsonbShape {
+  if (value === null || typeof value !== 'object') {
+    throw new CorruptedDataException(
+      'pro_profiles.address JSONB is not an object',
+    );
+  }
+  const obj = value as Record<string, unknown>;
+  for (const key of ['street', 'postalCode', 'city', 'country'] as const) {
+    if (typeof obj[key] !== 'string') {
+      throw new CorruptedDataException(
+        `pro_profiles.address.${key} is missing or not a string`,
+      );
+    }
+  }
+  if (obj['country'] !== 'FR') {
+    throw new CorruptedDataException(
+      `pro_profiles.address.country must be 'FR' (got: ${String(obj['country'])})`,
+    );
+  }
+}
+
 export class ProProfileMapper {
   static toDomain(entity: ProProfileEntity): ProProfile {
     if (!isKycStatus(entity.kycStatus)) {
@@ -14,6 +44,11 @@ export class ProProfileMapper {
         `invalid kyc_status value in pro_profiles row: ${entity.kycStatus}`,
       );
     }
+    // P11 — validate the JSONB shape before constructing the VO instead of
+    // unsafe `as 'FR'` cast. A corrupted row (manual edit, partial migration)
+    // surfaces as a clear `CorruptedDataException` rather than a downstream
+    // VO error or silent invalid state.
+    assertAddressJsonb(entity.address);
     return ProProfile.create({
       id: entity.id,
       userProfileId: entity.userProfileId,
@@ -24,7 +59,7 @@ export class ProProfileMapper {
         street: entity.address.street,
         postalCode: entity.address.postalCode,
         city: entity.address.city,
-        country: entity.address.country as 'FR',
+        country: 'FR',
       }),
       contactPhone: PhoneNumber.create(entity.contactPhone),
       kycStatus: entity.kycStatus,
@@ -37,6 +72,13 @@ export class ProProfileMapper {
         legalName: entity.inseeDenomination,
         incorporationDate: entity.inseeIncorporationDate,
         legalCategory: entity.inseeLegalCategory,
+        naf: entity.inseeNaf,
+        checkedAt: entity.inseeCheckedAt,
+      },
+      kycDecision: {
+        decidedAt: entity.kycDecisionAt,
+        decidedBy: entity.kycDecisionBy,
+        reason: entity.kycDecisionReason,
       },
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
@@ -62,16 +104,25 @@ export class ProProfileMapper {
     entity.kycRibR2Key = aggregate.kyc.ribR2Key;
     entity.kycKbisR2Key = aggregate.kyc.kbisR2Key;
     entity.kycStatus = aggregate.kycStatus;
-    entity.kycDecisionAt = null;
-    entity.kycDecisionBy = null;
-    entity.kycDecisionReason = null;
+    // D2 — kycDecision is now round-tripped via the aggregate instead of
+    // being silently nulled on every save. Story 2.3-2.4 will use aggregate
+    // methods to set these before saving.
+    entity.kycDecisionAt = aggregate.kycDecision.decidedAt;
+    entity.kycDecisionBy = aggregate.kycDecision.decidedBy;
+    entity.kycDecisionReason = aggregate.kycDecision.reason;
     entity.inseeDenomination = aggregate.insee.legalName;
     entity.inseeIncorporationDate = aggregate.insee.incorporationDate;
     entity.inseeLegalCategory = aggregate.insee.legalCategory;
-    entity.inseeCheckedAt = new Date();
-    entity.createdAt = aggregate.createdAt;
-    entity.updatedAt = aggregate.updatedAt;
+    entity.inseeNaf = aggregate.insee.naf;
+    // P13 — `inseeCheckedAt` is the aggregate's authoritative value, NOT
+    // `new Date()` on every save (which would silently turn "when INSEE was
+    // last consulted" into "when the row was last persisted").
+    entity.inseeCheckedAt = aggregate.insee.checkedAt;
     entity.deletedAt = aggregate.deletedAt;
+    // P12 — createdAt / updatedAt are intentionally NOT set here. The entity
+    // uses @CreateDateColumn / @UpdateDateColumn, so PostgreSQL sets the
+    // creation timestamp at INSERT and TypeORM bumps `updated_at` on every
+    // save. Setting them from the aggregate would freeze them.
     return entity;
   }
 }

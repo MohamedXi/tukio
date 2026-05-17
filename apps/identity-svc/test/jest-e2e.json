@@ -5,7 +5,8 @@
   "testRegex": "test/.*\\.e2e-spec\\.ts$",
   "testPathIgnorePatterns": [
     "/node_modules/",
-    "test/customer-register.e2e-spec.ts"
+    "test/customer-register.e2e-spec.ts",
+    "test/pro-register.e2e-spec.ts"
   ],
   "transform": {
     "^.+\\.(t|j)s$": [

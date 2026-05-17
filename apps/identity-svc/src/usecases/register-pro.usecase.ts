@@ -35,6 +35,7 @@ import {
   InseeSiretNotFoundError,
   InseeRateLimitError,
   InseeUnreachableError,
+  InseeAuthFailedError,
 } from '../domain/ports/insee-siret-validator.port.js';
 import {
   type IMediaStorage,
@@ -188,6 +189,18 @@ export class RegisterProUseCase {
           `INSEE rate limit reached, retry after ${err.retryAfterMs} ms`,
         );
       }
+      // Review P5 — distinct tukioCode so ops alerting can page on apiKey
+      // misconfiguration without it being conflated with transient outages.
+      if (err instanceof InseeAuthFailedError) {
+        this.logger.error(
+          'INSEE SIRENE API authentication failed — apiKey misconfigured or revoked',
+          { status: err.status, correlationId },
+        );
+        throw this.external(
+          IdentityErrorCodes.EXTERNAL_INSEE_AUTH_FAILED,
+          'INSEE service authentication failed',
+        );
+      }
       if (err instanceof InseeUnreachableError) {
         throw this.external(
           IdentityErrorCodes.EXTERNAL_INSEE_UNREACHABLE,
@@ -250,47 +263,67 @@ export class RegisterProUseCase {
     //    Story 1.10 reconciliation job).
     const userProfileId = this.newUuid();
     const proProfileId = this.newUuid();
-    // Track keys as each upload completes so partial failures can be compensated.
+    // P19 — Promise.allSettled waits for ALL uploads to finish (success or
+    // failure) before deciding what to compensate. Promise.all rejects on the
+    // first failure and races the still-resolving `.then()` callbacks, which
+    // can leave `uploadedKeys.*R2Key` as '' for an upload that did complete →
+    // the orphan blob would never be compensated.
     const uploadedKeys: UploadedKycKeys = {
       idCardR2Key: '',
       ribR2Key: '',
       kbisR2Key: null,
     };
-    try {
-      await Promise.all([
-        this.uploadKyc(
-          userProfileId,
-          'id-card',
-          input.files.idCard,
-          correlationId,
-        ).then((key) => {
+    const uploadDescriptors: Array<{
+      docType: 'id-card' | 'rib' | 'kbis-or-insee';
+      file: RegisterProFile;
+      assignKey: (key: string) => void;
+    }> = [
+      {
+        docType: 'id-card',
+        file: input.files.idCard,
+        assignKey: (key) => {
           uploadedKeys.idCardR2Key = key;
-        }),
-        this.uploadKyc(
-          userProfileId,
-          'rib',
-          input.files.rib,
-          correlationId,
-        ).then((key) => {
+        },
+      },
+      {
+        docType: 'rib',
+        file: input.files.rib,
+        assignKey: (key) => {
           uploadedKeys.ribR2Key = key;
-        }),
-        input.files.kbisOrInsee
-          ? this.uploadKyc(
-              userProfileId,
-              'kbis-or-insee',
-              input.files.kbisOrInsee,
-              correlationId,
-            ).then((key) => {
-              uploadedKeys.kbisR2Key = key;
-            })
-          : Promise.resolve(),
-      ]);
-    } catch (err) {
-      // Compensate Keycloak before bubbling the R2 error to the caller; any
-      // partial uploads that completed before the failure are deleted in
-      // `compensateR2` below.
+        },
+      },
+    ];
+    if (input.files.kbisOrInsee) {
+      uploadDescriptors.push({
+        docType: 'kbis-or-insee',
+        file: input.files.kbisOrInsee,
+        assignKey: (key) => {
+          uploadedKeys.kbisR2Key = key;
+        },
+      });
+    }
+    const results = await Promise.allSettled(
+      uploadDescriptors.map(async (d) => {
+        const key = await this.uploadKyc(
+          userProfileId,
+          d.docType,
+          d.file,
+          correlationId,
+        );
+        d.assignKey(key);
+        return key;
+      }),
+    );
+    const firstFailure = results.find(
+      (r): r is PromiseRejectedResult => r.status === 'rejected',
+    );
+    if (firstFailure) {
+      // Every settled upload (even the failed one's predecessors in the array)
+      // has now had a chance to assign its key. compensateR2 will delete every
+      // R2 object whose key is non-empty.
       await this.compensateR2(uploadedKeys, correlationId);
       await this.compensateKeycloak(keycloakUserId, correlationId);
+      const err: unknown = firstFailure.reason;
       if (err instanceof MediaStorageUploadError) {
         throw this.external(
           IdentityErrorCodes.EXTERNAL_R2_UPLOAD_FAILED,
@@ -323,6 +356,8 @@ export class RegisterProUseCase {
         status: UserStatus.PENDING_ADMIN_REVIEW,
       });
 
+      // After the `administrativeStatus !== 'active'` guard above, we know
+      // it is the narrowed literal `'active'` (matches RegisterProProps).
       const proProfile = ProProfile.register({
         id: proProfileId,
         userProfileId,
@@ -336,11 +371,12 @@ export class RegisterProUseCase {
           ribR2Key: uploadedKeys.ribR2Key,
           kbisR2Key: uploadedKeys.kbisR2Key,
         },
-        inseeAdministrativeStatus: inseeSnapshot.administrativeStatus,
+        inseeAdministrativeStatus: 'active',
         insee: {
           legalName: inseeSnapshot.legalName,
           incorporationDate: inseeSnapshot.incorporationDate,
           legalCategory: inseeSnapshot.legalCategory,
+          naf: inseeSnapshot.naf,
         },
         now,
       });
@@ -546,6 +582,7 @@ export class RegisterProUseCase {
         inseeLegalName: proProfile.insee.legalName,
         inseeIncorporationDate: proProfile.insee.incorporationDate,
         inseeLegalCategory: proProfile.insee.legalCategory,
+        inseeNaf: proProfile.insee.naf,
         acquisitionSource: userProfile.acquisition.source,
         acquisitionMedium: userProfile.acquisition.medium ?? null,
         acquisitionCampaign: userProfile.acquisition.campaign ?? null,

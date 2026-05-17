@@ -14,6 +14,9 @@ import { ResponseEnvelopeInterceptor } from './infrastructure/http/interceptors/
 import { LOGGER } from './domain/ports/tokens.js';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_FILES_PER_REQUEST = 3;
+const MAX_PARTS_PER_REQUEST = 5;
+const MAX_FIELD_SIZE_BYTES = 1 * 1024 * 1024;
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -24,7 +27,18 @@ async function bootstrap(): Promise<void> {
 
   // Register @fastify/multipart before any route handling.
   // Story 1.3b — `POST /internal/pros` uses multipart for KYC file uploads.
-  await app.register(multipart, { limits: { fileSize: MAX_FILE_SIZE_BYTES } });
+  // Story 1.3b review P2/P7 — throwFileSizeLimit makes oversized uploads fail
+  // explicitly (413) instead of silently truncating the buffer. files/parts/
+  // fieldSize caps defeat DoS via request inflation.
+  await app.register(multipart, {
+    throwFileSizeLimit: true,
+    limits: {
+      fileSize: MAX_FILE_SIZE_BYTES,
+      files: MAX_FILES_PER_REQUEST,
+      parts: MAX_PARTS_PER_REQUEST,
+      fieldSize: MAX_FIELD_SIZE_BYTES,
+    },
+  });
 
   // Route NestJS internal logs (bootstrap, DI errors) through the Pino adapter.
   app.useLogger(app.get<LoggerService>(LOGGER));

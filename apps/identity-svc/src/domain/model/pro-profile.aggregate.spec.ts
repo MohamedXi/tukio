@@ -31,6 +31,7 @@ const baseRegisterProps: RegisterProProps = {
     legalName: 'LA POSTE',
     incorporationDate: '1991-01-01',
     legalCategory: '5510',
+    naf: '5310Z',
   },
   now: new Date('2026-05-16T10:00:00.000Z'),
 };
@@ -103,12 +104,32 @@ describe('ProProfile.register', () => {
   });
 
   it('throws InvalidProProfileException when inseeAdministrativeStatus is not active (D1 invariant)', () => {
+    // Cast through `unknown` because the type was narrowed to `'active'`
+    // (Story 1.3b review P20); the runtime guard still self-protects.
     expect(() =>
       ProProfile.register({
         ...baseRegisterProps,
-        inseeAdministrativeStatus: 'ceased',
+        inseeAdministrativeStatus: 'ceased' as unknown as 'active',
       }),
     ).toThrow(InvalidProProfileException);
+  });
+
+  it('records the INSEE checkedAt timestamp at registration time', () => {
+    const now = new Date('2026-05-16T10:00:00.000Z');
+    const p = ProProfile.register({ ...baseRegisterProps, now });
+    expect(p.insee.checkedAt).toEqual(now);
+  });
+
+  it('preserves the NAF code captured at registration', () => {
+    const p = ProProfile.register(baseRegisterProps);
+    expect(p.insee.naf).toBe('5310Z');
+  });
+
+  it('initialises kycDecision to all-null on a fresh registration', () => {
+    const p = ProProfile.register(baseRegisterProps);
+    expect(p.kycDecision.decidedAt).toBeNull();
+    expect(p.kycDecision.decidedBy).toBeNull();
+    expect(p.kycDecision.reason).toBeNull();
   });
 });
 
@@ -131,6 +152,13 @@ describe('ProProfile.create (invariants)', () => {
       legalName: null,
       incorporationDate: null,
       legalCategory: null,
+      naf: null,
+      checkedAt: new Date('2026-05-16T10:00:00.000Z'),
+    },
+    kycDecision: {
+      decidedAt: null,
+      decidedBy: null,
+      reason: null,
     },
     createdAt: new Date('2026-05-16T10:00:00.000Z'),
     updatedAt: new Date('2026-05-16T10:00:00.000Z'),

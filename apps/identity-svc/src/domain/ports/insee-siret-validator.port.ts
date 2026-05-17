@@ -35,6 +35,23 @@ export class InseeUnreachableError extends Error {
 }
 
 /**
+ * INSEE returned 401/403 — apiKey is misconfigured or revoked. Distinct from
+ * `InseeUnreachableError` so the use case can surface a different tukioCode
+ * (`IDENTITY-EXTERNAL-AUTH_FAILED`) and ops alerting can page on
+ * "INSEE creds bad" without it drowning in transient outage noise
+ * (Story 1.3b code-review P5).
+ */
+export class InseeAuthFailedError extends Error {
+  readonly status: number;
+  constructor(status: number) {
+    super(`INSEE SIRENE API authentication failed (status ${status})`);
+    this.name = 'InseeAuthFailedError';
+    this.status = status;
+    Object.setPrototypeOf(this, InseeAuthFailedError.prototype);
+  }
+}
+
+/**
  * Administrative status of a legal entity in the INSEE SIRENE register.
  * Mapped from the raw French API value `etatAdministratifUniteLegale`:
  *   `'A'` (actif) → `'active'`, `'C'` (cessé) → `'ceased'`.
@@ -50,6 +67,11 @@ export interface InseeSiretSnapshot {
   incorporationDate: string | null;
   /** INSEE legal category code e.g. `'5710'` = SAS (`categorieJuridiqueUniteLegale`). */
   legalCategory: string | null;
+  /**
+   * NAF activity code e.g. `'5310Z'` = postal services (`activitePrincipaleUniteLegale`).
+   * Needed by AC10 metrics dashboard (parent Story 1.3). Added in Story 1.3b code-review D3.
+   */
+  naf: string | null;
 }
 
 /**

@@ -53,9 +53,21 @@ const buildConfigMock = (): IConfigService => ({
   getKeycloakAdminConfig: jest.fn().mockReturnValue(adminConfig),
   getInternalServiceSecret: jest.fn().mockReturnValue('hmac-secret'),
   getPublicBaseUrl: jest.fn().mockReturnValue('http://localhost:3000'),
-  getNatsConfig: jest.fn(),
-  getInseeConfig: jest.fn(),
-  getR2KycConfig: jest.fn(),
+  getNatsConfig: jest.fn().mockReturnValue({
+    url: 'nats://localhost:4222',
+    streamName: 'TUKIO_TEST',
+    replicas: 1,
+  }),
+  getInseeConfig: jest.fn().mockReturnValue({
+    apiUrl: 'https://api.insee.fr',
+    apiKey: 'test-api-key',
+  }),
+  getR2KycConfig: jest.fn().mockReturnValue({
+    endpoint: 'https://test-account.eu.r2.cloudflarestorage.com',
+    bucket: 'tukio-kyc-staging',
+    accessKeyId: 'test-access-key-id',
+    secretAccessKey: 'test-secret-access-key',
+  }),
   getR2KycBucket: jest.fn().mockReturnValue('tukio-kyc-staging'),
 });
 

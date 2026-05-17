@@ -26,6 +26,8 @@ export interface ProRegisteredV1Payload {
   inseeLegalName: string | null;
   inseeIncorporationDate: string | null;
   inseeLegalCategory: string | null;
+  /** NAF activity code (Story 1.3b review D3 — needed for AC10 metrics dashboard). */
+  inseeNaf: string | null;
   acquisitionSource: AcquisitionSource;
   acquisitionMedium: string | null;
   acquisitionCampaign: string | null;

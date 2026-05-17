@@ -22,9 +22,15 @@ export class CreateProProfilesTable1715240000000 implements MigrationInterface {
         kyc_decision_by UUID NULL,
         kyc_decision_reason TEXT NULL,
         insee_denomination VARCHAR(200) NULL,
-        insee_incorporation_date VARCHAR(10) NULL,
+        -- Story 1.3b review D3: incorporation_date is DATE (was VARCHAR(10))
+        -- so we can index/range-query without parsing strings.
+        insee_incorporation_date DATE NULL,
         insee_legal_category VARCHAR(10) NULL,
-        insee_checked_at TIMESTAMPTZ NULL,
+        -- Story 1.3b review D3: NAF activity code (5-char) — needed by AC10
+        -- metrics dashboard from parent Story 1.3 (dropped in initial impl,
+        -- restored after review).
+        insee_naf VARCHAR(10) NULL,
+        insee_checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         deleted_at TIMESTAMPTZ NULL
@@ -33,7 +39,7 @@ export class CreateProProfilesTable1715240000000 implements MigrationInterface {
 
     // FR16 anti-doublon: unique SIRET among non-soft-deleted Pro accounts.
     await queryRunner.query(`
-      CREATE UNIQUE INDEX idx_pro_profiles_siret_active
+      CREATE UNIQUE INDEX uq_pro_profiles_siret
         ON pro_profiles (siret)
         WHERE deleted_at IS NULL
     `);
@@ -55,9 +61,7 @@ export class CreateProProfilesTable1715240000000 implements MigrationInterface {
       `DROP INDEX IF EXISTS idx_pro_profiles_insee_checked_at`,
     );
     await queryRunner.query(`DROP INDEX IF EXISTS idx_pro_profiles_kyc_status`);
-    await queryRunner.query(
-      `DROP INDEX IF EXISTS idx_pro_profiles_siret_active`,
-    );
+    await queryRunner.query(`DROP INDEX IF EXISTS uq_pro_profiles_siret`);
     await queryRunner.query(`DROP TABLE IF EXISTS pro_profiles`);
   }
 }

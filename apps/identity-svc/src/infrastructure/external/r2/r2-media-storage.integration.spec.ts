@@ -70,32 +70,26 @@ describe('R2MediaStorageService (integration — aws-sdk-client-mock)', () => {
   describe('getSignedUrl()', () => {
     it('returns a pre-signed URL with the expected TTL', async () => {
       // aws-sdk-client-mock does not mock getSignedUrl (it uses the S3Client
-      // credentials). We verify the URL is a string and contains the key.
-      // In a real integration test, verify against a running MinIO or R2.
-      const svc = makeService();
       // The presigner signs locally — it doesn't make a network call.
+      // P21 — assert the X-Amz-Expires query parameter matches the requested TTL.
+      const svc = makeService();
       const url = await svc.getSignedUrl({
         bucket: TEST_BUCKET,
         key: TEST_KEY,
         ttlSeconds: 300,
       });
-      expect(typeof url).toBe('string');
-      expect(url.length).toBeGreaterThan(0);
+      expect(url).toContain(TEST_KEY);
+      expect(url).toContain('X-Amz-Expires=300');
     });
 
-    it('throws MediaStorageNotFoundError when object key does not exist', async () => {
-      // Simulate NoSuchKey error from presigner (would come from presigned URL
-      // fetch, but here we force it on the GetObjectCommand mock).
-      // In practice, getSignedUrl itself doesn't fail — the pre-signed URL
-      // fetch would return 404. We verify the error wrapping in the adapter.
-      // This test documents the adapter contract for callers.
+    it('honours a 60s TTL by emitting X-Amz-Expires=60', async () => {
       const svc = makeService();
       const url = await svc.getSignedUrl({
         bucket: TEST_BUCKET,
-        key: 'nonexistent/file.jpg',
-        ttlSeconds: 300,
+        key: TEST_KEY,
+        ttlSeconds: 60,
       });
-      expect(typeof url).toBe('string');
+      expect(url).toContain('X-Amz-Expires=60');
     });
   });
 

@@ -1,4 +1,11 @@
-import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity({ name: 'pro_profiles' })
 export class ProProfileEntity {
@@ -72,10 +79,11 @@ export class ProProfileEntity {
   })
   inseeDenomination!: string | null;
 
+  // ISO date `YYYY-MM-DD`. Stored as PostgreSQL `date` type (Story 1.3b
+  // review D3 — was VARCHAR(10), now DATE for proper indexing/range queries).
   @Column({
     name: 'insee_incorporation_date',
-    type: 'varchar',
-    length: 10,
+    type: 'date',
     nullable: true,
   })
   inseeIncorporationDate!: string | null;
@@ -88,14 +96,26 @@ export class ProProfileEntity {
   })
   inseeLegalCategory!: string | null;
 
-  @Index('idx_pro_profiles_insee_checked_at')
-  @Column({ name: 'insee_checked_at', type: 'timestamptz', nullable: true })
-  inseeCheckedAt!: Date | null;
+  // NAF activity code (Story 1.3b review D3 — needed for AC10 metrics dashboard).
+  @Column({
+    name: 'insee_naf',
+    type: 'varchar',
+    length: 10,
+    nullable: true,
+  })
+  inseeNaf!: string | null;
 
-  @Column({ name: 'created_at', type: 'timestamptz', default: () => 'NOW()' })
+  @Index('idx_pro_profiles_insee_checked_at')
+  @Column({ name: 'insee_checked_at', type: 'timestamptz' })
+  inseeCheckedAt!: Date;
+
+  // P12: DB-managed timestamps — let PostgreSQL DEFAULT NOW() handle creation
+  // and let TypeORM bump `updated_at` on each save (was set explicitly from
+  // the aggregate, which froze `updated_at` to the original `register()` time).
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 
-  @Column({ name: 'updated_at', type: 'timestamptz', default: () => 'NOW()' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt!: Date;
 
   @Column({ name: 'deleted_at', type: 'timestamptz', nullable: true })

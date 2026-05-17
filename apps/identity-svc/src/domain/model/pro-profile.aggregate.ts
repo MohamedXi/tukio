@@ -16,13 +16,32 @@ const COMPANY_NAME_MAX = 200;
  *
  * Field names are English mappings of the INSEE SIRENE V3.11 wire format:
  *   denominationUniteLegale → legalName
- *   dateCreationUniteLegale → incorporationDate
+ *   dateCreationUniteLegale → incorporationDate (ISO 'YYYY-MM-DD')
  *   categorieJuridiqueUniteLegale → legalCategory
+ *   activitePrincipaleUniteLegale → naf (Story 1.3b review D3 — needed for AC10 metrics dashboard)
+ *
+ * `checkedAt` records when INSEE was last consulted for this snapshot (Story 1.3b
+ * review P13 — moved from the mapper to keep the semantic correct: it means
+ * "when INSEE returned this data", not "when the row was last saved").
  */
 export interface ProInseeSnapshot {
   legalName: string | null;
   incorporationDate: string | null;
   legalCategory: string | null;
+  naf: string | null;
+  checkedAt: Date;
+}
+
+/**
+ * Admin KYC decision audit trail. Set when an admin transitions kycStatus
+ * to `approved` or `rejected` (Story 2.3-2.4). Story 1.3b review D2 — modelled
+ * on the aggregate so `ProProfileMapper.toEntity` round-trips cleanly and
+ * does not silently wipe these columns on re-save.
+ */
+export interface ProKycDecision {
+  decidedAt: Date | null;
+  decidedBy: string | null;
+  reason: string | null;
 }
 
 /**
@@ -48,6 +67,7 @@ export interface ProProfileProps {
   kycStatus: KycStatus;
   kyc: ProKycRefs;
   insee: ProInseeSnapshot;
+  kycDecision: ProKycDecision;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -63,11 +83,13 @@ export interface RegisterProProps {
   kyc: ProKycRefs;
   /**
    * Administrative status from the INSEE SIRENE register at registration time.
-   * Only `'active'` is accepted — the factory throws `InvalidProProfileException`
-   * if any other value is passed (domain invariant: you cannot register an inactive SIRET).
+   * Always `'active'` — the use case must validate against INSEE before calling
+   * this factory. The factory still self-protects (defense-in-depth) and throws
+   * `InvalidProProfileException` if any other value is passed, but the type is
+   * narrowed to the only legal value (Story 1.3b review P20).
    */
-  inseeAdministrativeStatus: 'active' | 'ceased';
-  insee: ProInseeSnapshot;
+  inseeAdministrativeStatus: 'active';
+  insee: Omit<ProInseeSnapshot, 'checkedAt'>;
   /** Override for tests; defaults to `randomUUID()` at call time. */
   id?: string;
   /** Override for tests; defaults to `new Date()` at call time. */
@@ -85,6 +107,7 @@ export class ProProfile {
   readonly kycStatus: KycStatus;
   readonly kyc: ProKycRefs;
   readonly insee: ProInseeSnapshot;
+  readonly kycDecision: ProKycDecision;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly deletedAt: Date | null;
@@ -100,6 +123,7 @@ export class ProProfile {
     this.kycStatus = props.kycStatus;
     this.kyc = props.kyc;
     this.insee = props.insee;
+    this.kycDecision = props.kycDecision;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
     this.deletedAt = props.deletedAt;
@@ -137,8 +161,12 @@ export class ProProfile {
    */
   static register(props: RegisterProProps): ProProfile {
     if (props.inseeAdministrativeStatus !== 'active') {
+      // After the narrowed type `'active'`, TypeScript flags `props.inseeAdministrativeStatus`
+      // as `never` here. The runtime guard still fires (defense-in-depth) when
+      // callers bypass the type system via cast — coerce to String for the message.
+      const received: string = String(props.inseeAdministrativeStatus);
       throw new InvalidProProfileException(
-        `SIRET must be administratively active at registration (got: ${props.inseeAdministrativeStatus})`,
+        `SIRET must be administratively active at registration (got: ${received})`,
       );
     }
     const now = props.now ?? new Date();
@@ -162,6 +190,13 @@ export class ProProfile {
         legalName: props.insee.legalName,
         incorporationDate: props.insee.incorporationDate,
         legalCategory: props.insee.legalCategory,
+        naf: props.insee.naf,
+        checkedAt: now,
+      },
+      kycDecision: {
+        decidedAt: null,
+        decidedBy: null,
+        reason: null,
       },
       createdAt: now,
       updatedAt: now,

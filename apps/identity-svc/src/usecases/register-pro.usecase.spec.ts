@@ -52,6 +52,7 @@ const VALID_INSEE: InseeSiretSnapshot = {
   legalName: 'LA POSTE',
   incorporationDate: '1991-01-01',
   legalCategory: '5510',
+  naf: '5310Z',
 };
 
 const mkFile = (filename: string, contentType: string): RegisterProFile => ({
@@ -102,7 +103,12 @@ const existingPro = (): ProProfile =>
     contactPhone: PhoneNumber.create('+33611111111'),
     kyc: { idCardR2Key: 'k1', ribR2Key: 'k2', kbisR2Key: null },
     inseeAdministrativeStatus: 'active',
-    insee: { legalName: null, incorporationDate: null, legalCategory: null },
+    insee: {
+      legalName: null,
+      incorporationDate: null,
+      legalCategory: null,
+      naf: null,
+    },
   });
 
 const existingUser = (): UserProfile =>

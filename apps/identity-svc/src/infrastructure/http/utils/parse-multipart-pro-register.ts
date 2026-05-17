@@ -49,19 +49,41 @@ export async function parseMultipartProRegister(
   let payloadJson: string | undefined;
   const uploadedFiles: Partial<Record<FileField, RegisterProFile>> = {};
 
+  // Limits are also enforced at the @fastify/multipart registration level in
+  // main.ts (P2/P7). Repeating here documents the parser-side contract.
   const parts = req.parts({ limits: { fileSize: 5 * 1024 * 1024 } });
   for await (const rawPart of parts) {
     const part = rawPart as { type: string };
     if (part.type === 'field') {
       const fieldPart = rawPart as MultipartValue<string>;
       if (fieldPart.fieldname === 'payload') {
+        if (payloadJson !== undefined) {
+          throw new BadRequestException(
+            'Duplicate `payload` field in multipart body',
+          );
+        }
         payloadJson = fieldPart.value;
       }
+      // Other field names (non-`payload`) are ignored. The @fastify/multipart
+      // `parts` cap at main.ts already bounds the total count.
     } else {
       const filePart = rawPart as MultipartFile;
+      // P8 — reject unknown file fieldnames explicitly (was: silently consumed
+      // via .resume()/continue). Bandwidth still spent reading the part, but
+      // the caller gets a clear 400 instead of a misleading silent success.
       if (!isFileField(filePart.fieldname)) {
         filePart.file.resume();
-        continue;
+        throw new BadRequestException(
+          `Unknown file field: ${filePart.fieldname}`,
+        );
+      }
+      // P9 — reject duplicate file fields (same fieldname twice). Without this
+      // the second part silently overwrote the first, masking smuggle attempts.
+      if (uploadedFiles[filePart.fieldname] !== undefined) {
+        filePart.file.resume();
+        throw new BadRequestException(
+          `Duplicate file field: ${filePart.fieldname}`,
+        );
       }
       if (!ALLOWED_MIME_TYPES.has(filePart.mimetype)) {
         filePart.file.resume();
