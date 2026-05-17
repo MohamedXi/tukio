@@ -9,6 +9,7 @@ import { AddOutboxInboxTables1715210000000 } from './1715210000000-AddOutboxInbo
 import { AddAcquisitionColumns1715220000000 } from './1715220000000-AddAcquisitionColumns.js';
 import { AddCustomerRegistrationFields1715230000000 } from './1715230000000-AddCustomerRegistrationFields.js';
 import { CreateProProfilesTable1715240000000 } from './1715240000000-CreateProProfilesTable.js';
+import { AddConversionFieldsToProProfiles1715250000000 } from './1715250000000-AddConversionFieldsToProProfiles.js';
 
 export const ALL_MIGRATIONS = [
   CreateUserProfilesBaseline1715200000000,
@@ -16,4 +17,5 @@ export const ALL_MIGRATIONS = [
   AddAcquisitionColumns1715220000000,
   AddCustomerRegistrationFields1715230000000,
   CreateProProfilesTable1715240000000,
+  AddConversionFieldsToProProfiles1715250000000,
 ];

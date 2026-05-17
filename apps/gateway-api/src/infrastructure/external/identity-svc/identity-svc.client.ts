@@ -213,11 +213,13 @@ function extractProResponse(
       'identity-svc returned a null or missing data field in the envelope',
     );
   }
+  // Story 1.3b-bis: requiresEmailVerification is now `false` (Customer is already
+  // email-verified). Updated from `!== true` to `!== false`.
   if (
     typeof data.userId !== 'string' ||
     typeof data.proProfileId !== 'string' ||
     data.requiresAdminReview !== true ||
-    data.requiresEmailVerification !== true
+    data.requiresEmailVerification !== false
   ) {
     throw new IdentitySvcUnreachableError(
       'identity-svc returned an envelope with unexpected shape',

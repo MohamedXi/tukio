@@ -1,5 +1,16 @@
 # Deferred Work
 
+## Deferred from: code review of 1-3a-bis-extend-register-pro-input-schema (2026-05-17)
+
+- **D1** — `requiresEmailVerification: z.literal(false)` dans `RegisterProResponseSchema` : la valeur est logiquement correcte (Customer déjà vérifié) mais la response schema complète sera redéfinie dans Story 1.3b-bis handler refactor. Actuellement `literal(false)` — confirmer ou ajuster lors de 1.3b-bis review. [décision review 2026-05-17]
+- **W1** — Année 0000 acceptée comme DoB (pas de borne inférieure min, ex: 1900) [register-pro.dto.ts] — Cas hypothétique, aucun impact pratique. Ajouter `.refine(y >= 1900)` en V1+.
+- **W2** — City Unicode-whitespace-only (zero-width space `​` non trimmé par `String.prototype.trim()`) [register-pro.dto.ts] — Cas extrêmement rare pour un nom de ville FR MVP. Déféré.
+- **W3** — `radiusKm` float/entier : message d'erreur Zod non testé [register-pro.spec.ts] — Fonctionnellement correct, test message fin déféré.
+- **W4** — `vatNumber` avec lettres exclues I/O non testées explicitement [register-pro.spec.ts] — Regex `[0-9A-HJ-NP-Z]` correct, test exhaustif déféré.
+- **W5** — Téléphone `+337XXXXXXXX` (mobile 07) non explicitement testé [register-pro.spec.ts] — Regex valide (7 match `[1-9]`), test déféré.
+- **W6** — `legalForm` avec valeurs limites (null, numérique, empty string) non testées [register-pro.spec.ts] — Enum Zod rejette automatiquement, test fin déféré.
+- **W7** — Cast `(noCharter as { acceptCharter?: true }).acceptCharter` cosmétiquement trompeur [register-pro.spec.ts] — Fonctionne correctement à runtime, refactor cosmétique déféré.
+
 ## Deferred from: code review of 1-3c-gateway-api-pro-register-multipart-forwarder (2026-05-17)
 
 - **W1** — Throttler keyed sur proxy IP (`trustProxy` absent) [`main.ts:FastifyAdapter`] — `FastifyAdapter({ logger: false })` sans `trustProxy: true` : `req.ip` = IP Caddy reverse proxy en prod, pas l'IP client réelle. Limite 3/min partagée par tous derrière le proxy. Pre-existing depuis Story 1.2c (affecte aussi `/v1/auth/customer/register`). Fix : ajouter `trustProxy: true` à `FastifyAdapter`.

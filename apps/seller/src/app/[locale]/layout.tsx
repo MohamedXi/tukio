@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 import './globals.css';
 
 const fraunces = Fraunces({
@@ -27,8 +29,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Tukio — Seller',
-  description: 'Tukio seller area (Sprint 0 placeholder).',
+  title: 'Tukio — Espace Pro',
+  description: 'Espace pro tukio.one — onboarding, fiches service, réservations.',
 };
 
 export default async function RootLayout({
@@ -39,12 +41,15 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
+  const messages = await getMessages();
   return (
     <html
       lang={locale}
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+      </body>
     </html>
   );
 }

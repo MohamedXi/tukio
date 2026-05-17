@@ -56,6 +56,24 @@ export interface ProKycRefs {
   kbisR2Key: string | null;
 }
 
+/**
+ * Conversion wizard fields collected in Story 1.3b-bis (new in `ProProfileProps`
+ * vs the Story 1.3b baseline). Stored at registration/conversion time so the
+ * admin review queue (Story 2.3-2.4) and frontend profile page can display them.
+ */
+export interface ProConversionFields {
+  /** ISO `YYYY-MM-DD` — must be ≥ 18 years at submission (validated by DTO). */
+  dateOfBirth: string;
+  /** Legal form (business structure): SAS_SASU | EURL_SARL | MICRO_ENTREPRISE | AUTO_ENTREPRENEUR | ASSO_1901. */
+  legalForm: string;
+  /** VAT registration status: vat_registered | vat_exempt. */
+  vatStatus: string;
+  /** MVP 6-category whitelist. 1-2 unique items. */
+  categories: readonly string[];
+  /** Intervention zone — city name + radius in km. */
+  serviceZone: { readonly city: string; readonly radiusKm: number };
+}
+
 export interface ProProfileProps {
   id: string;
   userProfileId: string;
@@ -68,6 +86,7 @@ export interface ProProfileProps {
   kyc: ProKycRefs;
   insee: ProInseeSnapshot;
   kycDecision: ProKycDecision;
+  conversion: ProConversionFields;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -90,6 +109,7 @@ export interface RegisterProProps {
    */
   inseeAdministrativeStatus: 'active';
   insee: Omit<ProInseeSnapshot, 'checkedAt'>;
+  conversion: ProConversionFields;
   /** Override for tests; defaults to `randomUUID()` at call time. */
   id?: string;
   /** Override for tests; defaults to `new Date()` at call time. */
@@ -108,6 +128,7 @@ export class ProProfile {
   readonly kyc: ProKycRefs;
   readonly insee: ProInseeSnapshot;
   readonly kycDecision: ProKycDecision;
+  readonly conversion: ProConversionFields;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly deletedAt: Date | null;
@@ -124,6 +145,7 @@ export class ProProfile {
     this.kyc = props.kyc;
     this.insee = props.insee;
     this.kycDecision = props.kycDecision;
+    this.conversion = props.conversion;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
     this.deletedAt = props.deletedAt;
@@ -197,6 +219,16 @@ export class ProProfile {
         decidedAt: null,
         decidedBy: null,
         reason: null,
+      },
+      conversion: {
+        dateOfBirth: props.conversion.dateOfBirth,
+        legalForm: props.conversion.legalForm,
+        vatStatus: props.conversion.vatStatus,
+        categories: [...props.conversion.categories],
+        serviceZone: {
+          city: props.conversion.serviceZone.city,
+          radiusKm: props.conversion.serviceZone.radiusKm,
+        },
       },
       createdAt: now,
       updatedAt: now,

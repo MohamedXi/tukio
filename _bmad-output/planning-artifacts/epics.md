@@ -485,7 +485,7 @@ Inputs primaires :
 |----|------|-------|------|
 | FR1 | Epic 1 | MVP | Customer registration B2C particulier |
 | FR2 | Epic 8 | V1 | B2B Customer registration |
-| FR3 | Epic 1 + Epic 2 | MVP | Pro registration (Epic 1) + onboarding/KYC (Epic 2) |
+| FR3 | Epic 1 + Epic 2 | MVP | Pro conversion wizard Identité+Activité+Documents+Récap (Epic 1 — voir FR13) → Stripe Connect + 1ère fiche (Epic 2) |
 | FR4 | Epic 1 | MVP | Login Keycloak email/password |
 | FR5 | Epic 7 | V1 | Social login Google/Apple |
 | FR6 | Epic 15 | V2 | SAML SSO Enterprise |
@@ -495,7 +495,7 @@ Inputs primaires :
 | FR10 | Epic 11 | V1 | MFA TOTP optionnel pro |
 | FR11 | Epic 2 | V1 | Profil pro enrichi (portfolio, équipe, certifs) |
 | FR12 | Epic 2 | V1 | Stripe Identity KYC complet |
-| FR13 | Epic 1 | V1 | Conversion customer → pro |
+| FR13 | Epic 1 | MVP | Conversion customer → pro (wizard 4 steps : Identité / Activité / Documents / Récap → `pending_admin_review`) |
 | FR14 | Epic 1 | MVP | Profile management |
 | FR15 | Epic 1 | MVP | Soft-delete + anonymisation RGPD |
 | FR16 | Epic 1 | MVP | Anti-doublon SIRET pro |
@@ -1114,22 +1114,29 @@ Epic 0 (Sprint 0 Foundation)
 - **Given** UX-DR9 (sign-up funnel), **When** je mesure le temps entre arrivée formulaire et succès, **Then** ≤ 30 s pour 90 % des inscriptions desktop (NFR48).
 - **Given** test Playwright e2e, **When** un Visitor s'inscrit, **Then** parcours validé sans erreur axe-core, FR + EN.
 
-#### Story 1.3: Pro registration with `pending_admin_review` status (`POST /v1/auth/pro/register`)
+#### Story 1.3: Customer→Pro conversion wizard with `pending_admin_review` status (`POST /v1/auth/pro/register`)
 
-> 🧩 **Décomposée en 4 sous-stories le 2026-05-16** via `/bmad-correct-course` (sprint-change-proposal-2026-05-16.md) : `1-3a-contracts-pro-domain-usecase` + `1-3b-identity-svc-infrastructure-insee-r2-controller` (deviation INSEE auth: apiKey direct au lieu d'OAuth2) + `1-3c-gateway-api-pro-register-multipart-forwarder` + `1-3d-frontend-wizard-seller-middleware-e2e-observability`. Pattern identique à Story 1.2 splittée 2026-05-15. Les ACs ci-dessous restent valides — la décomposition affecte uniquement la granularité d'exécution.
+> 🧩 **Décomposée en 4 sous-stories le 2026-05-16** via `/bmad-correct-course` (sprint-change-proposal-2026-05-16.md) : `1-3a-contracts-pro-domain-usecase` + `1-3b-identity-svc-infrastructure-insee-r2-controller` (deviation INSEE auth: apiKey direct au lieu d'OAuth2) + `1-3c-gateway-api-pro-register-multipart-forwarder` + `1-3d-frontend-wizard-seller-middleware-e2e-observability`.
+>
+> 🔄 **Re-cadrée le 2026-05-17** via `/bmad-correct-course` (sprint-change-proposal-2026-05-17.md) suite au constat que la spec divergeait du Cloud Design `docs/cloud-design-bundle/project/screens/mvp-pro-onboarding.jsx`. Le flow réel est : **Customer authentifié + email-verified → CTA "Devenir pro" dropdown avatar → wizard 4 steps** `/seller/onboarding/{step}` (Identité pré-remplie / Activité / Documents / Récap) **→ submit → page pending**. Backend Story 1.3a/b/c conservé (étendus via 1.3a-bis + 1.3b-bis ; endpoint réutilisé). Story 1.3d v1 mergée puis **rollback** (wizard + i18n + Playwright à supprimer dans Story 1.3d v2). Sub-stories actualisées : 1.3a ✅ + 1.3a-bis 🆕 + 1.3b ✅ + 1.3b-bis 🆕 + 1.3c ✅ + 1.3d v1 ❌ rollback + 1.3d v2 🆕.
 
-**As a** Visitor (futur Pro),
-**I want** to register as a Pro by submitting my company info (SIRET, raison sociale) + RIB + ID card, with my account flagged `pending_admin_review`,
-**So that** I can start the verification process and not bypass admin gating.
+**As a** Customer authentifié + email-verified,
+**I want** to convert my account to a Pro by completing a guided 4-step wizard (Identité / Activité / Documents / Récap) on `seller.tukio.one`,
+**So that** I can request to become a Pro on Tukio with my account flagged `pending_admin_review` for admin review — while preserving my existing account history.
 
 **Acceptance Criteria :**
 
-- **Given** un Visitor sur `tukio.one/fr/auth/sign-up?role=pro`, **When** il soumet step 1 `{ email, password, firstName, lastName, locale }` puis step 2 `{ companyName, siret, vatNumber?, address, contactPhone }` puis step 3 (uploads `idCard`, `rib`, `kbisOrInsee?`), **Then** identity-svc (1) valide format SIRET (14 digits + Luhn), (2) appelle `external/insee.api.gouv.fr/sirene/V3.11/siret/{siret}` pour vérifier existence et état actif, (3) si invalide, retourne 422 `IDENTITY-VALIDATION-002`, (4) si valide, crée le user Keycloak avec rôle `pro` + custom claim `tukio:status='pending_admin_review'`, (5) crée le `ProProfile` aggregate avec status `pending_admin_review`, (6) stocke uploads dans Cloudflare R2 chiffrés avec metadata `actorId`, (7) publie `identity.pro.registered.v1` (admin reçoit notif), (8) répond enveloppe avec `requiresAdminReview: true`.
-- **Given** un Pro qui essaie de s'inscrire avec un SIRET déjà utilisé par un autre `ProProfile` actif, **When** la step 2 est soumise, **Then** identity-svc retourne 409 enveloppe avec `tukioCode:'IDENTITY-CONFLICT-002'` (FR16, anti-doublon).
-- **Given** un Pro `pending_admin_review`, **When** il essaie d'accéder à `/seller/listings/new`, **Then** middleware Next.js redirige vers `/seller/onboarding/pending` avec un message "Votre dossier est en cours de vérification" + CTA "Voir l'avancement" (FR17).
-- **Given** UX-DR9, **When** je regarde le flow, **Then** je trouve un `<StepIndicator steps={['Compte','Société','Documents']} />` (Story 0.5).
-- **Given** la story Pro pending, **When** un Admin valide ou rejette le dossier (Epic 6), **Then** Pro reçoit un email transactionnel selon décision et son `tukio:status` Keycloak passe à `verified` ou `rejected` (FR3 ↔ FR54).
-- **Given** RGPD (NFR1), **When** un Pro upload sa pièce d'identité, **Then** le fichier est chiffré R2 server-side, accessible uniquement par admins via signed URLs 5 min, et purgé après 90 jours post-validation/rejet (rétention KYC).
+- **Given** un Customer authentifié + email-verified sur `tukio.one`, **When** il clique l'item "Devenir pro" dans le dropdown avatar, **Then** il est redirigé cross-zone vers `seller.tukio.one/{locale}/seller/onboarding/identity`.
+- **Given** le wizard step 1 "Identité" sur `/seller/onboarding/identity`, **When** il render, **Then** Prénom/Nom/Email sont pré-remplis depuis le compte Customer existant + champs additionnels Téléphone (required, hint "visible clients après acceptation") + Date de naissance (DD/MM/YYYY, required) + bannière RGPD brand-50.
+- **Given** le wizard step 2 "Activité" sur `/seller/onboarding/activity`, **When** soumis, **Then** identity-svc valide : companyName (required) + SIRET (Luhn live check + INSEE actif via apiKey, 422 `IDENTITY-VALIDATION-003` si inactif) + Forme juridique (enum SAS/SASU, EURL/SARL, Micro, Auto, Asso 1901) + Statut TVA (enum assujetti/non) + Catégories d'activité (1-2 max parmi 6 fixtures MVP) + Zone d'intervention (city + radiusKm 1-200) + Contact phone (FR format).
+- **Given** le wizard step 3 "Documents" sur `/seller/onboarding/documents`, **When** soumis, **Then** uploads `idCard` (required) + `rib` (required) + `kbisOrInsee?` (optional) stockés Cloudflare R2 chiffrés SSE-S3 (NFR15) avec metadata `actorId`.
+- **Given** le wizard step 4 "Récap" sur `/seller/onboarding/review`, **When** Pro coche la charte (acceptCharter required literal true) + clique "Soumettre mon dossier", **Then** identity-svc (1) assigne le rôle `pro` au user Keycloak existant (PAS créer un nouveau user) + set custom claim `tukio:status='pending_admin_review'`, (2) crée le `ProProfile` aggregate avec status `pending_admin_review`, (3) publie `identity.pro.registered.v1` (admin reçoit notif Story 2.3), (4) répond enveloppe avec `requiresAdminReview: true`, (5) frontend redirige vers `/seller/onboarding/pending`.
+- **Given** un Customer qui essaie de soumettre avec un SIRET déjà utilisé par un autre `ProProfile` actif, **When** la step 2 ou 4 est soumise, **Then** identity-svc retourne 409 enveloppe `tukioCode:'IDENTITY-CONFLICT-002'` (FR16, anti-doublon).
+- **Given** un Pro `pending_admin_review`, **When** il accède `/seller/listings/new` ou autre path transactionnel non-whitelist, **Then** middleware Next.js seller redirige vers `/seller/onboarding/pending` avec message "Votre dossier est en cours de vérification" (FR17). Whitelist : `/onboarding/*`, `/profile/*`, `/messaging/*`.
+- **Given** UX-DR9 + `docs/cloud-design-bundle/project/screens/mvp-pro-onboarding.jsx`, **When** je regarde le flow, **Then** je trouve : header simple (Logo + "Brouillon · sauvegardé il y a 1 min" + bouton "Continuer plus tard"), step indicator barres horizontales 4 segments + labels colorés (success-700 done / brand-700 current / charcoal-400 upcoming), layout single-column 720px max, Kicker "Étape N — Label" + H1 Fraunces + sub-paragraph.
+- **Given** la page pending `/seller/onboarding/pending`, **When** elle render, **Then** elle est conforme `ProOnbPendingScreen` : icône clock warning + headline "Dossier entre les mains d'un admin tukio" + "< 24h ouvrées" + card "Pendant ce temps préparez votre vitrine" 3 PendingTask (brouillon fiche, photos, politique annulation).
+- **Given** la story Pro pending, **When** un Admin valide ou rejette le dossier (Epic 2 Story 2.5), **Then** Pro reçoit un email transactionnel selon décision et son `tukio:status` Keycloak passe à `verified` (chemin → Stripe Connect Story 2.1) ou `rejected` (CTA "Corriger" Story 2.5).
+- **Given** RGPD (NFR1, NFR15), **When** un Pro upload sa pièce d'identité, **Then** chiffré R2 SSE-S3 server-side, accessible uniquement par admins via signed URLs 5 min, et purgé après 90 jours post-validation/rejet (rétention KYC — cf. runbook `docs/runbook/kyc-docs-retention.md`).
 
 #### Story 1.4: Login flow Keycloak (`POST /v1/auth/login` + Authorization Code + PKCE)
 
@@ -1171,7 +1178,7 @@ Epic 0 (Sprint 0 Foundation)
 **Acceptance Criteria :**
 
 - **Given** un user fraîchement inscrit, **When** il reçoit l'email "Vérifiez votre adresse" template Resend, **Then** il contient un lien `tukio.one/fr/auth/email/verify?token=...` (TTL 7 jours).
-- **Given** le user clique le lien, **When** il arrive sur la landing page, **Then** identity-svc valide le token via Keycloak, set `email_verified=true` dans Keycloak, publie `identity.email.verified.v1`, et la page affiche un message succès avec CTA "Continuer" (vers `/account/dashboard` si client, `/seller/onboarding` si pro pending).
+- **Given** le user clique le lien, **When** il arrive sur la landing page, **Then** identity-svc valide le token via Keycloak, set `email_verified=true` dans Keycloak, publie `identity.email.verified.v1`, et la page affiche un message succès avec CTA "Continuer" vers `/account/dashboard` (default Customer — l'option "Devenir pro" est accessible ensuite depuis le dropdown avatar pour démarrer le wizard conversion, cf. Story 1.3).
 - **Given** la landing page de verification (UX-DR10 — gap MVP critique à designer Sprint 0), **When** elle render, **Then** elle utilise les composants `<EmptyState variant="success">` (Story 0.5) avec icône check + titre Fraunces + description.
 - **Given** un token expiré, **When** le user clique, **Then** la page affiche "Lien expiré" + CTA "Renvoyer un email de vérification" qui appelle `POST /v1/auth/email/resend` (rate-limit 1/5 min).
 - **Given** un Customer email non vérifié qui essaie de réserver (FR17), **When** il accède `/customer/bookings/checkout`, **Then** middleware redirige vers `/auth/verify-email-required` qui affiche "Vérifiez votre email pour continuer" + CTA "Renvoyer le lien".
@@ -1269,23 +1276,27 @@ Epic 0 (Sprint 0 Foundation)
 - **Given** la NFR15, **When** un Stripe webhook arrive avec PII, **Then** payment-svc ne log JAMAIS le payload complet (uniquement `eventId, type, accountId`), et stocke `currently_due` requirements dans une colonne dédiée.
 - **Given** un Pro qui veut tester (sandbox), **When** son `STRIPE_MODE=test` est actif, **Then** payment-svc utilise les clés `STRIPE_SECRET_KEY_TEST` (Doppler), et un badge "TEST" apparaît dans `/seller/dashboard`.
 
-#### Story 2.2: Pro onboarding wizard frontend (4 steps : Profil + Stripe + KYC + 1ère fiche)
+#### Story 2.2: Stripe Connect step extension + first listing redirect (post conversion-wizard)
 
-**As a** Pro `pending_admin_review`,
-**I want** a guided 4-step wizard with progress indicator,
-**So that** je sais exactement ce qui me reste à faire avant d'être actif.
+> 🔄 **Re-cadrée 2026-05-17** via `/bmad-correct-course` (sprint-change-proposal-2026-05-17.md) : les steps Profil/KYC/Documents/Récap sont déplacées dans Story 1.3 (conversion wizard MVP). Story 2.2 ne couvre plus que (a) l'extension du wizard avec la step Stripe Connect après validation admin, (b) la redirection vers création 1ère fiche (Epic 3).
+
+**As a** Pro `verified` (admin a validé via Story 2.5),
+**I want** to add my Stripe Connect Express account via a guided step + then create my first listing,
+**So that** I can start receiving bookings + payments.
 
 **Acceptance Criteria :**
 
-- **Given** un Pro authentifié `pending_admin_review` qui se connecte, **When** il atterrit sur `/seller/`, **Then** middleware le redirige vers `/seller/onboarding/<currentStep>` (calculé selon checklist : `profile-complete`, `stripe-submitted`, `kyc-validated`, `first-listing-published`).
-- **Given** la page `/seller/onboarding`, **When** elle render, **Then** elle affiche `<StepIndicator steps={['Profil','Stripe Connect','Validation Tukio','1ère fiche']} current={...} />` (Story 0.5) + le contenu de la step active + CTAs "Continuer" et "Sauvegarder et reprendre plus tard".
-- **Given** la step 1 "Profil" complétée durant Epic 1 Story 1.3, **When** le Pro arrive, **Then** la step est ✅ pré-validée et il peut directement attaquer la step 2 "Stripe".
-- **Given** la step 2 "Stripe" (Story 2.1), **When** elle est complétée, **Then** la step 3 "Validation Tukio" affiche un état d'attente "Votre dossier est en cours de vérification par l'équipe Tukio. Délai estimé : 24h" + un bouton "Refaire des modifications" disabled.
-- **Given** la step 3 "Validation Tukio" en cours, **When** un Admin valide ou rejette (Story 2.5), **Then** notification-svc envoie un email + le Pro reçoit une in-app notif (V1 Epic 11), et au prochain refresh, la step bascule en ✅ ou en ❌ avec raison du rejet et CTA "Corriger".
-- **Given** la step 4 "1ère fiche", **When** elle est active, **Then** elle redirige le Pro vers `/seller/listings/new` (Epic 3) avec un banner "C'est votre 1ère fiche ! Une fois publiée, votre compte sera totalement actif".
-- **Given** un Pro qui complète les 4 steps, **When** la dernière fiche est publiée, **Then** identity-svc met à jour `ProProfile.onboardingCompletedAt = NOW()`, son JWT claim `tukio:status` passe à `verified` au prochain refresh, et il est redirigé vers `/seller/dashboard` avec une modale "Bienvenue chez Tukio !" + checklist V1+ (compléter portfolio, etc.).
-- **Given** UX-DR9 + UX-DR16 (empty state), **When** le Pro est dans onboarding, **Then** chaque step utilise `<EmptyState>` ou `<Card>` avec micro-animations brand (NFR47 motion `prefers-reduced-motion` respecté).
-- **Given** NFR48 (UX < 30 min), **When** je mesure le temps Pro de bout-en-bout, **Then** un Pro typique (avec ses docs prêts) complète l'ensemble en < 30 min (hors attente Admin).
+- **Given** un Pro `verified` qui se connecte (Story 1.4), **When** il atterrit sur `/seller/`, **Then** middleware le redirige vers `/seller/onboarding/stripe` si `stripeStatus != 'submitted'`, sinon vers `/seller/onboarding/first-listing` si pas encore de fiche, sinon `/seller/dashboard`.
+- **Given** la page `/seller/onboarding/stripe`, **When** elle render, **Then** elle réutilise le `<OnbShell>` Story 1.3d v2 + step indicator étendu (Identité ✅ / Activité ✅ / Documents ✅ / Récap ✅ / **Stripe** courant / 1ère fiche upcoming) + contenu Stripe Connect (Story 2.1) + CTAs "Continuer" / "Sauvegarder et reprendre plus tard".
+- **Given** la step Stripe complétée (Story 2.1 — `details_submitted + charges_enabled + payouts_enabled = true`), **When** Pro clique "Continuer", **Then** il est redirigé vers `/seller/onboarding/first-listing` qui présente CTA "Créer ma première fiche" → redirect `/seller/listings/new` (Epic 3) avec banner "C'est votre 1ère fiche ! Une fois publiée, votre compte sera totalement actif".
+- **Given** un Pro qui complète tout, **When** la fiche est publiée, **Then** identity-svc met à jour `ProProfile.onboardingCompletedAt = NOW()`, son JWT claim `tukio:status` passe à `verified-active` au prochain refresh, et il est redirigé vers `/seller/dashboard` avec une modale "Bienvenue chez Tukio !" + checklist V1+ (compléter portfolio, etc.).
+- **Given** NFR48 (UX < 30 min post-validation admin), **When** je mesure le temps Pro post-`verified` jusqu'à fiche publiée, **Then** un Pro typique complète Stripe + 1ère fiche en < 20 min.
+
+**Hors scope** (déplacé Story 1.3 v2) :
+- Step "Profil" — remplacée par step "Identité" wizard conversion Story 1.3
+- Step "Validation Tukio" — page pending standalone `/seller/onboarding/pending` Story 1.3
+- Step "KYC docs" — step "Documents" wizard conversion Story 1.3
+- Step "Récap" — step "Récap" wizard conversion Story 1.3
 
 #### Story 2.3: Admin verification queue (`GET /v1/admin/verifications` + UI list)
 

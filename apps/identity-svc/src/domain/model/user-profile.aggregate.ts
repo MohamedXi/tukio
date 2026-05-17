@@ -254,6 +254,33 @@ export class UserProfile {
     return this.status === UserStatus.ACTIVE && !this.isDeleted();
   }
 
+  /**
+   * Returns a copy of this UserProfile with role=`pro` and
+   * status=`pending_admin_review`. Called by `ConvertCustomerToProUseCase`
+   * (Story 1.3b-bis) inside the atomic DB transaction so the local user_profiles
+   * row stays in sync with Keycloak's realm-role assignment.
+   */
+  convertToPro(now: Date): UserProfile {
+    return UserProfile.create({
+      id: this.id,
+      keycloakUserId: this.keycloakUserId,
+      email: this.email,
+      firstName: this.firstName,
+      lastName: this.lastName,
+      role: UserRole.PRO,
+      locale: this.locale,
+      acquisition: this.acquisition,
+      status: UserStatus.PENDING_ADMIN_REVIEW,
+      emailVerified: this.emailVerified,
+      marketingOptIn: this.marketingOptIn,
+      acceptTerms: this.acceptTerms,
+      acceptTermsAt: this.acceptTermsAt,
+      createdAt: this.createdAt,
+      updatedAt: now,
+      deletedAt: this.deletedAt,
+    });
+  }
+
   private static assertNonEmptyId(value: string, field: string): void {
     if (typeof value !== 'string' || value.trim().length === 0) {
       throw new InvalidUserProfileException(

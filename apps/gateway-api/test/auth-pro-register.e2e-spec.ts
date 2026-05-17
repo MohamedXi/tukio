@@ -23,7 +23,13 @@
  * Run with: `pnpm --filter=gateway-api test:e2e auth-pro-register`.
  */
 import { randomUUID } from 'node:crypto';
-import { type DynamicModule, Module, VersioningType } from '@nestjs/common';
+import {
+  type CanActivate,
+  type DynamicModule,
+  type ExecutionContext,
+  Module,
+  VersioningType,
+} from '@nestjs/common';
 import { NestFactory, APP_GUARD } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -31,7 +37,7 @@ import {
 } from '@nestjs/platform-fastify';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TukioAuthModule } from '@tukio/auth/module';
-import { KeycloakJwtGuard } from '@tukio/auth/guards';
+import type { BackendActor } from '@tukio/auth/types';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { correlationMiddleware } from '@tukio/messaging/correlation/middleware';
 import fastifyCookie from '@fastify/cookie';
@@ -65,6 +71,32 @@ import { EnvelopeExceptionFilter } from '../src/infrastructure/http/filters/enve
 import { ResponseEnvelopeInterceptor } from '../src/infrastructure/http/interceptors/response-envelope.interceptor.js';
 
 const TEST_INTERNAL_SECRET = 'unit-test-internal-secret-32-bytes!';
+// Keycloak userId injected by the mock guard so controller can extract it.
+const TEST_ACTOR_USER_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+/**
+ * Stub guard that replaces `KeycloakJwtGuard` in the e2e test module.
+ * Sets a pre-defined actor on `request.actor` so the controller can call
+ * `@CurrentActor()` without a real Keycloak token (Story 1.3b-bis: endpoint
+ * is no longer `@Public()`).
+ */
+class MockKeycloakJwtGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context
+      .switchToHttp()
+      .getRequest<{ actor: BackendActor }>();
+    request.actor = {
+      userId: TEST_ACTOR_USER_ID,
+      role: 'client',
+      roles: ['client'],
+      locale: 'fr',
+      email: 'test@example.com',
+      emailVerified: true,
+      amr: [],
+    };
+    return true;
+  }
+}
 
 function setTestEnv(): void {
   Object.assign(process.env, {
@@ -108,7 +140,7 @@ class MockIdentitySvcClient implements IIdentitySvcClient {
     userId: string;
     proProfileId: string;
     requiresAdminReview: true;
-    requiresEmailVerification: true;
+    requiresEmailVerification: false;
   }> {
     this.behavior.proCalls.push(input);
     const handler = this.behavior.proNext;
@@ -121,7 +153,7 @@ class MockIdentitySvcClient implements IIdentitySvcClient {
             userId: string;
             proProfileId: string;
             requiresAdminReview: true;
-            requiresEmailVerification: true;
+            requiresEmailVerification: false;
           },
         );
       }
@@ -130,7 +162,7 @@ class MockIdentitySvcClient implements IIdentitySvcClient {
       userId: '11111111-1111-1111-1111-111111111111',
       proProfileId: '22222222-2222-2222-2222-222222222222',
       requiresAdminReview: true,
-      requiresEmailVerification: true,
+      requiresEmailVerification: false,
     });
   }
 }
@@ -193,7 +225,9 @@ class TestAppModule {
         HttpModule,
       ],
       providers: [
-        { provide: APP_GUARD, useClass: KeycloakJwtGuard },
+        // Stub the JWT guard — the endpoint is authenticated (Story 1.3b-bis
+        // removes @Public()) but the e2e test doesn't have a real Keycloak.
+        { provide: APP_GUARD, useClass: MockKeycloakJwtGuard },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
       ],
     };
@@ -236,17 +270,21 @@ async function buildTestApp(
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
+// Story 1.3b-bis: DTO now uses conversion wizard fields (no password/acceptTerms)
 const validPayload = (email = 'pro@example.com') => ({
   email,
-  password: 'StrongPass-2026!',
   firstName: 'Jean',
   lastName: 'Dupont',
   locale: 'fr' as const,
-  acceptTerms: true as const,
+  dateOfBirth: '1990-06-15',
   acceptMarketing: false,
   companyName: 'Pro SAS',
   // Luhn-passing SIRET — same canonical fixture as identity-svc 1.3b.
   siret: '73282932000074',
+  vatStatus: 'vat_registered',
+  legalForm: 'SAS_SASU',
+  categories: ['tents_marquees'],
+  serviceZone: { city: 'Nantes', radiusKm: 80 },
   address: {
     street: '1 rue de la République',
     postalCode: '44000',
@@ -254,6 +292,7 @@ const validPayload = (email = 'pro@example.com') => ({
     country: 'FR' as const,
   },
   contactPhone: '+33612345678',
+  acceptCharter: true as const,
 });
 
 interface MultipartParts {
@@ -342,7 +381,7 @@ describe('POST /v1/auth/pro/register (E2E — Story 1.3c)', () => {
     expect(env.data.userId).toMatch(/^[0-9a-f-]{36}$/u);
     expect(env.data.proProfileId).toMatch(/^[0-9a-f-]{36}$/u);
     expect(env.data.requiresAdminReview).toBe(true);
-    expect(env.data.requiresEmailVerification).toBe(true);
+    expect(env.data.requiresEmailVerification).toBe(false);
     expect(behavior.proCalls).toHaveLength(1);
     expect(behavior.proCalls[0]?.siret).toBe('73282932000074');
     expect(behavior.proCalls[0]?.files.idCard.contentType).toBe('image/jpeg');

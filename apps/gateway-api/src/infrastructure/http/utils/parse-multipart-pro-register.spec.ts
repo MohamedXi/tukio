@@ -69,16 +69,20 @@ function buildRequest(parts: Part[]): {
   };
 }
 
+// Story 1.3b-bis: DTO now uses conversion wizard fields (no password/acceptTerms).
 const validPayload = {
   email: 'pro@example.com',
-  password: 'StrongPass-2026!',
   firstName: 'Jean',
   lastName: 'Dupont',
   locale: 'fr',
-  acceptTerms: true,
+  dateOfBirth: '1990-06-15',
   acceptMarketing: false,
   companyName: 'Pro SAS',
   siret: '73282932000074',
+  vatStatus: 'vat_registered',
+  legalForm: 'SAS_SASU',
+  categories: ['tents_marquees'],
+  serviceZone: { city: 'Nantes', radiusKm: 80 },
   address: {
     street: '1 rue de la République',
     postalCode: '44000',
@@ -86,6 +90,7 @@ const validPayload = {
     country: 'FR',
   },
   contactPhone: '+33612345678',
+  acceptCharter: true,
 };
 
 describe('parseMultipartProRegister', () => {

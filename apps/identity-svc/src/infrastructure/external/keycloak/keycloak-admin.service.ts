@@ -5,6 +5,7 @@ import {
   type IKeycloakAdmin,
   type CreateKeycloakUserInput,
   type CreateKeycloakUserResult,
+  type KeycloakUserProfile,
   KeycloakUserAlreadyExistsError,
   KeycloakUnreachableError,
 } from '../../../domain/ports/keycloak-admin.port.js';
@@ -184,6 +185,55 @@ export class KeycloakAdminService implements IKeycloakAdmin, OnModuleInit {
       return { keycloakUserId: id };
     } catch (err) {
       throw this.translate(err, { operation: 'findUserByEmail', email });
+    }
+  }
+
+  async findUserById(
+    keycloakUserId: string,
+  ): Promise<KeycloakUserProfile | null> {
+    await this.ensureAuthenticated();
+    try {
+      const user = await this.client.users.findOne({
+        realm: this.realm,
+        id: keycloakUserId,
+      });
+      if (!user || !user.id) return null;
+      const rawAttrs = user.attributes ?? {};
+      const attrs: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(rawAttrs)) {
+        attrs[k] = Array.isArray(v) ? (v as string[]) : [String(v)];
+      }
+      return {
+        keycloakUserId: user.id,
+        emailVerified: user.emailVerified ?? false,
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+        email: user.email ?? '',
+        attributes: attrs,
+      };
+    } catch (err) {
+      throw this.translate(err, {
+        operation: 'findUserById',
+        keycloakUserId,
+      });
+    }
+  }
+
+  async hasRealmRole(keycloakUserId: string, role: UserRole): Promise<boolean> {
+    await this.ensureAuthenticated();
+    const roleName = ROLE_NAME_BY_TUKIO_ROLE[role];
+    try {
+      const roles = await this.client.users.listRealmRoleMappings({
+        realm: this.realm,
+        id: keycloakUserId,
+      });
+      return roles.some((r) => r.name === roleName);
+    } catch (err) {
+      throw this.translate(err, {
+        operation: 'hasRealmRole',
+        keycloakUserId,
+        roleName,
+      });
     }
   }
 

@@ -48,13 +48,14 @@ Create `<event>.v2.{schema.json,ts}` in parallel with v1. Keep v1. Update produc
 
 ## Identity events (Epic 1)
 
-The identity domain emits two NATS events on successful customer registration
-(Story 1.2, transactional outbox via `@tukio/messaging`):
+The identity domain emits these NATS events on successful registration flows
+(Stories 1.2 / 1.3, transactional outbox via `@tukio/messaging`):
 
-| Event                         | Subject                             | Schema                                               | Downstream consumers                                                                                            |
-| ----------------------------- | ----------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `identity.user.registered.v1` | `tukio.identity.user.registered.v1` | `src/events/identity/user-registered.v1.schema.json` | `notification-svc` (welcome email), analytics (Plausible BI), `messaging-svc` (preload conversation slot in V1) |
-| `notification.email.send.v1`  | `tukio.notification.email.send.v1`  | `src/events/notification/email-send.v1.schema.json`  | `notification-svc` Resend dispatcher (locale-aware template)                                                    |
+| Event                         | Subject                             | Schema                                               | Downstream consumers                                                                                              |
+| ----------------------------- | ----------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `identity.user.registered.v1` | `tukio.identity.user.registered.v1` | `src/events/identity/user-registered.v1.schema.json` | `notification-svc` (welcome email), analytics (Plausible BI), `messaging-svc` (preload conversation slot in V1)   |
+| `identity.pro.registered.v1`  | `tukio.identity.pro.registered.v1`  | `src/events/identity/pro-registered.v1.schema.json`  | `notification-svc` (pending-review email FR/EN), admin queue feed (Story 2.3), analytics (pro acquisition funnel) |
+| `notification.email.send.v1`  | `tukio.notification.email.send.v1`  | `src/events/notification/email-send.v1.schema.json`  | `notification-svc` Resend dispatcher (locale-aware template)                                                      |
 
 **Payload contracts** (TypeScript types — see `events/identity/user-registered.v1.ts`):
 

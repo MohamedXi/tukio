@@ -80,6 +80,16 @@ export class ProProfileMapper {
         decidedBy: entity.kycDecisionBy,
         reason: entity.kycDecisionReason,
       },
+      conversion: {
+        dateOfBirth: entity.dateOfBirth,
+        legalForm: entity.legalForm,
+        vatStatus: entity.vatStatus,
+        categories: Array.isArray(entity.categories) ? entity.categories : [],
+        serviceZone: {
+          city: entity.serviceZone.city ?? '',
+          radiusKm: entity.serviceZone.radiusKm ?? 0,
+        },
+      },
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
       deletedAt: entity.deletedAt,
@@ -118,6 +128,14 @@ export class ProProfileMapper {
     // `new Date()` on every save (which would silently turn "when INSEE was
     // last consulted" into "when the row was last persisted").
     entity.inseeCheckedAt = aggregate.insee.checkedAt;
+    entity.dateOfBirth = aggregate.conversion.dateOfBirth;
+    entity.legalForm = aggregate.conversion.legalForm;
+    entity.vatStatus = aggregate.conversion.vatStatus;
+    entity.categories = [...aggregate.conversion.categories];
+    entity.serviceZone = {
+      city: aggregate.conversion.serviceZone.city,
+      radiusKm: aggregate.conversion.serviceZone.radiusKm,
+    };
     entity.deletedAt = aggregate.deletedAt;
     // P12 — createdAt / updatedAt are intentionally NOT set here. The entity
     // uses @CreateDateColumn / @UpdateDateColumn, so PostgreSQL sets the

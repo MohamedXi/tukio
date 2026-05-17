@@ -15,15 +15,19 @@ import {
 } from '../domain/exception/index.js';
 
 const baseInput: ForwardRegisterProInput = {
+  userId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   email: 'pro@example.com',
-  password: 'StrongPass-2026!',
   firstName: 'Jean',
   lastName: 'Dupont',
   locale: 'fr',
-  acceptTerms: true,
+  dateOfBirth: '1990-06-15',
   acceptMarketing: false,
   companyName: 'Pro SAS',
   siret: '73282932000074',
+  vatStatus: 'vat_registered',
+  legalForm: 'SAS_SASU',
+  categories: ['tents_marquees'],
+  serviceZone: { city: 'Nantes', radiusKm: 80 },
   address: {
     street: '1 rue de la République',
     postalCode: '44000',
@@ -31,6 +35,7 @@ const baseInput: ForwardRegisterProInput = {
     country: 'FR',
   },
   contactPhone: '+33612345678',
+  acceptCharter: true,
   correlationId: 'corr-pro-1',
   files: {
     idCard: {
@@ -50,7 +55,7 @@ const successResponse = {
   userId: '11111111-1111-1111-1111-111111111111',
   proProfileId: '22222222-2222-2222-2222-222222222222',
   requiresAdminReview: true as const,
-  requiresEmailVerification: true as const,
+  requiresEmailVerification: false as const,
 };
 
 const buildClient = (

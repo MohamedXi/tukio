@@ -15,6 +15,14 @@ const ADDRESS = Address.create({
 });
 const PHONE = PhoneNumber.create('+33612345678');
 
+const BASE_CONVERSION = {
+  dateOfBirth: '1990-06-15',
+  legalForm: 'SAS_SASU',
+  vatStatus: 'vat_registered',
+  categories: ['tents_marquees'],
+  serviceZone: { city: 'Nantes', radiusKm: 80 },
+} as const;
+
 const baseRegisterProps: RegisterProProps = {
   userProfileId: '00000000-0000-4000-8000-000000000001',
   companyName: 'Acme SAS',
@@ -33,6 +41,7 @@ const baseRegisterProps: RegisterProProps = {
     legalCategory: '5510',
     naf: '5310Z',
   },
+  conversion: BASE_CONVERSION,
   now: new Date('2026-05-16T10:00:00.000Z'),
 };
 
@@ -160,6 +169,7 @@ describe('ProProfile.create (invariants)', () => {
       decidedBy: null,
       reason: null,
     },
+    conversion: BASE_CONVERSION,
     createdAt: new Date('2026-05-16T10:00:00.000Z'),
     updatedAt: new Date('2026-05-16T10:00:00.000Z'),
     deletedAt: null,

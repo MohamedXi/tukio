@@ -8,6 +8,14 @@ import type { UserRole } from '../model/user-role.enum.js';
  * translate library-specific errors to these — keeps the use case Pretre-pure
  * (no import from infrastructure).
  */
+export class KeycloakUserNotFoundError extends Error {
+  constructor(keycloakUserId: string) {
+    super(`Keycloak user not found: "${keycloakUserId}"`);
+    this.name = 'KeycloakUserNotFoundError';
+    Object.setPrototypeOf(this, KeycloakUserNotFoundError.prototype);
+  }
+}
+
 export class KeycloakUserAlreadyExistsError extends Error {
   constructor(email: string) {
     super(`Keycloak user already exists for email "${email}"`);
@@ -31,6 +39,21 @@ export class KeycloakUnreachableError extends Error {
  * Real implementation arrives Story 1.2b via `@keycloak/keycloak-admin-client`.
  * Domain layer never imports the concrete library.
  */
+/**
+ * Minimal Keycloak user representation returned by `findUserById`.
+ * Domain layer only needs what is required to validate conversion eligibility
+ * and to merge existing custom attributes before calling `setUserAttributes`.
+ */
+export interface KeycloakUserProfile {
+  keycloakUserId: string;
+  emailVerified: boolean;
+  firstName: string;
+  lastName: string;
+  email: string;
+  /** Existing custom attributes on the Keycloak user (e.g. `tukio:locale`). */
+  attributes: Record<string, string[]>;
+}
+
 export interface CreateKeycloakUserInput {
   email: string;
   firstName: string;
@@ -49,6 +72,18 @@ export interface CreateKeycloakUserResult {
 export interface IKeycloakAdmin {
   createUser(input: CreateKeycloakUserInput): Promise<CreateKeycloakUserResult>;
   findUserByEmail(email: string): Promise<{ keycloakUserId: string } | null>;
+  /**
+   * Fetch a single user by their Keycloak UUID (the JWT `sub` claim).
+   * Used by `ConvertCustomerToProUseCase` (Story 1.3b-bis) to verify the
+   * account exists and its email is verified before starting the conversion.
+   * Returns `null` if the user is not found.
+   */
+  findUserById(keycloakUserId: string): Promise<KeycloakUserProfile | null>;
+  /**
+   * Check whether a user holds a given realm-level role.
+   * Used by `ConvertCustomerToProUseCase` to reject already-converted accounts.
+   */
+  hasRealmRole(keycloakUserId: string, role: UserRole): Promise<boolean>;
   /**
    * Hard-delete used only for compensation rollback when the business DB transaction
    * fails after the Keycloak user has been created (Story 1.2 §"Compensation pattern").
