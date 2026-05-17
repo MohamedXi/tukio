@@ -24,25 +24,6 @@
       "@tukio/contracts/*": ["../../packages/contracts/src/*"],
       "@tukio/ui/components/*": ["../../packages/ui/src/components/*"],
       "@tukio/ui/patterns/*": ["../../packages/ui/src/patterns/*"],
-      "@tukio/api-client/providers": ["../../packages/api-client/src/providers/query-provider.tsx"],
-      "@tukio/api-client/providers/api-client-context": [
-        "../../packages/api-client/src/providers/api-client-context.tsx"
-      ],
-      "@tukio/api-client/client": ["../../packages/api-client/src/client/axios-client.ts"],
-      "@tukio/api-client/hooks/identity/use-register-pro": [
-        "../../packages/api-client/src/hooks/identity/use-register-pro.ts"
-      ],
-      "@tukio/api-client/hooks/use-acquisition-tracking": [
-        "../../packages/api-client/src/hooks/use-acquisition-tracking.ts"
-      ],
-      "@tukio/api-client/types/api-error": ["../../packages/api-client/src/types/api-error.ts"],
-      "@tukio/i18n-client/config": ["../../packages/i18n-client/src/config/locales.ts"],
-      "@tukio/i18n-client/config/next-intl": [
-        "../../packages/i18n-client/src/config/next-intl.config.ts"
-      ],
-      "@tukio/i18n-client/middleware": [
-        "../../packages/i18n-client/src/middleware/create-i18n-middleware.ts"
-      ],
       "@tukio/*": ["../../packages/*/src"]
     }
   },

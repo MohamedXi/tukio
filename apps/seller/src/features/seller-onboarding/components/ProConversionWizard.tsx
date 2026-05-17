@@ -2,10 +2,6 @@
 
 import { useReducer, useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRegisterPro } from '@tukio/api-client/hooks/identity/use-register-pro';
-import type { ApiError } from '@tukio/api-client/types/api-error';
-import { useAcquisitionTracking } from '@tukio/api-client/hooks/use-acquisition-tracking';
-import { isLocale } from '@tukio/i18n-client/config';
 import { OnbShell } from './OnbShell';
 import { StepIdentity } from './StepIdentity';
 import { StepActivity } from './StepActivity';
@@ -20,6 +16,7 @@ import {
   type WizardStep,
 } from '../wizard-state';
 import { classifyConversionError } from '../services/conversion.service';
+import { useRegisterProMutation } from '../hooks/use-register-pro-mutation';
 
 const SELLER_BASE_FALLBACK = 'http://localhost:3002';
 
@@ -29,14 +26,19 @@ function resolveSellerBaseUrl(): string {
   return SELLER_BASE_FALLBACK;
 }
 
+function resolveLocale(locale: string): 'fr' | 'en' {
+  return locale === 'en' ? 'en' : 'fr';
+}
+
 interface ProConversionWizardProps {
   locale: string;
   prefillIdentity?: Partial<IdentityStepValues>;
 }
 
 export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWizardProps) {
-  const resolvedLocale = isLocale(locale) ? locale : 'fr';
+  const resolvedLocale = resolveLocale(locale);
   const tReview = useTranslations('seller.onboarding.review');
+  const mutation = useRegisterProMutation();
 
   const [state, dispatch] = useReducer(wizardReducer, {
     ...initialWizardState,
@@ -51,10 +53,6 @@ export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWi
         }
       : null,
   });
-
-  const mutation = useRegisterPro();
-  const { mutate: registerPro, isPending } = mutation;
-  const acquisition = useAcquisitionTracking();
 
   const [bannerError, setBannerError] = useState<string | undefined>(undefined);
   const [siretServerError, setSiretServerError] = useState<string | undefined>(undefined);
@@ -121,34 +119,8 @@ export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWi
     setBannerError(undefined);
     setSiretServerError(undefined);
 
-    const input = {
-      email: state.identity.email,
-      firstName: state.identity.firstName,
-      lastName: state.identity.lastName,
-      locale: resolvedLocale,
-      dateOfBirth: state.identity.dateOfBirth,
-      contactPhone: state.identity.contactPhone,
-      acceptMarketing: state.identity.acceptMarketing,
-      companyName: state.activity.companyName,
-      siret: state.activity.siret,
-      vatNumber: state.activity.vatNumber,
-      legalForm: state.activity.legalForm,
-      vatStatus: state.activity.vatStatus,
-      categories: state.activity.categories,
-      serviceZone: state.activity.serviceZone,
-      address: state.activity.address,
-      acceptCharter: true as const,
-      ...(acquisition ? { acquisition } : {}),
-    };
-
-    const files = {
-      idCard: state.documents.idCard,
-      rib: state.documents.rib,
-      ...(state.documents.kbisOrInsee ? { kbisOrInsee: state.documents.kbisOrInsee } : {}),
-    };
-
-    registerPro(
-      { input, files },
+    mutation.mutate(
+      { state, locale: resolvedLocale },
       {
         onSuccess: () => {
           mutation.reset();
@@ -157,7 +129,7 @@ export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWi
             window.location.assign(target);
           }
         },
-        onError: (error: ApiError) => {
+        onError: (error) => {
           mutation.reset();
           const failure = classifyConversionError(error);
           switch (failure.kind) {
@@ -195,8 +167,8 @@ export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWi
       locale={locale}
       onBack={state.currentStep > 1 ? handleBack : undefined}
       onContinue={handleContinue}
-      isContinueLoading={isPending}
-      isContinueDisabled={isPending}
+      isContinueLoading={mutation.isPending}
+      isContinueDisabled={mutation.isPending}
     >
       <div ref={bannerRef} tabIndex={-1} style={{ outline: 'none' }}>
         {state.currentStep === 1 && (
@@ -221,7 +193,7 @@ export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWi
             state={state}
             onEdit={handleEditStep}
             onSubmit={handleFinalSubmit}
-            isSubmitting={isPending}
+            isSubmitting={mutation.isPending}
             bannerError={bannerError}
           />
         )}

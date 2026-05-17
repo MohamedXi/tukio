@@ -16,8 +16,10 @@ const nextConfig: NextConfig = {
     '@tukio/ui',
   ],
 
-  experimental: {
-    optimizePackageImports: ['@tukio/ui', '@tukio/i18n-client', '@tukio/api-client'],
+  // Set turbopack workspace root to the monorepo root so pnpm workspace
+  // symlinks are resolved correctly and transpilePackages applies properly.
+  turbopack: {
+    root: '../../',
   },
 
   // Webpack extensionAlias so `.js` imports in workspace packages resolve
