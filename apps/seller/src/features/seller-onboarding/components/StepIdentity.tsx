@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Input } from '@tukio/ui/components/Input';
 import { FormField } from '@tukio/ui/components/FormField';
-import type { IdentityStepValues } from '../wizard-state.js';
+import type { IdentityStepValues } from '../wizard-state';
 
 const PHONE_REGEX = /^(?:\+33|0)[1-9]\d{8}$/;
 const DOB_DISPLAY_REGEX = /^\d{2}\/\d{2}\/\d{4}$/;

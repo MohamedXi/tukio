@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { FileUpload } from '@tukio/ui/patterns/FileUpload';
-import type { DocumentsState } from '../wizard-state.js';
+import type { DocumentsState } from '../wizard-state';
 
 const ACCEPT = '.jpg,.jpeg,.png,.pdf';
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;

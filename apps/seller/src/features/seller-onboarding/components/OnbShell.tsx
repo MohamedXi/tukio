@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Button } from '@tukio/ui/components/Button';
-import type { WizardStep } from '../wizard-state.js';
+import type { WizardStep } from '../wizard-state';
 
 const SELLER_BASE_FALLBACK = 'http://localhost:3000';
 

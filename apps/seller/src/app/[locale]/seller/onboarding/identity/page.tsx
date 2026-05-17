@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { cookies } from 'next/headers';
-import { ConversionProviders } from '../../../../../features/seller-onboarding/components/ConversionProviders.js';
-import { ProConversionWizard } from '../../../../../features/seller-onboarding/components/ProConversionWizard.js';
+import { ConversionProviders } from '@/features/seller-onboarding/components/ConversionProviders';
+import { ProConversionWizard } from '@/features/seller-onboarding/components/ProConversionWizard';
 
 export async function generateMetadata({
   params,

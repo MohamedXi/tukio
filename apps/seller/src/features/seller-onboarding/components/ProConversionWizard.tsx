@@ -6,11 +6,11 @@ import { useRegisterPro } from '@tukio/api-client/hooks/identity/use-register-pr
 import type { ApiError } from '@tukio/api-client/types/api-error';
 import { useAcquisitionTracking } from '@tukio/api-client/hooks/use-acquisition-tracking';
 import { isLocale } from '@tukio/i18n-client/config';
-import { OnbShell } from './OnbShell.js';
-import { StepIdentity } from './StepIdentity.js';
-import { StepActivity } from './StepActivity.js';
-import { StepDocuments } from './StepDocuments.js';
-import { StepReview } from './StepReview.js';
+import { OnbShell } from './OnbShell';
+import { StepIdentity } from './StepIdentity';
+import { StepActivity } from './StepActivity';
+import { StepDocuments } from './StepDocuments';
+import { StepReview } from './StepReview';
 import {
   initialWizardState,
   wizardReducer,
@@ -18,8 +18,8 @@ import {
   type ActivityStepValues,
   type DocumentsState,
   type WizardStep,
-} from '../wizard-state.js';
-import { classifyConversionError } from '../services/conversion.service.js';
+} from '../wizard-state';
+import { classifyConversionError } from '../services/conversion.service';
 
 const SELLER_BASE_FALLBACK = 'http://localhost:3002';
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { WizardState, WizardStep } from '../wizard-state.js';
+import type { WizardState, WizardStep } from '../wizard-state';
 
 interface ReviewCardProps {
   sectionLabel: string;

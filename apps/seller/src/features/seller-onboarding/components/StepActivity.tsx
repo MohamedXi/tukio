@@ -6,7 +6,7 @@ import { Input } from '@tukio/ui/components/Input';
 import { FormField } from '@tukio/ui/components/FormField';
 import { siretLuhnCheck } from '@tukio/contracts/utils/siret';
 import type { LegalForm, VatStatus, Category } from '@tukio/contracts/dtos/identity/register-pro';
-import type { ActivityStepValues } from '../wizard-state.js';
+import type { ActivityStepValues } from '../wizard-state';
 
 const LEGAL_FORM_OPTIONS: LegalForm[] = [
   'SAS_SASU',

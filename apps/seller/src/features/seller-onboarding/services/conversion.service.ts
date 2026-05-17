@@ -1,7 +1,7 @@
 import { ApiError } from '@tukio/api-client/types/api-error';
 import type { RegisterProMutationInput } from '@tukio/api-client/hooks/identity/use-register-pro';
 import type { RegisterProInputDto } from '@tukio/contracts/dtos/identity/register-pro';
-import type { WizardState } from '../wizard-state.js';
+import type { WizardState } from '../wizard-state';
 
 export type ConversionErrorKind =
   | 'rate_limited'
