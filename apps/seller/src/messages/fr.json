@@ -20,7 +20,8 @@
         },
         "rgpd": "Vos données personnelles sont protégées et conformes au RGPD. Elles ne seront jamais revendues à des tiers.",
         "rgpdAlt": "Bouclier RGPD",
-        "edit": "Modifier"
+        "edit": "Modifier",
+        "stepCounter": "Étape {n} sur {total} · Devenir pro sur tukio"
       },
       "identity": {
         "title": "Parlez-nous de vous",
@@ -144,7 +145,20 @@
           "idCardRequired": "La pièce d'identité est requise",
           "ribRequired": "Le RIB est requis"
         },
-        "tooManyFiles": "1 fichier maximum"
+        "tooManyFiles": "1 fichier maximum",
+        "whyTitle": "Pourquoi ces documents ?",
+        "whyText": "Conformément à la réglementation LCEN et aux exigences KYC des marketplaces de paiement, nous devons vérifier votre identité et votre activité. Vos documents sont chiffrés at-rest et ne sont jamais partagés avec vos clients.",
+        "noteText": "Délai de vérification habituel : 24 h ouvrées. Vous pouvez préparer votre vitrine en parallèle.",
+        "uploaded": "Téléversé",
+        "replace": "Remplacer",
+        "remove": "Supprimer le fichier",
+        "dropZoneText": "Glissez votre fichier ici ou",
+        "dropZoneAction": "parcourez",
+        "idCardInstructions": "Recto et verso si CNI — CNI, passeport ou titre de séjour en cours de validité",
+        "ribInstructions": "Au nom de votre entreprise ou micro-entreprise — pas de RIB personnel",
+        "kbisInstructions": "Moins de 3 mois. Requis pour SAS, SARL, EURL. Micro-entrepreneurs et auto-entrepreneurs : ignorez cette étape.",
+        "formatsImages": "JPG · PNG · PDF · 5 Mo",
+        "formatsPdf": "PDF · JPG · 5 Mo"
       },
       "review": {
         "title": "Récapitulatif de votre dossier",
@@ -155,8 +169,7 @@
           "documents": "Documents",
           "legalAgreement": "Accord légal"
         },
-        "charter": "Je certifie l'exactitude des informations fournies. Je m'engage à respecter la {charterLink} des pros tukio, notamment l'obligation de réponse sous 24 h et la non-désintermédiation des clients.",
-        "charterLink": "charte",
+        "charter": "Je certifie l'exactitude des informations fournies. Je m'engage à respecter la <charterLink>charte des pros tukio</charterLink>, notamment l'obligation de réponse sous 24 h et la non-désintermédiation des clients.",
         "charterRequired": "Vous devez accepter la charte des pros pour continuer",
         "documentsUploaded": "{count} document(s) chargé(s)",
         "errors": {

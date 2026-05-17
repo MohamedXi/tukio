@@ -3,6 +3,7 @@
 import { useReducer, useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { OnbShell } from './OnbShell';
+import { OnbStepperBand } from './OnbStepperBand';
 import { StepIdentity } from './StepIdentity';
 import { StepActivity } from './StepActivity';
 import { StepDocuments } from './StepDocuments';
@@ -171,6 +172,7 @@ export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWi
     <OnbShell
       step={state.currentStep}
       locale={locale}
+      band={<OnbStepperBand step={state.currentStep} />}
       onBack={state.currentStep > 1 ? handleBack : undefined}
       onContinue={handleContinue}
       isContinueLoading={mutation.isPending}

@@ -20,7 +20,8 @@
         },
         "rgpd": "Your personal data is protected and GDPR-compliant. It will never be sold to third parties.",
         "rgpdAlt": "GDPR shield",
-        "edit": "Edit"
+        "edit": "Edit",
+        "stepCounter": "Step {n} of {total} · Becoming a pro on tukio"
       },
       "identity": {
         "title": "Tell us about yourself",
@@ -144,7 +145,20 @@
           "idCardRequired": "Identity document is required",
           "ribRequired": "Bank account details are required"
         },
-        "tooManyFiles": "1 file maximum"
+        "tooManyFiles": "1 file maximum",
+        "whyTitle": "Why do we need these documents?",
+        "whyText": "In compliance with LCEN regulations and the KYC requirements of payment marketplaces, we need to verify your identity and business. Your documents are encrypted at-rest and never shared with clients.",
+        "noteText": "Typical verification time: 24 business hours. You can prepare your storefront in the meantime.",
+        "uploaded": "Uploaded",
+        "replace": "Replace",
+        "remove": "Remove file",
+        "dropZoneText": "Drop your file here or",
+        "dropZoneAction": "browse",
+        "idCardInstructions": "Front and back if national ID — valid national ID, passport, or residence permit",
+        "ribInstructions": "In the name of your business or sole trader — no personal bank accounts",
+        "kbisInstructions": "Less than 3 months old. Required for SAS, SARL, EURL. Sole traders and auto-entrepreneurs: skip this step.",
+        "formatsImages": "JPG · PNG · PDF · 5 MB",
+        "formatsPdf": "PDF · JPG · 5 MB"
       },
       "review": {
         "title": "Application summary",
@@ -155,8 +169,7 @@
           "documents": "Documents",
           "legalAgreement": "Legal agreement"
         },
-        "charter": "I certify the accuracy of the information provided. I agree to comply with the {charterLink} for tukio pros, including the obligation to respond within 24 hours and to not circumvent clients.",
-        "charterLink": "pro charter",
+        "charter": "I certify the accuracy of the information provided. I agree to comply with the <charterLink>pro charter for tukio</charterLink>, including the obligation to respond within 24 hours and to not circumvent clients.",
         "charterRequired": "You must accept the pro charter to continue",
         "documentsUploaded": "{count} document(s) uploaded",
         "errors": {

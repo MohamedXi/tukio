@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Alert } from '@tukio/ui/components/Alert';
 import { Input } from '@tukio/ui/components/Input';
 import { FormField } from '@tukio/ui/components/FormField';
 import type { IdentityStepValues } from '../wizard-state';
@@ -166,13 +167,7 @@ export function StepIdentity({ initialValues, onSubmit }: StepIdentityProps) {
         <span>{t('acceptMarketing')}</span>
       </label>
 
-      {/* RGPD banner */}
-      <div className="flex items-start gap-3 rounded-lg border border-brand-100 bg-brand-50 px-4 py-3">
-        <span aria-label={tCommon('rgpdAlt')} className="mt-0.5 text-lg">
-          🛡️
-        </span>
-        <p className="text-xs leading-relaxed text-brand-700">{tCommon('rgpd')}</p>
-      </div>
+      <Alert variant="info">{tCommon('rgpd')}</Alert>
 
       {/* Hidden submit trigger — OnbShell footer button calls handleContinue via ref alternative */}
       <button
