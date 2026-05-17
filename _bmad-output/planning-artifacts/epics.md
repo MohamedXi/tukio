@@ -1140,6 +1140,20 @@ Epic 0 (Sprint 0 Foundation)
 
 #### Story 1.4: Login flow Keycloak (`POST /v1/auth/login` + Authorization Code + PKCE)
 
+> ⚠️ **Décomposée en 4 sub-stories** via `/bmad-correct-course` 2026-05-17-bis
+> (cf. `_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-17-bis.md`) :
+> 1.4a (contracts + utils + KeycloakOAuthClient) → 1.4b (5 endpoints + 5 use cases + CsrfGuard + e2e)
+> → 1.4c (login page + callback + AuthProvider ×3 + LogoutButton ×3) → 1.4d (middlewares ×3
+> + auth-client hooks finalize + observability).
+>
+> 🔑 **Architecture dual-portal acté 2026-05-17 17h** (révision de la décision Customer-first matinale) :
+> 2 portails UX distincts (apex `tukio.one` Customer + `seller.tukio.one` Pro) avec **1 backend
+> Customer-first unique** (`POST /v1/auth/customer/register` → role=client systématique). Implications
+> sur cette story 1.4 : zéro `?role=pro` au signup, zéro lien "S'inscrire en tant que Pro" sur la
+> page login customer apex. Le rôle Pro s'obtient via conversion post-auth (Story 1.3 v2 ✅ livrée).
+> Le **CTA "Devenir pro"** dans le header global apex + les **pages auth seller.tukio.one** sont
+> livrés par **Story 1.11** (NEW). Voir mémoire `project_signup_dual_portal_2026_05_17.md`.
+
 **As a** Customer / Pro / Admin,
 **I want** to log in with my email + password via Keycloak,
 **So that** I get a session valid across all 4 zones (`*.tukio.one`).
@@ -1246,7 +1260,33 @@ Epic 0 (Sprint 0 Foundation)
 - **Given** la table `outbox` est en place dans `tukio_identity`, **When** un use case publie un event (ex: `register-customer.usecase` → `identity.user.registered.v1`), **Then** l'event est inséré dans outbox dans la même transaction TypeORM que la création du `UserProfile` (cohérence — ADR-007).
 - **Given** la migration TypeORM identity-svc, **When** elle s'exécute, **Then** la table `audit_log` est créée avec colonnes `id (uuid)`, `actor_id (uuid)`, `actor_role (enum)`, `action_type (text)`, `aggregate_type (text)`, `aggregate_id (uuid)`, `before_state (jsonb)`, `after_state (jsonb)`, `reason (text NULL)`, `correlation_id (uuid)`, `at (timestamptz NOT NULL)`, `ip_address (inet)`, `user_agent (text)`, indexes `(actor_id, at DESC)` et `(aggregate_id, at DESC)`. Disponible dès Epic 1 pour les use cases (login audit Story 1.4, TOTP setup Story 1.7, account delete Story 1.9). Le trigger d'immutabilité + UI de consultation sont ajoutés Story 2.7.
 
-**Epic 1 — Total stories : 10**
+#### Story 1.11: Seller signup portal (`seller.tukio.one` sign-up + login + CTA "Devenir pro" header apex + flag intent Pro)
+
+> 🆕 **Story NEW** créée 2026-05-17 suite à la décision dual-portal (révision 17h) actée par Ismael
+> (cf. `_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-17-bis.md` addendum).
+> Architecture : 2 portails UX distincts (apex Customer + seller Pro) avec 1 backend Customer-first unique.
+
+**As a** Pro prospect (visiteur ou Customer existant souhaitant devenir Pro),
+**I want** un portail signup/login dédié sur `seller.tukio.one` avec branding/storytelling Pro, accessible
+depuis un CTA "Devenir pro" visible dans le header global apex `tukio.one`, et un mécanisme de redirect
+intelligent post-email-verify vers le wizard conversion Pro,
+**So that** j'ai un point d'entrée visuel clair, un parcours signup brandé pro, et — si je suis déjà
+Customer authentifié — une proposition contextualisée de conversion vers le wizard Story 1.3 v2.
+
+**Acceptance Criteria :**
+
+- **Given** un visiteur sur `tukio.one`, **When** il regarde le header global, **Then** il voit un CTA "Devenir pro" (FR) / "Become a pro" (EN) visible 100 % du temps, qui click → `seller.tukio.one/{locale}/auth/sign-up`. Variante mobile dans drawer (≤768px).
+- **Given** un visiteur sur `seller.tukio.one/{locale}/auth/sign-up`, **When** la page render, **Then** il voit un hero brandé pro + 3 cards bénéfices + form fields IDENTIQUES au signup Customer (email, password, firstName, lastName, acceptTerms, acceptMarketing) — pas de field Pro spécifique (SIRET collecté plus tard via wizard).
+- **Given** le user soumet le sign-up Pro, **When** la requête part, **Then** `POST /v1/auth/customer/register` (Story 1.2c, MÊME endpoint) est appelé avec body `signupOrigin: 'pro_portal'`. gateway-api set un cookie `tukio-signup-intent=pro` (HttpOnly+Secure+SameSite=Lax+Domain=.tukio.one+Max-Age=86400). identity-svc set `user_profile.signup_intent='pro'` (DB column NEW migration).
+- **Given** le compte est créé, **When** je regarde Keycloak, **Then** le rôle est `client` (PAS `pro`) — backend Customer-first préservé. Le rôle Pro effectif s'obtient via `ConvertCustomerToProUseCase` Story 1.3b-bis (wizard conversion Story 1.3 v2 ✅ livré).
+- **Given** un Customer authentifié `role=client status=active` arrivant sur `seller.tukio.one/{locale}` (racine), **When** middleware seller route, **Then** affiche page "Vous êtes connecté en tant que client. Devenir pro ?" avec CTA "Démarrer ma demande" → `seller.tukio.one/{locale}/seller/onboarding/identity` (wizard step 1 Story 1.3 v2).
+- **Given** un Pro `role=pro status=pending_admin_review` OU `active` arrivant sur `seller.tukio.one/{locale}`, **When** middleware seller route, **Then** redirect vers dashboard seller approprié (Story 2.x).
+- **Given** un visiteur non authentifié arrivant sur `seller.tukio.one/{locale}` (racine), **When** middleware seller route, **Then** redirect vers `seller.tukio.one/{locale}/auth/sign-up` (AC2).
+- **Given** Story 1.6 (email-verify) extension AC, **When** un user clique le lien email-verify post-signup, **Then** redirect intelligent : (1) cookie `tukio-signup-intent=pro` d'abord, (2) DB column `user_profile.signup_intent` en fallback. Si `'pro'` détecté → `seller.tukio.one/{locale}/seller/onboarding/identity`. Sinon → `tukio.one/{locale}/account/dashboard`. Cookie cleared après usage (mais pas la DB column — cleared par `ConvertCustomerToProUseCase` à la conversion réussie ou rejet explicite).
+- **Given** la page login seller `seller.tukio.one/{locale}/auth/login`, **When** elle render, **Then** brandée pro, `<LoginCta>` initie Keycloak OAuth (`clientId=tukio-web`, MÊME que apex), avec lien "Pas encore de compte pro ? Créez-en un" (mène vers AC2). Pas de lien "Customer signup".
+- **Given** Playwright e2e `apps/seller/e2e/auth/signup-pro-portal.spec.ts`, **When** il tourne, **Then** il valide 14 cases × 2 locales : CTA header apex visible + redirect cross-zone + axe-core 0 violations sur 3 pages + happy path signup + cookie + DB column + Customer auth conversion proposée + non-auth redirect sign-up + email non-verified redirect verify-email-required.
+
+**Epic 1 — Total stories : 11**
 
 ---
 
@@ -2316,7 +2356,7 @@ Epic 0 (Sprint 0 Foundation)
 
 ## Couverture MVP — Récap end-of-Epic 7 (sortie MVP)
 
-**Total stories MVP** : Epic 0 (13) + Epic 1 (10) + Epic 2 (8) + Epic 3 (12) + Epic 4 (13) + Epic 5 (10) + Epic 6 (8) + Epic 7 (9) = **83 stories**.
+**Total stories MVP** : Epic 0 (13) + Epic 1 (11) + Epic 2 (8) + Epic 3 (12) + Epic 4 (13) + Epic 5 (10) + Epic 6 (8) + Epic 7 (9) = **84 stories**. (Epic 1 = 11 stories après ajout Story 1.11 dual-portal 2026-05-17.)
 
 **FRs MVP couverts (sur 130 total PRD)** :
 - A. Identity (FR1, FR3, FR4, FR7, FR8, FR9, FR14-17) : **10/17** — Epic 1
@@ -2639,10 +2679,10 @@ Epic 0 (Sprint 0 Foundation)
 ## Couverture totale — Récap end-of-Epic 16
 
 **Total stories sur 17 epics** :
-- MVP (Epics 0-7) : 83 stories
+- MVP (Epics 0-7) : 84 stories (Epic 1 = 11 après ajout Story 1.11 dual-portal 2026-05-17)
 - V1 (Epics 8-12) : 4+4+4+4+4 = 20 stories
 - V2 (Epics 13-16) : 3+3+3+3 = 12 stories
-- **TOTAL** : **115 stories**
+- **TOTAL** : **116 stories**
 
 **FRs couverts** :
 - 130 FRs PRD (100 % couvert)

@@ -1,25 +1,47 @@
-# Story 1.4: Login flow Keycloak (`POST /v1/auth/login` + Authorization Code + PKCE)
+# Story 1.4: Login flow Keycloak (`POST /v1/auth/login` + Authorization Code + PKCE) — UMBRELLA
 
-Status: ready-for-dev
+Status: split-umbrella  # décomposée en 1.4a/b/c/d via /bmad-correct-course 2026-05-17-bis
 
-> ⚠️ **ADR-016 / Story 0.14 (2026-05-15) — frontend topology pivot — IMPACT LOURD sur cette story**
-> `apps/customer` a été mergé dans `apps/public` (apex `tukio.one` unifié,
-> visiteurs + customers B2C). Conséquences sur ce flow login :
-> - Redirect post-login Customer : `customer.tukio.one/{locale}/account/dashboard` → `tukio.one/{locale}/account/dashboard`.
-> - Le "cross-zone session sharing" Customer ↔ Customer n'a plus lieu d'être (même origin). Reste la cross-zone vers `seller.tukio.one` (cookie `Domain=.tukio.one`).
-> - Callback URL Keycloak : déjà `tukio.one/{locale}/auth/callback` dans la story (✅ aligné).
-> - Routes auth-gated `apps/public/[locale]/(authenticated)/...` protégées par le middleware Story 0.14 (`apps/public/src/middleware.ts`) — Story 1.4 doit poser le cookie `tukio-session-active` que ce middleware lit.
+> ⚠️ **Décomposée en 4 sub-stories atomiques** via `/bmad-correct-course` 2026-05-17-bis
+> (cf. `_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-17-bis.md`).
+> Cette umbrella conserve le **contexte architectural + décisions techniques transverses** ;
+> les ACs/Tasks/tests sont définis dans chaque sub-story file :
+>
+> - **[[1-4a-contracts-utils-keycloak-oauth-client]]** — `@tukio/contracts` (5 NATS events + 1 DTO + 7 error codes) + gateway-api utils (pkce, state-jwt, cookie-helpers, redirect-resolver) + KeycloakOAuthClient + unit tests
+> - **[[1-4b-gateway-api-endpoints-usecases-csrf-e2e]]** — gateway-api 5 endpoints (login + callback + refresh + logout + whoami) + CsrfGuard + 5 use cases (Pretre) + e2e specs avec testcontainer Keycloak
+> - **[[1-4c-frontend-login-callback-authprovider-logout]]** — `apps/public` login page (FR/EN i18n) + callback route handler + AuthProvider wiring sur 3 apps (public + seller + admin) + LogoutButton ×3 + Playwright e2e
+> - **[[1-4d-middlewares-auth-client-hooks-observability]]** — middleware finalisation (public unifié + seller + admin) + auth-client hooks finalisation (useAuth + useLogout + useRole + RefreshTokenRotation + CookieManager) + observability (Grafana dashboard auth-flow + 3 runbooks)
+>
+> ✅ **ADR-016 / Story 0.14 (2026-05-15) — `apps/customer` est désormais `apps/public/[locale]/(authenticated)/...`**
+> Routes authentifiées Customer vivent sous `apps/public` (middleware unifié). Cette
+> umbrella acte le pivot ; toutes les sub-stories référencent `apps/public`.
 > Voir `docs/adr/0016-frontend-topology-pivot-apex-unified.md` et Story 0.14.
+>
+> ✅ **Architecture signup dual-portal (révision 2026-05-17 17h, supersedes Customer-first matinale)** :
+> 2 portails UX distincts (apex `tukio.one` Customer + `seller.tukio.one` Pro), **1 backend
+> Customer-first unique** (`POST /v1/auth/customer/register` → role=client systématique). Le rôle
+> Pro effectif s'obtient toujours via conversion post-auth Story 1.3 v2 (wizard 4 steps livré ✅).
+> Implications pour Story 1.4 :
+> - Plus de `?role=pro` au signup ni de lien "S'inscrire en tant que Pro" sur la page login customer apex.
+> - Le **CTA "Devenir pro"** vit dans le **header global apex** (visible toutes pages), livré par
+>   **Story 1.11** (`apps/public/src/components/Header.tsx`).
+> - La **page login seller** (`seller.tukio.one/{locale}/auth/login`) est aussi livrée par Story 1.11
+>   (initiates Keycloak OAuth comme apex, mais branding/storytelling Pro).
+> - Le tunnel OAuth backend (PKCE + state JWT + 5 endpoints + cookies cross-zone) reste identique
+>   pour les 3 zones — Story 1.11 ne dupplique RIEN du flow.
+>
+> Voir mémoires `project_signup_dual_portal_2026_05_17.md` (architecture finale) +
+> `story_1_11_seller_signup_portal_planned.md` (spec Story 1.11).
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
 ## Story
 
 **As a** Customer / Pro / Admin authentifié sur Tukio,
-**I want** un flow de login complet **OAuth 2.0 Authorization Code + PKCE S256** initié depuis `apps/public/{locale}/auth/login` (page UI minimaliste avec CTA "Se connecter avec Tukio" qui appelle `GET /v1/auth/login` côté gateway-api), avec **redirect Keycloak** `auth.tukio.one/realms/tukio/protocol/openid-connect/auth?response_type=code&client_id=tukio-web&redirect_uri=https://tukio.one/{locale}/auth/callback&code_challenge=<S256-of-verifier>&code_challenge_method=S256&state=<csrf-uuid>&kc_locale={locale}` (PKCE obligatoire NFR9, state UUID anti-CSRF, kc_locale matche locale Tukio), **callback Next.js** route handler `apps/public/src/app/[locale]/auth/callback/route.ts` qui forward le `?code=...&state=...` à gateway-api `GET /v1/auth/callback` (code → tokens via Keycloak `/token` endpoint avec PKCE verifier vérifié), **HttpOnly cookies cross-zone Domain=.tukio.one** (`tukio-access-token` HttpOnly+Secure+SameSite=Lax+max-age=5min, `tukio-refresh-token` HttpOnly+Secure+SameSite=Strict+max-age=30j rolling, `tukio-session-active` HttpOnly:false+marker JS-readable, `tukio-csrf-token` HttpOnly:false double-submit), **redirect post-login** intelligent (Pro `tukio:status='pending_admin_review'` → `seller.tukio.one/{locale}/seller/onboarding/pending` Story 1.3, Pro `tukio:status='active'` → `seller.tukio.one/{locale}/seller/dashboard` Story 2.x, Customer → `customer.tukio.one/{locale}/account/dashboard` Story 1.8, Admin → `admin.tukio.one/{locale}/admin/dashboard` après TOTP Story 1.7), **silent refresh** automatique 60s avant expiration access token via `POST /v1/auth/refresh` (refresh token rotation Keycloak NFR12 — anti-thundering-herd cross-tabs via BroadcastChannel Story 0.8), **logout** `POST /v1/auth/logout` qui révoque la session Keycloak + clear cookies + redirect vers `/{locale}/`, **cross-zone session sharing** garantie par `Domain=.tukio.one` (Customer connecté sur customer.tukio.one navigue vers seller.tukio.one en mode pro toggle si role='pro', reste authentifié), **gestion erreurs** : message générique anti-énumération `"Email ou mot de passe incorrect"` côté frontend pour bad credentials (Keycloak retourne 401 mais frontend masque le tukioCode), brute-force lockout Story 1.1 (5 fails/5min → 15 min lock + `LOGIN_ERROR` event publié vers identity-svc bridge), MFA admin obligatoire Story 1.1 (`tukio-admin` client utilise flow `tukio-admin-mfa-required` → si user n'a pas TOTP → redirect `/auth/totp-setup` Story 1.7), labels UI FR + EN i18n strict via next-intl + axe-core RGAA AA tests Playwright e2e,
+**I want** un flow de login complet **OAuth 2.0 Authorization Code + PKCE S256** initié depuis `apps/public/{locale}/auth/login` (page UI minimaliste avec CTA "Se connecter avec Tukio" qui appelle `GET /v1/auth/login` côté gateway-api), avec **redirect Keycloak** `auth.tukio.one/realms/tukio/protocol/openid-connect/auth?response_type=code&client_id=tukio-web&redirect_uri=https://tukio.one/{locale}/auth/callback&code_challenge=<S256-of-verifier>&code_challenge_method=S256&state=<csrf-uuid>&kc_locale={locale}` (PKCE obligatoire NFR9, state UUID anti-CSRF, kc_locale matche locale Tukio), **callback Next.js** route handler `apps/public/src/app/[locale]/auth/callback/route.ts` qui forward le `?code=...&state=...` à gateway-api `GET /v1/auth/callback` (code → tokens via Keycloak `/token` endpoint avec PKCE verifier vérifié), **HttpOnly cookies cross-zone Domain=.tukio.one** (`tukio-access-token` HttpOnly+Secure+SameSite=Lax+max-age=5min, `tukio-refresh-token` HttpOnly+Secure+SameSite=Strict+max-age=30j rolling, `tukio-session-active` HttpOnly:false+marker JS-readable, `tukio-csrf-token` HttpOnly:false double-submit), **redirect post-login** intelligent (Pro `tukio:status='pending_admin_review'` → `seller.tukio.one/{locale}/seller/onboarding/pending` Story 1.3, Pro `tukio:status='active'` → `seller.tukio.one/{locale}/seller/dashboard` Story 2.x, Customer → `tukio.one/{locale}/account/dashboard` Story 1.8, Admin → `admin.tukio.one/{locale}/admin/dashboard` après TOTP Story 1.7), **silent refresh** automatique 60s avant expiration access token via `POST /v1/auth/refresh` (refresh token rotation Keycloak NFR12 — anti-thundering-herd cross-tabs via BroadcastChannel Story 0.8), **logout** `POST /v1/auth/logout` qui révoque la session Keycloak + clear cookies + redirect vers `/{locale}/`, **cross-zone session sharing** garantie par `Domain=.tukio.one` (Customer connecté sur tukio.one navigue vers seller.tukio.one en mode pro toggle si role='pro', reste authentifié), **gestion erreurs** : message générique anti-énumération `"Email ou mot de passe incorrect"` côté frontend pour bad credentials (Keycloak retourne 401 mais frontend masque le tukioCode), brute-force lockout Story 1.1 (5 fails/5min → 15 min lock + `LOGIN_ERROR` event publié vers identity-svc bridge), MFA admin obligatoire Story 1.1 (`tukio-admin` client utilise flow `tukio-admin-mfa-required` → si user n'a pas TOTP → redirect `/auth/totp-setup` Story 1.7), labels UI FR + EN i18n strict via next-intl + axe-core RGAA AA tests Playwright e2e,
 **so that** TOUS les Stories 1.5+ (password reset Story 1.5 — utilise login → set password → login back), 1.6 (email verify — landing page redirect vers login), 1.7 (admin TOTP setup — utilise login flow Admin avec TOTP requirement), 1.8 (profile management — `useAuth` hook retourne user data depuis JWT du cookie session), 1.9 (account delete — utilise logout + session clear), Stories Epic 2-7 (toutes les pages authentifiées) consomment un mécanisme de session unique, robuste, cross-zone, cohérent ADR-009 + NFR9-13 ; le frontend Tukio devient **pleinement utilisable end-to-end** (un user peut s'inscrire Story 1.2/1.3, vérifier son email Story 1.6, se connecter Story 1.4, gérer son profil Story 1.8, naviguer cross-zones, et se déconnecter — flow utilisateur fermé) ; et le **pattern complet "OAuth Authorization Code + PKCE proxied via gateway-api"** devient le template canonique pour Stories V1+ login social Google + Apple FR5 (juste différents identity providers Keycloak — même flow), V2 SAML SSO B2B Enterprise FR6 (juste un autre Keycloak realm broker — même proxy gateway-api).
 
-> **Outcome attendu** : à la fin de cette story, un user fraîchement registered Story 1.2 (Customer email-verified) qui clique "Se connecter avec Tukio" sur `tukio.one/fr/auth/login` est redirigé vers Keycloak login page (theme Tukio terracotta + Fraunces FR Story 1.1) → entre email + password → Keycloak redirect callback `tukio.one/fr/auth/callback?code=...&state=...` → gateway-api exchange code → tokens → set 4 cookies `Domain=.tukio.one` → 302 redirect vers `customer.tukio.one/fr/account/dashboard` ; le user est authentifié sur les 3 zones (`tukio.one`, `customer.tukio.one`, `seller.tukio.one`) sans re-login ; son JWT décodé montre `tukio:locale='fr'`, `tukio:status='active'`, `realm_access.roles=['client']` ; après 4 min 30 sec d'inactivité, le frontend appelle silencieusement `POST /v1/auth/refresh` qui rotate les tokens → cookies updated → request retry transparent ; un Pro `tukio:status='pending_admin_review'` Story 1.3 qui se connecte est redirigé vers `seller.tukio.one/fr/seller/onboarding/pending` (FR17) ; un Admin qui se connecte voit Keycloak forcer le step TOTP (Story 1.1 flow `tukio-admin-mfa-required`) avant émission token ; un user qui clique "Se déconnecter" voit `/v1/auth/logout` révoque la session Keycloak + clear cookies → redirect `/fr/` ; un test `pnpm playwright test --grep "login"` passe en FR ET EN, 4 scénarios (Customer + Pro pending + Pro active + Admin TOTP), axe-core 0 violations, perf NFR48 ≤ 3s p90 entre clic CTA et dashboard rendered.
+> **Outcome attendu** : à la fin de cette story, un user fraîchement registered Story 1.2 (Customer email-verified) qui clique "Se connecter avec Tukio" sur `tukio.one/fr/auth/login` est redirigé vers Keycloak login page (theme Tukio terracotta + Fraunces FR Story 1.1) → entre email + password → Keycloak redirect callback `tukio.one/fr/auth/callback?code=...&state=...` → gateway-api exchange code → tokens → set 4 cookies `Domain=.tukio.one` → 302 redirect vers `tukio.one/fr/account/dashboard` ; le user est authentifié sur les 3 zones (`tukio.one`, `tukio.one` (apex unifié ADR-016), `seller.tukio.one`) sans re-login ; son JWT décodé montre `tukio:locale='fr'`, `tukio:status='active'`, `realm_access.roles=['client']` ; après 4 min 30 sec d'inactivité, le frontend appelle silencieusement `POST /v1/auth/refresh` qui rotate les tokens → cookies updated → request retry transparent ; un Pro `tukio:status='pending_admin_review'` Story 1.3 qui se connecte est redirigé vers `seller.tukio.one/fr/seller/onboarding/pending` (FR17) ; un Admin qui se connecte voit Keycloak forcer le step TOTP (Story 1.1 flow `tukio-admin-mfa-required`) avant émission token ; un user qui clique "Se déconnecter" voit `/v1/auth/logout` révoque la session Keycloak + clear cookies → redirect `/fr/` ; un test `pnpm playwright test --grep "login"` passe en FR ET EN, 4 scénarios (Customer + Pro pending + Pro active + Admin TOTP), axe-core 0 violations, perf NFR48 ≤ 3s p90 entre clic CTA et dashboard rendered.
 
 ## Acceptance Criteria
 
@@ -31,7 +53,7 @@ Status: ready-for-dev
      - `<FormField label="Mot de passe" type="password" required>` (pas de validation complexity côté login — c'est registration only)
      - **CTA principal** : `<Button variant="primary" size="lg" type="submit">Se connecter</Button>`
      - **Lien secondaire 1** : `<Link href="/{locale}/auth/password-reset">Mot de passe oublié ?</Link>` (Story 1.5)
-     - **Lien secondaire 2** : `<Link href="/{locale}/auth/sign-up">Pas de compte ? S'inscrire</Link>` (Story 1.2 Customer) ou `?role=pro` selon contexte (Story 1.3 Pro)
+     - **Lien secondaire 2** : `<Link href="/{locale}/auth/sign-up">Pas de compte ? S'inscrire</Link>` (Customer générique — Story 1.2 ; le rôle Pro s'obtient via conversion post-auth Story 1.3 v2 ✅, ou via le portail Pro `seller.tukio.one` livré par Story 1.11 — pas de signup pro sur cette page login customer apex)
    - **Implémentation choisie** : pas de form HTML standard (post-and-redirect classique), mais bouton `<Button>` qui appelle JS `handleSignIn()` qui :
      1. Génère un PKCE `verifier` (32-byte random base64url) côté client
      2. Calcule `challenge = base64url(sha256(verifier))` côté client (via `crypto.subtle.digest`)
@@ -42,8 +64,8 @@ Status: ready-for-dev
    - **i18n strict** (memory `feedback_i18n_frontend.md`) : zéro hardcoded UI string. Toutes les strings dans `apps/public/messages/{fr,en}.json` sous le namespace `auth.login.*` (~15 keys). Importées via `useTranslations('auth.login')`.
    - **Accessibilité RGAA AA** : labels associés via `htmlFor`, focus visible, navigation Tab/Enter, errors via `role="alert"`, axe-core 0 violations.
    - **Pas de validation password complexity côté login** : on laisse Keycloak retourner 401 generic. Anti-énumération NFR9.
-   - **Param `?next=<encoded-url>`** : si présent dans URL `tukio.one/fr/auth/login?next=https%3A%2F%2Fcustomer.tukio.one%2Ffr%2Faccount%2Fbookings%2Fcheckout`, propagé dans `state` JWT-encoded → après login, redirect vers cet URL au lieu du dashboard default.
-   - **Param `?role=pro`** : si présent, modifie le label du lien sign-up vers `"Pas de compte ? S'inscrire en tant que Pro"` + `href` vers `?role=pro` (cohérent Story 1.3 entry).
+   - **Param `?next=<encoded-url>`** : si présent dans URL `tukio.one/fr/auth/login?next=https%3A%2F%2Ftukio.one%2Ffr%2Faccount%2Fbookings%2Fcheckout`, propagé dans `state` JWT-encoded → après login, redirect vers cet URL au lieu du dashboard default.
+   - ❌ ~~**Param `?role=pro`**~~ — **SUPPRIMÉ** (dual-portal 2026-05-17 17h). Plus de switch label, plus de propagation Pro au signup sur la page login customer apex. Le rôle Pro s'obtient via conversion post-auth (Story 1.3 v2 ✅) ou via le portail dédié `seller.tukio.one` (Story 1.11). Le portail seller use le **même** endpoint backend `POST /v1/auth/customer/register` avec un param `signupOrigin: 'pro_portal'` qui set un flag DB `user_profile.signup_intent='pro'` consommé par Story 1.6 post-email-verify.
    - **Param `?error=...`** : Keycloak peut retourner ?error=invalid_grant après échec login. Si présent, afficher message générique `"Email ou mot de passe incorrect"` + reset form (anti-énumération NFR9 + AC4).
    - **Test Playwright e2e** (`apps/public/e2e/auth/login.spec.ts`) : naviguer page login FR + EN, vérifier 0 axe-core violations, vérifier liens password-reset + sign-up, cliquer CTA "Se connecter" → vérifier redirect vers `auth.tukio.one/realms/tukio/protocol/openid-connect/auth?...&code_challenge=...&code_challenge_method=S256&state=...` (Task 9).
 
@@ -225,7 +247,7 @@ Status: ready-for-dev
    - **Edge runtime ou Node runtime ?** : Node runtime (default) — `fetch` cross-subdomain + cookies forwarding fonctionnent. Edge runtime aurait des limitations sur certains headers cookies.
    - **Tests** : Playwright e2e flow complet (Task 9)
 
-7. **AC7 — Cross-zone session sharing + middleware redirect intelligence** : Given un user authentifié sur `customer.tukio.one`, When il navigue vers `seller.tukio.one`, Then :
+7. **AC7 — Cross-zone session sharing + middleware redirect intelligence** : Given un user authentifié sur `tukio.one` (apex unifié ADR-016), When il navigue vers `seller.tukio.one`, Then :
    - **Cookie shared via `Domain=.tukio.one`** : tous les cookies set par AC3 sont visibles depuis tous les sous-domaines `*.tukio.one`. Le browser auto-attache `tukio-access-token` sur les requests vers `seller.tukio.one`.
    - **Middleware seller** (Story 1.3 finalisé Story 1.4) — `apps/seller/src/middleware.ts` :
      - Vérifie présence cookie `tukio-session-active` (rapide check JS-readable)
@@ -238,16 +260,16 @@ Status: ready-for-dev
        - `'rejected'` → redirect `/seller/onboarding/rejected` (Story 2.5 page placeholder)
        - `'suspended'` → redirect `/seller/account/suspended` (Story 6.5 page placeholder)
      - Vérifie `email_verified === true` pour endpoints transactionnels (Story 1.2 `email_verified` middleware logic réutilisée)
-   - **Middleware customer** (`apps/customer/src/middleware.ts` — UPDATE Story 1.2) — pattern similaire mais pour rôle `client`
+   - **Middleware customer** (`apps/public/src/middleware.ts` — UPDATE Story 1.2) — pattern similaire mais pour rôle `client`
    - **Middleware admin** (`apps/admin/src/middleware.ts` — NEW Story 1.4) :
      - Check `realm_access.roles.includes('admin-*')` sinon redirect login
      - Check `amr.includes('totp')` sinon redirect `/auth/totp-setup` (Story 1.7)
-     - Pas de middleware sur `apps/public/` (zone publique sans auth required, sauf paths privés `apps/public/account/...` qui n'existent pas — ces paths sont sur `apps/customer/`)
+     - Pas de middleware sur `apps/public/` (zone publique sans auth required, sauf paths privés `apps/public/account/...` qui n'existent pas — ces paths sont sur `apps/public/`)
    - **JWT decode dans middleware** : utilise `jose` `decodeJwt` (no signature verification dans middleware Edge runtime — gateway-api a déjà validé via JWKS Story 0.8) — verification full RS256 + JWKS arrive Story 0.8 `KeycloakJwtGuard` côté backend services
-   - **Tests E2E middleware** : se connecter Customer → naviguer customer.tukio.one/account/dashboard → OK. Naviguer seller.tukio.one/seller/listings → vérifier redirect (Customer n'est pas Pro). Se connecter Pro pending → naviguer seller.tukio.one/seller/listings → redirect /seller/onboarding/pending.
+   - **Tests E2E middleware** : se connecter Customer → naviguer tukio.one/account/dashboard → OK. Naviguer seller.tukio.one/seller/listings → vérifier redirect (Customer n'est pas Pro). Se connecter Pro pending → naviguer seller.tukio.one/seller/listings → redirect /seller/onboarding/pending.
 
 8. **AC8 — Frontend `useAuth` + `useLogout` hooks wired (Story 0.8 update finale)** : Given `@tukio/auth-client/hooks/use-auth.ts` (Story 0.8 a posé l'API), When un component consomme `const { user, role, locale, isAuthenticated, isLoading } = useAuth()`, Then :
-   - **`<AuthProvider>` Story 0.8** : Story 1.4 finalise le wiring dans les 3 apps (`apps/customer/src/app/[locale]/layout.tsx`, `apps/seller/src/app/[locale]/layout.tsx`, `apps/admin/src/app/[locale]/layout.tsx`) — wrap autour de `{children}`
+   - **`<AuthProvider>` Story 0.8** : Story 1.4 finalise le wiring dans les 3 apps (`apps/public/src/app/[locale]/layout.tsx`, `apps/seller/src/app/[locale]/layout.tsx`, `apps/admin/src/app/[locale]/layout.tsx`) — wrap autour de `{children}`
    - **Init côté client** : `<AuthProvider>` au mount lit le cookie `tukio-session-active` (JS-readable) → si présent, fetch `GET /v1/me` (Story 1.8 — pour MVP : decode JWT côté client via `jose decodeJwt` du cookie `tukio-access-token` ? non — HttpOnly. **Décision MVP** : `<AuthProvider>` appelle `GET /v1/auth/whoami` endpoint nouveau Story 1.4 qui retourne le user data depuis le JWT validé côté gateway-api).
    - **Endpoint nouveau `GET /v1/auth/whoami`** (gateway-api) — réponse :
      ```json
@@ -287,15 +309,15 @@ Status: ready-for-dev
    - **Tests** : `@testing-library/react` `renderHook(useAuth)` mocked AuthContext → vérifie state propagation. `useLogout` mocked fetch → vérifie call + state cleared + router push.
 
 9. **AC9 — Tests Playwright e2e login flow FR + EN + axe-core (NFR48 + UX-DR9)** : Given `apps/public/e2e/auth/login.spec.ts` (NEW), When je lance `pnpm --filter=apps/public test:e2e --grep "login"`, Then :
-   - **Test 1 (happy path FR Customer)** : précréer un user `customer1@tukio.one` Customer email-verified via Keycloak Admin API fixture → naviguer `localhost:3000/fr/auth/login` → cliquer "Se connecter" → entrer email + password sur Keycloak login page (theme Tukio Story 1.1 themed) → submit → vérifier redirect vers `customer.tukio.one/fr/account/dashboard` + cookies set
-   - **Test 2 (happy path EN Customer)** : idem en `/en/auth/login` → Keycloak login en EN (kc_locale) → vérifier UI strings EN + redirect customer.tukio.one/en/account/dashboard
+   - **Test 1 (happy path FR Customer)** : précréer un user `customer1@tukio.one` Customer email-verified via Keycloak Admin API fixture → naviguer `localhost:3000/fr/auth/login` → cliquer "Se connecter" → entrer email + password sur Keycloak login page (theme Tukio Story 1.1 themed) → submit → vérifier redirect vers `tukio.one/fr/account/dashboard` + cookies set
+   - **Test 2 (happy path EN Customer)** : idem en `/en/auth/login` → Keycloak login en EN (kc_locale) → vérifier UI strings EN + redirect tukio.one/en/account/dashboard
    - **Test 3 (Pro pending)** : précréer Pro `pending_admin_review` → login → vérifier redirect `seller.tukio.one/fr/seller/onboarding/pending` (FR17)
    - **Test 4 (Pro active)** : précréer Pro `tukio_status='active'` (admin validé Story 2.5 fixture) → login → vérifier redirect `seller.tukio.one/fr/seller/dashboard`
    - **Test 5 (Admin TOTP)** : précréer Admin avec TOTP configuré → login → Keycloak force step TOTP → entrer code TOTP (utiliser `totp-generator` npm fixture) → vérifier redirect `admin.tukio.one/fr/admin/dashboard`
    - **Test 6 (bad credentials anti-énumération)** : entrer mauvais password → vérifier UI message générique `"Email ou mot de passe incorrect"` (FR), pas de mention "user not found" — anti-énumération NFR9
    - **Test 7 (brute-force lockout)** : 5x bad password en 5 min → 6ᵉ tentative bloquée par Keycloak (NFR10) → vérifier UI message `"Trop de tentatives, votre compte est temporairement verrouillé"` (Story 1.1 brute-force config)
    - **Test 8 (silent refresh)** : login → wait 4 min 30 sec → trigger une API call (e.g. `<HeartbeatComponent>` test only) → vérifier `POST /v1/auth/refresh` appelé silencieusement + nouveaux cookies set + API call retry succeeded transparent UX (NFR12)
-   - **Test 9 (cross-zone session)** : login Customer → naviguer customer.tukio.one/account → OK → naviguer seller.tukio.one (sans seller role) → vérifier redirect approprié OU tukio.one mode public (selon décision UX MVP)
+   - **Test 9 (cross-zone session)** : login Customer → naviguer tukio.one/account → OK → naviguer seller.tukio.one (sans seller role) → vérifier redirect approprié OU tukio.one mode public (selon décision UX MVP)
    - **Test 10 (logout)** : login → cliquer "Se déconnecter" → vérifier `POST /v1/auth/logout` appelé + cookies cleared + redirect `/fr/`. Naviguer protected page → vérifier redirect login (session révoquée).
    - **Test 11 (CSRF protection)** : login → simuler call `POST /v1/auth/logout` sans header `X-CSRF-Token` → vérifier 403 (CSRF protection enforced)
    - **Test 12 (axe-core a11y)** : `await injectAxe(page); await checkA11y(page);` sur `/auth/login` page — vérifier 0 violations critical/serious (RGAA AA)
@@ -319,6 +341,12 @@ Status: ready-for-dev
     - **ADR** : pas de nouvel ADR Story 1.4 (s'inscrit dans ADR-009 Keycloak split + ADR-014 envelope existants)
 
 ## Tasks / Subtasks
+
+> ⚠️ **HISTORIQUE** — Les Tasks/Subtasks listés ci-dessous **sont délégués aux 4 sub-stories** 1.4a/b/c/d
+> via /bmad-correct-course 2026-05-17-bis (cf. warning en haut). Ne pas démarrer d'implémentation
+> sur cette spec umbrella ; lancer `/bmad-dev-story` séquentiellement sur 1.4a → 1.4b → 1.4c → 1.4d.
+> Les Tasks ci-dessous restent comme **référence comparative** (architecture intention vs
+> répartition réelle effectuée par le split).
 
 - [ ] **Task 1 — Étendre `@tukio/contracts` avec event login + types whoami** (AC: #2, #3, #8, #10)
   - [ ] 1.1 — Créer `packages/contracts/src/events/identity/user-logged-in.v1.{schema.json,ts}` (audit event NATS)
@@ -372,10 +400,10 @@ Status: ready-for-dev
 - [ ] **Task 8 — Frontend : login page UI + callback route handler + AuthProvider wiring** (AC: #1, #6, #7, #8)
   - [ ] 8.1 — Créer `apps/public/src/app/[locale]/auth/login/page.tsx` (Server Component layout) + `apps/public/src/features/auth/login/components/LoginCta.tsx` (Client Component avec bouton "Se connecter" qui redirige vers `/v1/auth/login`)
   - [ ] 8.2 — Créer `apps/public/src/app/[locale]/auth/callback/route.ts` (Route Handler — cf. AC6 squelette)
-  - [ ] 8.3 — Update `apps/customer/src/app/[locale]/layout.tsx` : wrap dans `<AuthProvider config={...}>` (Story 0.8 finalisé)
+  - [ ] 8.3 — Update `apps/public/src/app/[locale]/layout.tsx` : wrap dans `<AuthProvider config={...}>` (Story 0.8 finalisé)
   - [ ] 8.4 — Update `apps/seller/src/app/[locale]/layout.tsx` : idem
   - [ ] 8.5 — Créer `apps/admin/src/app/[locale]/layout.tsx` (NEW — admin app n'avait pas de layout final Story 0.8 placeholder) : `<AuthProvider config={...}>`
-  - [ ] 8.6 — Créer `apps/customer/src/components/LogoutButton.tsx` (Client Component) qui utilise `useLogout()` (Story 0.8 hook finalisé Story 1.4 Task 9)
+  - [ ] 8.6 — Créer `apps/public/src/components/LogoutButton.tsx` (Client Component) qui utilise `useLogout()` (Story 0.8 hook finalisé Story 1.4 Task 9)
   - [ ] 8.7 — Idem pour `apps/seller` et `apps/admin`
   - [ ] 8.8 — Update `apps/public/messages/{fr,en}.json` : namespace `auth.login.*` (~15 keys)
   - [ ] 8.9 — Helper `apps/public/src/lib/redirect-url.ts` : whitelist `*.tukio.one` URLs sanitization
@@ -391,7 +419,7 @@ Status: ready-for-dev
   - [ ] 9.7 — Tests `@testing-library/react` : useAuth state propagation, useLogout call + state clear + router push, refresh trigger before expiry, BroadcastChannel inter-tabs sync
 
 - [ ] **Task 10 — Middleware Next.js apps : seller (UPDATE Story 1.3), customer (UPDATE Story 1.2), admin (NEW)** (AC: #7)
-  - [ ] 10.1 — Update `apps/customer/src/middleware.ts` (Story 1.2) : ajouter check `realm_access.roles.includes('client')` (sinon redirect /), check `tukio_status='suspended'` redirect approprié
+  - [ ] 10.1 — Update `apps/public/src/middleware.ts` (Story 1.2) : ajouter check `realm_access.roles.includes('client')` (sinon redirect /), check `tukio_status='suspended'` redirect approprié
   - [ ] 10.2 — Update `apps/seller/src/middleware.ts` (Story 1.3) : ajouter check role `pro` + status `active`/`pending_admin_review`/`rejected`/`suspended` redirects
   - [ ] 10.3 — Créer `apps/admin/src/middleware.ts` (NEW) : check role `admin-*` + check `amr.includes('totp')` sinon redirect `/auth/totp-setup` Story 1.7
   - [ ] 10.4 — Décoder JWT du cookie `tukio-access-token` server-side dans middleware (Edge runtime — `jose decodeJwt` no-verify, gateway-api a déjà validé)
@@ -440,7 +468,7 @@ Stories 1.1, 1.2, 1.3, 0.8 ont posé toutes les briques individuelles du flow au
    - `tukio-session-active` non-HttpOnly Lax 30j — marker JS-readable pour `<AuthProvider>` détection rapide
    - `tukio-csrf-token` non-HttpOnly Strict 30j — double-submit pattern
 5. **Refresh token rotation native Keycloak** (`max.reuse: 0` configuré Story 1.1 realm). Si refresh token est réutilisé une 2ème fois → 400 invalid_grant → gateway-api alerte security (suspect attack — token volé).
-6. **Anti-thundering-herd cross-tabs** (BroadcastChannel API Story 0.8) : un seul tab refresh, les autres reçoivent la notification. Cohérent avec multi-tab UX (user navigue customer.tukio.one + seller.tukio.one en simultané).
+6. **Anti-thundering-herd cross-tabs** (BroadcastChannel API Story 0.8) : un seul tab refresh, les autres reçoivent la notification. Cohérent avec multi-tab UX (user navigue tukio.one + seller.tukio.one en simultané).
 7. **CSRF double-submit cookie pattern** (Architecture lignes 681-686 + Story 0.8 AC8) : `tukio-csrf-token` lisible JS + header `X-CSRF-Token` requis sur POST/PUT/PATCH/DELETE + check header === cookie côté `CsrfGuard` gateway-api.
 8. **Callback handler = Next.js Route Handler** (pas Page Server Component). Justification : (a) operation server-only (forward cookies + Set-Cookie relay), (b) explicit GET handler, (c) accès direct à `request.headers` + `response.headers` natifs.
 9. **Anti-énumération NFR9** : message UI générique pour all login errors (`"Email ou mot de passe incorrect"`) — pas de leak côté UI, mais codes API distincts pour observability.
@@ -499,7 +527,7 @@ apps/public/src/
 ├─ messages/{fr,en}.json                                             # UPDATE — auth.login.*
 └─ e2e/auth/login.spec.ts                                            # NEW Story 1.4 (13 tests)
 
-apps/customer/src/
+apps/public/src/
 ├─ app/[locale]/layout.tsx                                           # UPDATE — wrap AuthProvider
 ├─ middleware.ts                                                     # UPDATE Story 1.2 — finalize role checks
 ├─ components/LogoutButton.tsx                                       # NEW Story 1.4
@@ -696,9 +724,9 @@ export class AuthLoginController {
 > - `apps/gateway-api/src/infrastructure/config/environment-config.service.ts` — getStateJwtSecret + getZoneBaseUrls + getKeycloakOAuthConfig
 > - `apps/gateway-api/.env.example` — env vars Story 1.4
 > - `apps/public/messages/{fr,en}.json` — namespace auth.login.*
-> - `apps/customer/src/middleware.ts` (Story 1.2) — finalize role + status checks
+> - `apps/public/src/middleware.ts` (Story 1.2) — finalize role + status checks
 > - `apps/seller/src/middleware.ts` (Story 1.3) — finalize status checks complete
-> - `apps/customer/src/app/[locale]/layout.tsx` — wrap AuthProvider
+> - `apps/public/src/app/[locale]/layout.tsx` — wrap AuthProvider
 > - `apps/seller/src/app/[locale]/layout.tsx` — wrap AuthProvider
 
 > **À CREATE** :
@@ -714,8 +742,8 @@ export class AuthLoginController {
 > - `apps/public/src/features/auth/login/{components/LoginCta.tsx,index.ts}` (2)
 > - `apps/public/src/lib/redirect-url.ts` (1)
 > - `apps/public/e2e/auth/login.spec.ts` (1)
-> - `apps/customer/src/components/LogoutButton.tsx` (1)
-> - `apps/customer/e2e/middleware/role-redirect.spec.ts` (1)
+> - `apps/public/src/components/LogoutButton.tsx` (1)
+> - `apps/public/e2e/middleware/role-redirect.spec.ts` (1)
 > - `apps/seller/src/components/LogoutButton.tsx` (1)
 > - `apps/seller/e2e/middleware/role-redirect.spec.ts` (1)
 > - `apps/admin/src/{app/[locale]/layout.tsx,middleware.ts,components/LogoutButton.tsx}` (3)
