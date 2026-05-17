@@ -163,7 +163,7 @@ export function StepIdentity({ initialValues, onSubmit }: StepIdentityProps) {
           }
           data-testid="checkbox-acceptMarketing"
         />
-        <span>J&apos;accepte de recevoir des conseils et actualités de tukio par email.</span>
+        <span>{t('acceptMarketing')}</span>
       </label>
 
       {/* RGPD banner */}

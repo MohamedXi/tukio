@@ -260,7 +260,7 @@ export class UserProfile {
    * (Story 1.3b-bis) inside the atomic DB transaction so the local user_profiles
    * row stays in sync with Keycloak's realm-role assignment.
    */
-  convertToPro(now: Date): UserProfile {
+  convertToPro(now: Date, marketingOptIn?: boolean): UserProfile {
     return UserProfile.create({
       id: this.id,
       keycloakUserId: this.keycloakUserId,
@@ -272,7 +272,7 @@ export class UserProfile {
       acquisition: this.acquisition,
       status: UserStatus.PENDING_ADMIN_REVIEW,
       emailVerified: this.emailVerified,
-      marketingOptIn: this.marketingOptIn,
+      marketingOptIn: marketingOptIn ?? this.marketingOptIn,
       acceptTerms: this.acceptTerms,
       acceptTermsAt: this.acceptTermsAt,
       createdAt: this.createdAt,

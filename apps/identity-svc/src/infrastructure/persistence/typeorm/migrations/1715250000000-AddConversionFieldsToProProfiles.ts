@@ -48,6 +48,13 @@ export class AddConversionFieldsToProProfiles1715250000000 implements MigrationI
     await queryRunner.query(
       `ALTER TABLE pro_profiles ALTER COLUMN vat_status DROP DEFAULT`,
     );
+    // Also drop DEFAULT for JSONB columns so new rows must supply real data.
+    await queryRunner.query(
+      `ALTER TABLE pro_profiles ALTER COLUMN categories DROP DEFAULT`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE pro_profiles ALTER COLUMN service_zone DROP DEFAULT`,
+    );
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {

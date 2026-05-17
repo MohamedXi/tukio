@@ -111,7 +111,7 @@ development_status:
   1-3b-bis-identity-svc-convert-customer-to-pro-handler: done  # 2026-05-17 — code-review passé : 9 patches (P1-P5 français→anglais VatStatus+JSDoc+comments, P6 setUserAttributes merge attrs Keycloak, P7 guards isDeleted+role+status, P8 error code NOT_FOUND_USER, P9 JSDoc orphelin). 443 tests ✅ : findUserById+hasRealmRole Keycloak + EmailNotVerifiedException + AlreadyProException + ProProfile conversion fields migration + UserProfile.convertToPro() + gateway-api retire @Public() + @CurrentActor() userId injection + 258 tests ✅
   1-3c-gateway-api-pro-register-multipart-forwarder: done
   1-3d-frontend-wizard-seller-middleware-e2e-observability: rolled-back  # v1 mergée PR #45 puis rollbackée 2026-05-17 (spec divergente Cloud Design) ; cleanup dans v2
-  1-3d-v2-conversion-wizard-seller-mvp-pro-onboarding: review  # 2026-05-17 (wizard 4 steps seller + rollback v1 + CTA + next-intl + cookie-to-bearer gateway bridge + 14 seller tests ✅ + 182/44/217 suite verte)
+  1-3d-v2-conversion-wizard-seller-mvp-pro-onboarding: done  # 2026-05-17 code-review Groupe 1/4 + 19 patches appliqués (P2-P20, P1 dismiss FP) · Keycloak mapper fix (🔴), 403 tunnel fix, guards order, acceptMarketing, i18n strings, migration defaults, metrics wired · 217/182/44/14 tests ✅
   1-4-login-flow-keycloak-authorization-code-pkce: ready-for-dev
   1-5-password-reset-flow: ready-for-dev
   1-6-email-verification-flow-landing-page: ready-for-dev

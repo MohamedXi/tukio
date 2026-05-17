@@ -126,9 +126,15 @@ export async function parseMultipartProRegister(
   // be silently discarded by `RegisterProInputSchema.safeParse`).
   const rawPayload = payload as Record<string, unknown>;
   const userId = rawPayload['userId'];
-  if (typeof userId !== 'string' || userId.trim().length === 0) {
+  const UUID_V4_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (
+    typeof userId !== 'string' ||
+    userId.trim().length === 0 ||
+    !UUID_V4_RE.test(userId.trim())
+  ) {
     throw new BadRequestException(
-      'Missing or invalid `userId` in payload — gateway-api must inject JWT sub',
+      'Missing or invalid `userId` in payload — must be a valid UUID v4 (JWT sub injected by gateway-api)',
     );
   }
 
@@ -144,6 +150,10 @@ export async function parseMultipartProRegister(
 
   return {
     userId,
+    // Identity fields from the wizard (may have been edited by the user — D1 decision).
+    email: dto.email,
+    firstName: dto.firstName,
+    lastName: dto.lastName,
     dateOfBirth: dto.dateOfBirth,
     contactPhone: dto.contactPhone,
     acceptMarketing: dto.acceptMarketing,

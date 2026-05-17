@@ -44,7 +44,7 @@ function DocumentSlot({
         errorLabels={{
           fileTypeNotAllowed: tDocuments('errors.fileType'),
           fileTooLarge: tDocuments('errors.fileTooLarge'),
-          tooManyFiles: '1 fichier maximum',
+          tooManyFiles: tDocuments('tooManyFiles'),
         }}
       />
       {file && (

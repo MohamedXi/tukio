@@ -1,6 +1,6 @@
 # Story 1.3d v2: frontend `<ProConversionWizard>` 4 steps (Identité + Activité + Documents + Récap) on seller + "Devenir pro" CTA from customer dropdown + Playwright e2e + observability
 
-Status: review
+Status: done
 
 > 🆕 **Sub-story créée 2026-05-17** via `/bmad-correct-course` (sprint-change-proposal-2026-05-17.md) en REMPLACEMENT de la v1 (1-3d-frontend-wizard-seller-middleware-e2e-observability.md) qui suivait la spec Story 1.3 v1 — divergente du Cloud Design `mvp-pro-onboarding.jsx`.
 > Parent : `_bmad-output/implementation-artifacts/1-3-pro-registration-pending-admin-review.md` (umbrella source-of-truth des ACs refondus).
@@ -297,6 +297,49 @@ Status: review
 ## Change Log
 
 - Story 1.3d v2 implémentée (2026-05-17) : rollback v1 + wizard conversion 4 steps seller.tukio.one + CTA "Devenir pro" Customer dropdown + next-intl adoption apps/seller + i18n 160 keys FR/EN + Playwright 9 e2e cases + cookie-to-bearer gateway-api bridge + observability step metric
+
+## Senior Developer Review (AI)
+
+**Date:** 2026-05-17 · **Outcome:** Changes Requested · **Scope:** Groupe 1/4 (contracts + identity-svc domain/usecases)
+
+### Review Follow-ups (AI)
+
+#### Décisions résolues
+- [x] [Review][Decision] D1 — email/firstName/lastName : lire le DTO (choix A) — usecase doit utiliser input.email/firstName/lastName au lieu de kcUser [convert-customer-to-pro.usecase.ts]
+- [x] [Review][Decision] D2 — result.userId = local UUID : intentionnel, cohérent 1.2c — ajouter un commentaire au return [convert-customer-to-pro.usecase.ts]
+
+#### Patches
+- [x] [Review][Patch] P1 — R2 orphan sur DB eligibility guards post-upload [convert-customer-to-pro.usecase.ts] 🔴
+- [x] [Review][Patch] P2 — EmailNotVerifiedException (403) tunnellé comme 502 au gateway [identity-svc.client.ts] 🔴
+- [x] [Review][Patch] P3 — Eligibility guards s'exécutent après INSEE + SIRET DB [convert-customer-to-pro.usecase.ts] 🟠
+- [x] [Review][Patch] P4 — acceptMarketing silencieusement ignoré [convert-customer-to-pro.usecase.ts] 🟠
+- [x] [Review][Patch] P5 — CONFLICT_ALREADY_PRO et EMAIL_NOT_VERIFIED non gérés dans conversion.service.ts 🟠
+- [x] [Review][Patch] P6 — Codes morts EXTERNAL-002/003 dans conversion.service.ts:20 🟠
+- [x] [Review][Patch] P7 — Strings FR hardcodées dans 3 composants (StepIdentity, StepDocuments, StepReview) 🟠
+- [x] [Review][Patch] P8 — Métriques Prometheus définies mais jamais instrumentées (3 fichiers) 🟠
+- [x] [Review][Patch] P9 — Migration DEFAULT non supprimé pour categories et service_zone 🟠
+- [x] [Review][Patch] P10 — Keycloak user null classifié comme EXTERNAL_KEYCLOAK_DOWN 🟠
+- [x] [Review][Patch] P11 — inferExtension échoue si MIME contient des paramètres [convert-customer-to-pro.usecase.ts:698] 🟡
+- [x] [Review][Patch] P12 — NEXT_PUBLIC_API_URL non vérifié en staging [identity/page.tsx:43] 🟡
+- [x] [Review][Patch] P13 — test-customer-auth ROPC peut être désactivé en Keycloak 25 [test-customer-auth.ts:13] 🟡
+- [x] [Review][Patch] P14 — Email support affiché deux fois sur la page pending [pending/page.tsx:103] 🟡
+- [x] [Review][Patch] P15 — InseeAuthFailedError non testé dans la spec 🟡
+- [x] [Review][Patch] P16 — void correlationId dans catch block [convert-customer-to-pro.usecase.ts:463] 🟡
+- [x] [Review][Patch] P17 — userId non validé comme UUID v4 dans le parser multipart [parse-multipart-pro-register.ts:128] 🟡
+- [x] [Review][Patch] P18 (ex-D1) — email/firstName/lastName : lire le DTO pas KC [convert-customer-to-pro.usecase.ts] 🟠
+- [x] [Review][Patch] P19 — CRITIQUE : Keycloak JWT attribute key mismatch — mapper user.attribute="status" mais code écrit "tukio:status" → claim absent → pending-guard bypassé [keycloak-admin.service.ts + infra/keycloak/realm-config/protocol-mappers.json] 🔴
+- [x] [Review][Patch] P20 — isPgUniqueViolation retourne CONFLICT_SIRET_EXISTS sur violation user_profile_id (double-submit) [convert-customer-to-pro.usecase.ts] 🟠
+
+#### Defers
+- [x] [Review][Defer] W1 — RegisterProUseCase sentinel conversion invalides — deferred, flow supersédé sans route active
+- [x] [Review][Defer] W2 — KeycloakUserNotFoundError dead code dans le port — deferred, documenté W1 V1+
+- [x] [Review][Defer] W3 — ProConversionFields legalForm/vatStatus typed string — deferred, documenté W5 V1+
+- [x] [Review][Defer] W4 — EMAIL_NOT_VERIFIED naming convention IDENTITY-EMAIL-NOT-VERIFIED-001 — deferred, brisant de changer
+- [x] [Review][Defer] W5 — existingAttributes stale sur race condition Keycloak — deferred, best-effort acceptable
+- [x] [Review][Defer] W6 — Transaction atomicity TransactionContext implicite — deferred, architecture testée
+- [x] [Review][Defer] W7 — Age check edge UTC midnight — deferred, acceptable MVP
+- [x] [Review][Defer] W8 — DOM getElementById coupling ProConversionWizard — deferred, design choice MVP
+- [x] [Review][Defer] W9 — requiresEmailVerification défini en 1.3a-bis scope — deferred, même branch no runtime impact
 
 ## Story Completion Status
 - [ ] All tasks complete

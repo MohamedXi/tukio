@@ -48,7 +48,8 @@
           "dobInvalid": "Date invalide (format JJ/MM/AAAA attendu)",
           "dobTooYoung": "Vous devez avoir au moins 18 ans",
           "dobFuture": "La date de naissance ne peut pas être dans le futur"
-        }
+        },
+        "acceptMarketing": "J’accepte de recevoir des conseils et actualités de tukio par email."
       },
       "activity": {
         "title": "Votre activité professionnelle",
@@ -142,7 +143,8 @@
           "fileType": "Type de fichier non accepté (JPG, PNG ou PDF uniquement)",
           "idCardRequired": "La pièce d'identité est requise",
           "ribRequired": "Le RIB est requis"
-        }
+        },
+        "tooManyFiles": "1 fichier maximum"
       },
       "review": {
         "title": "Récapitulatif de votre dossier",
@@ -164,7 +166,23 @@
           "network": "Vérifiez votre connexion internet et réessayez.",
           "generic": "Une erreur est survenue. Réessayez ou contactez le support.",
           "conflictSiret": "Ce SIRET est déjà utilisé par un autre compte pro",
-          "inactiveInsee": "Ce SIRET n'est pas actif dans le registre INSEE"
+          "inactiveInsee": "Ce SIRET n'est pas actif dans le registre INSEE",
+          "alreadyPro": "Votre compte est déjà un compte pro.",
+          "emailNotVerified": "Veuillez vérifier votre email avant de devenir pro. Consultez votre boîte de réception."
+        },
+        "labels": {
+          "firstName": "Prénom",
+          "lastName": "Nom",
+          "email": "Email",
+          "phone": "Téléphone",
+          "dateOfBirth": "Date de naissance",
+          "companyName": "Nom commercial",
+          "siret": "SIRET",
+          "legalForm": "Forme juridique",
+          "vatStatus": "Statut TVA",
+          "categories": "Catégories",
+          "zone": "Zone",
+          "documents": "Documents"
         }
       },
       "pending": {

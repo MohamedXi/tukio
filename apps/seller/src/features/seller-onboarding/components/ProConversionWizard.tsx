@@ -146,6 +146,12 @@ export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWi
               setSiretServerError(tReview('errors.inactiveInsee'));
               dispatch({ type: 'GO_TO', step: 2 });
               break;
+            case 'already_pro':
+              setBannerError(tReview('errors.alreadyPro'));
+              break;
+            case 'email_not_verified':
+              setBannerError(tReview('errors.emailNotVerified'));
+              break;
             case 'external':
               setBannerError(tReview('errors.external'));
               break;

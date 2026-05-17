@@ -48,7 +48,8 @@
           "dobInvalid": "Invalid date (expected DD/MM/YYYY format)",
           "dobTooYoung": "You must be at least 18 years old",
           "dobFuture": "Date of birth cannot be in the future"
-        }
+        },
+        "acceptMarketing": "I agree to receive tips and news from tukio by email."
       },
       "activity": {
         "title": "Your professional activity",
@@ -142,7 +143,8 @@
           "fileType": "File type not accepted (JPG, PNG or PDF only)",
           "idCardRequired": "Identity document is required",
           "ribRequired": "Bank account details are required"
-        }
+        },
+        "tooManyFiles": "1 file maximum"
       },
       "review": {
         "title": "Application summary",
@@ -164,7 +166,23 @@
           "network": "Check your internet connection and try again.",
           "generic": "An error occurred. Please retry or contact support.",
           "conflictSiret": "This SIRET is already used by another pro account",
-          "inactiveInsee": "This SIRET is not active in the INSEE register"
+          "inactiveInsee": "This SIRET is not active in the INSEE register",
+          "alreadyPro": "Your account is already a pro account.",
+          "emailNotVerified": "Please verify your email before becoming a pro. Check your inbox."
+        },
+        "labels": {
+          "firstName": "First name",
+          "lastName": "Last name",
+          "email": "Email",
+          "phone": "Phone",
+          "dateOfBirth": "Date of birth",
+          "companyName": "Business name",
+          "siret": "SIRET",
+          "legalForm": "Legal structure",
+          "vatStatus": "VAT status",
+          "categories": "Categories",
+          "zone": "Service area",
+          "documents": "Documents"
         }
       },
       "pending": {

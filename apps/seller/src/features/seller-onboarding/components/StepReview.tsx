@@ -96,41 +96,44 @@ export function StepReview({
 
       {identity && (
         <ReviewCard sectionLabel={t('sections.identity')} step={1} onEdit={onEdit}>
-          <ReviewRow label="Prénom" value={identity.firstName} />
-          <ReviewRow label="Nom" value={identity.lastName} />
-          <ReviewRow label="Email" value={identity.email} />
-          <ReviewRow label="Téléphone" value={identity.contactPhone} />
-          <ReviewRow label="Date de naissance" value={identity.dateOfBirth} />
+          <ReviewRow label={t('labels.firstName')} value={identity.firstName} />
+          <ReviewRow label={t('labels.lastName')} value={identity.lastName} />
+          <ReviewRow label={t('labels.email')} value={identity.email} />
+          <ReviewRow label={t('labels.phone')} value={identity.contactPhone} />
+          <ReviewRow label={t('labels.dateOfBirth')} value={identity.dateOfBirth} />
         </ReviewCard>
       )}
 
       {activity && (
         <ReviewCard sectionLabel={t('sections.activity')} step={2} onEdit={onEdit}>
-          <ReviewRow label="Nom commercial" value={activity.companyName} />
-          <ReviewRow label="SIRET" value={activity.siret} />
+          <ReviewRow label={t('labels.companyName')} value={activity.companyName} />
+          <ReviewRow label={t('labels.siret')} value={activity.siret} />
           <ReviewRow
-            label="Forme juridique"
+            label={t('labels.legalForm')}
             value={tActivity(`legalForms.${activity.legalForm}`)}
           />
           <ReviewRow
-            label="Statut TVA"
+            label={t('labels.vatStatus')}
             value={tActivity(
               activity.vatStatus === 'vat_registered' ? 'vatRegistered' : 'vatExempt',
             )}
           />
           <ReviewRow
-            label="Catégories"
+            label={t('labels.categories')}
             value={activity.categories.map((c) => tActivity(`categoryList.${c}`)).join(', ')}
           />
           <ReviewRow
-            label="Zone"
+            label={t('labels.zone')}
             value={`${activity.serviceZone.city} — ${activity.serviceZone.radiusKm} km`}
           />
         </ReviewCard>
       )}
 
       <ReviewCard sectionLabel={t('sections.documents')} step={3} onEdit={onEdit}>
-        <ReviewRow label="Documents" value={t('documentsUploaded', { count: docCount })} />
+        <ReviewRow
+          label={t('labels.documents')}
+          value={t('documentsUploaded', { count: docCount })}
+        />
       </ReviewCard>
 
       <div className="rounded-xl border border-cream-200 bg-cream-50 p-5">

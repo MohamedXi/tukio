@@ -93,7 +93,7 @@ export default async function OnboardingPendingPage({
           </ul>
         </div>
 
-        {/* Support link */}
+        {/* Support link — email rendered by rich text from i18n key */}
         <p className="text-center text-sm text-charcoal-500">
           {t.rich('support', {
             email: (chunks) => (
@@ -101,10 +101,7 @@ export default async function OnboardingPendingPage({
                 {chunks}
               </a>
             ),
-          })}{' '}
-          <a href="mailto:support@tukio.one" className="font-medium text-brand-700 hover:underline">
-            support@tukio.one
-          </a>
+          })}
         </p>
       </section>
 

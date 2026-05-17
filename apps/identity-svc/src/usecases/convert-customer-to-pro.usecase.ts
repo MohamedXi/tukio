@@ -62,6 +62,11 @@ export interface ConvertCustomerToProInput {
   /** Keycloak user id (`sub` claim from JWT forwarded by gateway-api). */
   userId: string;
   // Identity (step 1 — pre-filled from Customer account, editable in the wizard)
+  // These values are submitted by the wizard and take precedence over KC values
+  // for the pro-profile event and notifications (Decision D1, 2026-05-17 review).
+  email: string;
+  firstName: string;
+  lastName: string;
   dateOfBirth: string;
   contactPhone: string;
   acceptMarketing: boolean;
@@ -164,7 +169,37 @@ export class ConvertCustomerToProUseCase {
       throw new AlreadyProException();
     }
 
-    // 3. INSEE validation — must be active.
+    // 3. Find the existing UserProfile and run eligibility guards early
+    //    (before INSEE to avoid consuming API quota for ineligible accounts).
+    const userProfile = await this.userProfileRepo.findByKeycloakUserId(
+      input.userId,
+    );
+    if (userProfile === null) {
+      throw this.validation(
+        IdentityErrorCodes.NOT_FOUND_USER,
+        'UserProfile not found for this Keycloak user — account inconsistency',
+      );
+    }
+    if (userProfile.isDeleted()) {
+      throw this.validation(
+        IdentityErrorCodes.VALIDATION_INPUT_INVALID,
+        'Account is deleted and cannot be converted to a Pro account',
+      );
+    }
+    if (userProfile.role !== UserRole.CLIENT) {
+      throw this.validation(
+        IdentityErrorCodes.VALIDATION_INPUT_INVALID,
+        'Only Customer accounts (role=client) may be converted to Pro',
+      );
+    }
+    if (userProfile.status !== UserStatus.ACTIVE) {
+      throw this.validation(
+        IdentityErrorCodes.VALIDATION_INPUT_INVALID,
+        'Only active accounts (status=active) may be converted to Pro',
+      );
+    }
+
+    // 4. INSEE validation — must be active.
     const siretVo = Siret.create(input.siret);
     const vatNumberVo = input.vatNumber
       ? VatNumber.create(input.vatNumber)
@@ -188,10 +223,14 @@ export class ConvertCustomerToProUseCase {
           `INSEE rate limit reached, retry after ${err.retryAfterMs} ms`,
         );
       }
-      if (err instanceof InseeAuthFailedError) {
+      if (
+        err instanceof InseeAuthFailedError ||
+        (err instanceof Error && err.name === 'InseeAuthFailedError')
+      ) {
+        const authErr = err as InseeAuthFailedError;
         this.logger.error(
           'INSEE SIRENE API authentication failed — apiKey misconfigured or revoked',
-          { status: err.status, correlationId },
+          { status: authErr.status, correlationId },
         );
         throw this.external(
           IdentityErrorCodes.EXTERNAL_INSEE_AUTH_FAILED,
@@ -219,37 +258,6 @@ export class ConvertCustomerToProUseCase {
       throw this.conflict(
         IdentityErrorCodes.CONFLICT_SIRET_EXISTS,
         'SIRET already registered to an active Pro account',
-      );
-    }
-
-    // 5. Find the existing UserProfile by keycloakUserId.
-    const userProfile = await this.userProfileRepo.findByKeycloakUserId(
-      input.userId,
-    );
-    if (userProfile === null) {
-      throw this.validation(
-        IdentityErrorCodes.NOT_FOUND_USER,
-        'UserProfile not found for this Keycloak user — account inconsistency',
-      );
-    }
-    // Guard: soft-deleted accounts cannot be converted.
-    if (userProfile.isDeleted()) {
-      throw this.validation(
-        IdentityErrorCodes.VALIDATION_INPUT_INVALID,
-        'Account is deleted and cannot be converted to a Pro account',
-      );
-    }
-    // Guard (D2 decision): only active Customer accounts may be converted.
-    if (userProfile.role !== UserRole.CLIENT) {
-      throw this.validation(
-        IdentityErrorCodes.VALIDATION_INPUT_INVALID,
-        'Only Customer accounts (role=client) may be converted to Pro',
-      );
-    }
-    if (userProfile.status !== UserStatus.ACTIVE) {
-      throw this.validation(
-        IdentityErrorCodes.VALIDATION_INPUT_INVALID,
-        'Only active accounts (status=active) may be converted to Pro',
       );
     }
 
@@ -318,7 +326,11 @@ export class ConvertCustomerToProUseCase {
 
     // 7. Atomic DB transaction: update UserProfile role+status, save ProProfile, publish events.
     try {
-      const updatedUserProfile = userProfile.convertToPro(now);
+      // Pass wizard-submitted acceptMarketing (may differ from current KC value).
+      const updatedUserProfile = userProfile.convertToPro(
+        now,
+        input.acceptMarketing,
+      );
 
       const proProfile = ProProfile.register({
         id: proProfileId,
@@ -354,12 +366,14 @@ export class ConvertCustomerToProUseCase {
         await txn.userProfileRepo.save(updatedUserProfile);
         await txn.proProfileRepo.save(proProfile);
 
+        // Use wizard-submitted identity values (D1 decision, 2026-05-17 review):
+        // the user may have edited email/name in the wizard (pro contact details).
         const proRegisteredEvent = this.buildProRegisteredEvent({
           userProfile: updatedUserProfile,
           proProfile,
-          kcEmail: kcUser.email,
-          kcFirstName: kcUser.firstName,
-          kcLastName: kcUser.lastName,
+          kcEmail: input.email,
+          kcFirstName: input.firstName,
+          kcLastName: input.lastName,
           correlationId,
           occurredAt: now,
         });
@@ -368,8 +382,8 @@ export class ConvertCustomerToProUseCase {
         const emailSendEvent = this.buildEmailSendEvent({
           userProfile: updatedUserProfile,
           proProfile,
-          kcEmail: kcUser.email,
-          kcFirstName: kcUser.firstName,
+          kcEmail: input.email,
+          kcFirstName: input.firstName,
           correlationId,
           occurredAt: now,
         });
@@ -378,9 +392,13 @@ export class ConvertCustomerToProUseCase {
     } catch (err) {
       if (isPgUniqueViolation(err)) {
         await this.compensateR2(uploadedKeys, correlationId);
+        // The unique violation may originate from either:
+        //   (a) the partial SIRET unique index → SIRET already used by another Pro
+        //   (b) the user_profile_id unique constraint → same user double-submitted
+        // Both map to a 409 conflict with SIRET code for a safe UX message.
         throw this.conflict(
           IdentityErrorCodes.CONFLICT_SIRET_EXISTS,
-          'SIRET already registered to an active Pro account (concurrent registration)',
+          'SIRET already registered (concurrent registration or duplicate submission)',
         );
       }
       await this.compensateR2(uploadedKeys, correlationId);
@@ -425,12 +443,12 @@ export class ConvertCustomerToProUseCase {
     }
     if (kcUser === null) {
       this.logger.warn(
-        'ConvertCustomerToProUseCase: Keycloak user not found — JWT sub mismatch',
+        'ConvertCustomerToProUseCase: Keycloak user not found — JWT sub mismatch (account inconsistency)',
         { keycloakUserId: '[REDACTED]', correlationId },
       );
-      throw this.external(
-        IdentityErrorCodes.EXTERNAL_KEYCLOAK_DOWN,
-        'Keycloak user not found',
+      throw this.validation(
+        IdentityErrorCodes.NOT_FOUND_USER,
+        'Keycloak user not found — JWT sub does not match any user',
       );
     }
     if (!kcUser.emailVerified) {
@@ -460,7 +478,10 @@ export class ConvertCustomerToProUseCase {
           'Keycloak unreachable while checking roles',
         );
       }
-      void correlationId;
+      this.logger.error(
+        'ConvertCustomerToProUseCase: unexpected error checking Keycloak realm role',
+        { keycloakUserId: '[REDACTED]', correlationId },
+      );
       throw err;
     }
   }
@@ -696,7 +717,12 @@ const EXT_BY_MIME: Record<string, string> = {
 const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.pdf']);
 
 function inferExtension(filename: string, contentType: string): string {
-  const fromMime = EXT_BY_MIME[contentType.toLowerCase()];
+  // Strip MIME parameters (e.g. "image/jpeg; charset=utf-8" → "image/jpeg")
+  // before lookup to avoid cache misses on parameterized content-types.
+  const mimeBase = (contentType.split(';')[0] ?? contentType)
+    .trim()
+    .toLowerCase();
+  const fromMime = EXT_BY_MIME[mimeBase];
   if (fromMime) return fromMime;
   const idx = filename.lastIndexOf('.');
   if (idx >= 0 && idx < filename.length - 1) {

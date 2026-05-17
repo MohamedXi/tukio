@@ -39,8 +39,10 @@ export default async function OnboardingIdentityPage({
   const { locale } = await params;
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!apiUrl && process.env.NODE_ENV === 'production') {
-    throw new Error('NEXT_PUBLIC_API_URL is required in production builds.');
+  if (!apiUrl) {
+    throw new Error(
+      'NEXT_PUBLIC_API_URL is required — set it in .env.local or the deployment environment.',
+    );
   }
 
   const cookieStore = await cookies();

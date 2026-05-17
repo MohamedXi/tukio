@@ -20,7 +20,12 @@ async function getTokenDirect(): Promise<string> {
     }),
   });
   if (!res.ok) {
-    throw new Error(`Keycloak token exchange failed: ${res.status} ${await res.text()}`);
+    const body = await res.text();
+    throw new Error(
+      `Keycloak ROPC token exchange failed (${res.status}): ${body}\n` +
+        'Check that directGrantsEnabled=true is set on the tukio realm and ' +
+        'that E2E_TEST_CUSTOMER_EMAIL/E2E_TEST_CUSTOMER_PASSWORD are correct.',
+    );
   }
   const json = (await res.json()) as { access_token: string };
   return json.access_token;
