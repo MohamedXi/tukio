@@ -26,10 +26,32 @@ interface MinimalHttpRequest {
 const HEADER_NAME = 'x-internal-service-token';
 const HEADER_TIMESTAMP = 'x-internal-service-timestamp';
 const HEADER_BODY_HASH = 'x-internal-service-body-sha256';
+const HEADER_CONTENT_TYPE = 'content-type';
 const MAX_CLOCK_SKEW_SECONDS = 300; // 5 minutes — protects against replay.
 /** Sentinel for the maximum plausible Unix-seconds value (year 2286). */
 const MAX_UNIX_SECONDS = 9_999_999_999;
 const HEX_REGEX = /^[0-9a-f]+$/i;
+
+/**
+ * Sentinel body-hash for multipart/form-data requests (Story 1.3b code-review D1).
+ *
+ * Fastify does NOT populate `request.body` or `request.rawBody` for multipart
+ * because parsing is opt-in via `req.parts()` at controller time — AFTER the
+ * guard runs. So the guard cannot compute the actual body hash. Both sides
+ * (gateway-api signing + identity-svc verifying) use this fixed sentinel
+ * instead, keeping the HMAC signature bound to (timestamp, method, path) but
+ * NOT to the body bytes.
+ *
+ * Trade-off: within the 5-minute replay window, an attacker with internal
+ * network access could re-send a captured (token, ts, sig) triple with a
+ * modified multipart body. Accepted for MVP given:
+ *   - identity-svc:4001 is internal-only (DO firewall + K8s NetworkPolicy)
+ *   - gateway-api → identity-svc traffic stays on the tukio-apps bridge network
+ *   - V1+ supersedes the HMAC guard with mTLS via Linkerd (see customer.controller.ts)
+ */
+export const MULTIPART_BODY_HASH_SENTINEL = createHash('sha256')
+  .update('TUKIO_MULTIPART_NO_BODY_HASH')
+  .digest('hex');
 
 /**
  * Story 1.2b — guards `/internal/*` endpoints with an HMAC-SHA256 signature
@@ -113,6 +135,26 @@ export class InternalServiceGuard implements CanActivate {
     }
     if (!timingSafeEqual(providedBuffer, expectedBuffer)) {
       throw forbidden('Invalid internal service token');
+    }
+
+    // Story 1.3b code-review D1 — multipart bypass: Fastify cannot expose the
+    // raw multipart body to the guard (parsing is opt-in at controller time).
+    // The gateway-api signs and sends the fixed MULTIPART_BODY_HASH_SENTINEL
+    // for multipart endpoints; the canonical above already includes it, so
+    // the token check above already validated the (ts, method, path, sentinel)
+    // tuple. Skip the body-hash recomputation only when both the Content-Type
+    // is multipart AND the claimed hash is exactly the sentinel.
+    const contentType = (
+      headerString(request, HEADER_CONTENT_TYPE) ?? ''
+    ).toLowerCase();
+    const isMultipart = contentType.startsWith('multipart/');
+    if (isMultipart) {
+      if (providedBodyHash.toLowerCase() !== MULTIPART_BODY_HASH_SENTINEL) {
+        throw forbidden(
+          'Multipart requests must use the multipart body-hash sentinel',
+        );
+      }
+      return true;
     }
 
     // Review patch B1 (1.2b) — verify the body hash actually matches the

@@ -19,6 +19,8 @@ export const IdentityErrorCodes = {
   EXTERNAL_KEYCLOAK_DOWN: 'IDENTITY-EXTERNAL-001',
   EXTERNAL_INSEE_UNREACHABLE: 'IDENTITY-EXTERNAL-002',
   EXTERNAL_R2_UPLOAD_FAILED: 'IDENTITY-EXTERNAL-003',
+  /** INSEE returned 401/403 — apiKey misconfigured or revoked (Story 1.3b review P5). */
+  EXTERNAL_INSEE_AUTH_FAILED: 'IDENTITY-EXTERNAL-004',
 } as const;
 
 export type IdentityErrorCode = (typeof IdentityErrorCodes)[keyof typeof IdentityErrorCodes];

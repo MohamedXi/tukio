@@ -159,6 +159,10 @@ jobs:
             export TUKIO_INTERNAL_SERVICE_SECRET=\$(cat /home/tukio/tukio/secrets/internal_service_secret)
             export KEYCLOAK_CLIENT_SECRET_TUKIO_API=\$(cat /home/tukio/tukio/secrets/keycloak_client_secret_tukio_api)
             export PUBLIC_BASE_URL=\$(cat /home/tukio/tukio/secrets/public_base_url 2>/dev/null || echo "https://tukio.one")
+            export INSEE_API_KEY=\$(cat /home/tukio/tukio/secrets/insee_api_key 2>/dev/null || echo "")
+            export R2_KYC_ENDPOINT=\$(cat /home/tukio/tukio/secrets/r2_kyc_endpoint 2>/dev/null || echo "")
+            export R2_KYC_ACCESS_KEY_ID=\$(cat /home/tukio/tukio/secrets/r2_kyc_access_key_id 2>/dev/null || echo "")
+            export R2_KYC_SECRET_ACCESS_KEY=\$(cat /home/tukio/tukio/secrets/r2_kyc_secret_access_key 2>/dev/null || echo "")
             export IMAGE_TAG="${PREV_TAG}"
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\

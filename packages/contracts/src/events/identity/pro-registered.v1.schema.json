@@ -98,6 +98,7 @@
           "anyOf": [{ "type": "string", "format": "date" }, { "type": "null" }]
         },
         "inseeLegalCategory": { "type": ["string", "null"] },
+        "inseeNaf": { "type": ["string", "null"] },
         "acquisitionSource": {
           "type": "string",
           "enum": ["organic", "google_ads", "meta_ads", "referral", "direct", "partner", "unknown"]

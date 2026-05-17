@@ -133,4 +133,17 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-return': 'off',
     },
   },
+  // @fastify/multipart augments FastifyRequest via declaration merging. ESLint's
+  // TypeScript project service does not always resolve the augmentation through
+  // the `type` import, causing false-positive `no-unsafe-*` violations on
+  // `req.isMultipart()` and `req.parts()`. The parse utility is pure
+  // infrastructure glue — it is tested via e2e specs, not unit specs.
+  {
+    files: ['src/infrastructure/http/utils/parse-multipart-pro-register.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+    },
+  },
 );

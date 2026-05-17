@@ -32,6 +32,20 @@ export interface NatsConfig {
   replicas: number;
 }
 
+/** INSEE SIRENE V3.11 apiKey auth (Story 1.3b deviation — no OAuth2). */
+export interface InseeConfig {
+  apiUrl: string;
+  apiKey: string;
+}
+
+/** Cloudflare R2 KYC bucket config (AWS SDK S3 v3 compatible, Story 1.3b). */
+export interface R2KycConfig {
+  endpoint: string;
+  bucket: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+}
+
 export interface IConfigService {
   getNodeEnv(): 'development' | 'test' | 'production';
   getServiceName(): string;
@@ -47,4 +61,10 @@ export interface IConfigService {
   /** Public-facing apex URL used to build email-verify links (Story 1.2a use case). */
   getPublicBaseUrl(): string;
   getNatsConfig(): NatsConfig;
+  /** INSEE SIRENE V3.11 apiKey config (Story 1.3b). */
+  getInseeConfig(): InseeConfig;
+  /** Cloudflare R2 KYC storage config (Story 1.3b). */
+  getR2KycConfig(): R2KycConfig;
+  /** R2 KYC bucket name (convenience getter used by the use-case proxy wiring). */
+  getR2KycBucket(): string;
 }

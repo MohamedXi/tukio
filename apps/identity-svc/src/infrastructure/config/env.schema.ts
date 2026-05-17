@@ -42,6 +42,14 @@ export const EnvSchema = z
     NATS_URL: z.string().min(1).default('nats://localhost:4222'),
     NATS_STREAM_NAME: z.string().min(1).default('TUKIO_IDENTITY'),
     NATS_REPLICAS: z.coerce.number().int().positive().default(1),
+    // INSEE SIRENE V3.11 apiKey (Story 1.3b). Optional — only required when pro registration is active.
+    INSEE_API_URL: z.string().url().min(1).default('https://api.insee.fr'),
+    INSEE_API_KEY: z.string().min(1).optional(),
+    // Cloudflare R2 KYC bucket (Story 1.3b). Optional — only required when pro registration is active.
+    R2_KYC_ENDPOINT: z.string().url().min(1).optional(),
+    R2_KYC_ACCESS_KEY_ID: z.string().min(1).optional(),
+    R2_KYC_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    R2_KYC_BUCKET: z.string().min(1).default('tukio-kyc-staging'),
   })
   .passthrough();
 
@@ -90,6 +98,26 @@ export const validateEnv = (raw: Record<string, unknown>): Env => {
       throw new Error(
         `Refusing to start in production with dev fallback secret(s) for : ${leaked.join(', ')}. ` +
           'Set explicit values via secret store before deploy.',
+      );
+    }
+
+    // Story 1.3b review P6 — INSEE_API_KEY and R2 KYC credentials are marked
+    // optional in the schema for dev/test convenience, but production cannot
+    // accept registration requests without them. Fail-fast at boot so ops
+    // get a clear signal instead of silently 502-ing every pro registration.
+    const REQUIRED_IN_PROD: Array<keyof typeof parsed.data> = [
+      'INSEE_API_KEY',
+      'R2_KYC_ENDPOINT',
+      'R2_KYC_ACCESS_KEY_ID',
+      'R2_KYC_SECRET_ACCESS_KEY',
+    ];
+    const missing = REQUIRED_IN_PROD.filter(
+      (key) => parsed.data[key] === undefined || parsed.data[key] === '',
+    );
+    if (missing.length > 0) {
+      throw new Error(
+        `Refusing to start in production without required pro-registration secret(s): ${missing.join(', ')}. ` +
+          'Provision via secret store (Story 1.3b Task 5.1).',
       );
     }
   }

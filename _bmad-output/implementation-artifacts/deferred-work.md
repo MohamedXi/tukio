@@ -1,5 +1,16 @@
 # Deferred Work
 
+## Deferred from: code review of 1-3b-identity-svc-infrastructure-insee-r2-controller (2026-05-17)
+
+- **W1** — R2 `delete()` n'a pas de `correlationId` dans la signature de port — orphan compensation logs perdent le lien de trace. Story 1.10 reconciliation job aura besoin de retrouver "quel register a généré quel orphan blob". Étendre `DeleteInput` avec correlationId optionnel et logger côté adapter.
+- **W2** — prom-client counters manquants : `tukio_keycloak_orphan_users_total`, `tukio_r2_orphan_kyc_objects_total`, `tukio_insee_rate_limit_total`, `tukio_insee_5xx_total`. Story 1.10 (reconciliation job) et Story 4.13 (observability MVP) en ont besoin. Pattern Story 1.2b à étendre.
+- **W3** — `ProTransactionContext.tokenRepo` est une dépendance leaky du repo pro (le `tokenRepo` est injecté juste pour forwarder, jamais appelé par pro registration). Touche le contrat de Story 1.3a (`pro-profile.repository.port.ts`). À refactor en V1+ : retirer `tokenRepo` du `ProTransactionContext` (ne devrait pas étendre `TransactionContext` parent customer).
+- **W4** — `UserProfile.registerPro()` factory dédiée : actuellement `RegisterProUseCase` fait `UserProfile.register(...)` puis `UserProfile.create({ ...userProfile, role: PRO, status: PENDING_ADMIN_REVIEW })` — TODO inline ligne 317. Le spread perd toute invariant future ajoutée à `register()`. Ajouter une factory dédiée à l'aggregate.
+- **W5** — INSEE adapter sans retry/circuit breaker — single transient blip = 502 utilisateur. Parent story narrative mentionnait un circuit breaker mais pas implémenté en 1.3b. V1+ scope.
+- **W6** — ESLint disable `no-unsafe-*` sur `parse-multipart-pro-register.ts` — fix propre via tsconfig project service (le module augmentation de `@fastify/multipart` n'est pas pickée par ESLint). Non-bloquant.
+- **W7** — MIME magic-byte validation via lib `file-type` — `filePart.mimetype` est client-supplied via Content-Type, donc un `.exe` labelé `image/jpeg` passe la whitelist. KYC blob arrive R2 avec wrong stated type → admin signed URL → risque XSS si rendu inline. Story 2.3-2.4 (admin KYC review) devra faire la double-check au retrieve + envisager file-type lib ici. Nouvelle dep à valider.
+- **W8** — `R2_KYC_BUCKET` hardcoded à `tukio-kyc-staging` dans `infra/docker-compose/apps.prod.yml` + `INSEE_API_URL` utilise le default Zod (jamais exporté par le workflow). Pas de bucket prod existant. Sprint dédié post-MVP go-live prod : (a) créer secret droplet `r2_kyc_bucket`, (b) ajouter `export R2_KYC_BUCKET=...` aux 2 SSH steps de `deploy-staging.yml` (et du futur `deploy-production.yml`), (c) ajouter `INSEE_API_URL` au workflow export pour permettre l'override (INSEE sandbox vs prod).
+
 ## Deferred from: code review of 1-3a-contracts-pro-domain-usecase (2026-05-16)
 
 - **W1** — `ProTransactionContext` port design n'enforce pas le QueryRunner partagé — Story 1.3b implémentation doit garantir que `userProfileRepo` et `proProfileRepo` utilisent le même `QueryRunner` (documentation-only dans le port). Si mal implémenté → writes non atomiques sans erreur visible.
