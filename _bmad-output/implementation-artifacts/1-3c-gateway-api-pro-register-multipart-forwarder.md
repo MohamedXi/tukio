@@ -1,6 +1,6 @@
 # Story 1.3c: gateway-api `POST /v1/auth/pro/register` (multipart) + forwarder vers identity-svc
 
-Status: ready-for-dev
+Status: done
 
 > 🧩 **Sub-story 3/4 de Story 1.3** (décomposée 2026-05-16 via `/bmad-correct-course`).
 > Parent : `_bmad-output/implementation-artifacts/1-3-pro-registration-pending-admin-review.md` (umbrella source-of-truth des ACs/Dev Notes complets).
@@ -90,26 +90,48 @@ Voir parent ligne 191-281 pour la spec complète du endpoint.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Port + forwarder + IdentitySvcClient extension** (AC: #1) — Story 1.3 parent Task 6.1-6.3
-  - [ ] 1.1 — Update `domain/ports/identity-svc.port.ts` (ajouter `registerPro`)
-  - [ ] 1.2 — Créer `usecases/register-pro.forwarder.ts`
-  - [ ] 1.3 — Update `identity-svc.client.ts` (multipart via form-data + HMAC body bytes)
-  - [ ] 1.4 — `pnpm --filter=gateway-api add form-data`
-  - [ ] 1.5 — Update `identity-svc.client.spec.ts` (cases multipart + HMAC)
+- [x] **Task 1 — Port + forwarder + IdentitySvcClient extension** (AC: #1) — Story 1.3 parent Task 6.1-6.3
+  - [x] 1.1 — Update `domain/ports/identity-svc.port.ts` (ajouter `registerPro` + `ForwardRegisterProInput` + `RegisterProForwardedFile`)
+  - [x] 1.2 — Créer `usecases/register-pro.forwarder.ts` (BFF Pretre forwarder + mapping erreurs)
+  - [x] 1.3 — Update `identity-svc.client.ts` (multipart via form-data + HMAC `MULTIPART_BODY_HASH_SENTINEL` côté gateway — dévie du spec body-bytes : Fastify ne peut pas exposer le raw body au guard avant `req.parts()`, alignement avec identity-svc Story 1.3b D1)
+  - [x] 1.4 — `pnpm --filter=gateway-api add form-data @fastify/multipart`
+  - [x] 1.5 — Update `identity-svc.client.spec.ts` (6 cas registerPro : signature sentinel + kbisOrInsee inclus + 409 / 422 / 502 / malformed envelope)
 
-- [ ] **Task 2 — Controller `POST /v1/auth/pro/register` + multer config + throttler** (AC: #1) — Story 1.3 parent Task 6.4-6.9
-  - [ ] 2.1 — Vérifier `multer` + `@types/multer` (sinon installer)
-  - [ ] 2.2 — Créer `multer.config.ts` (5 MB/file + MIME whitelist)
-  - [ ] 2.3 — Créer `utils/sort-files-by-fieldname.ts`
-  - [ ] 2.4 — Créer `auth-pro.controller.ts` (FileFieldsInterceptor + throttle scope `pro-register` 3/min + merge acquisition)
-  - [ ] 2.5 — Update `app.module.ts` (throttler config `'pro-register'`)
-  - [ ] 2.6 — Update `.env.example` (2 throttler vars)
-  - [ ] 2.7 — Update `environment-config.service.ts` + Zod schema
+- [x] **Task 2 — Controller `POST /v1/auth/pro/register` + Fastify multipart + throttler** (AC: #1) — Story 1.3 parent Task 6.4-6.9
+  - [x] 2.1 — Dévie du spec : gateway-api tourne sur Fastify (cf. Story 1.2c), donc utilisation de `@fastify/multipart` + parser custom au lieu de `multer` + `FileFieldsInterceptor` (pattern aligné avec identity-svc 1.3b)
+  - [x] 2.2 — Créer `infrastructure/http/utils/parse-multipart-pro-register.ts` (MIME whitelist `image/jpeg` / `image/png` / `application/pdf`, fileSize 5 MB, traduction `FST_REQ_FILE_TOO_LARGE` → 413 `PayloadTooLargeException`, validation Zod du `payload` JSON)
+  - [x] 2.3 — N/A : pattern identity-svc 1.3b utilise structural `MultipartRequest` ; pas de `sort-files-by-fieldname.ts` séparé
+  - [x] 2.4 — Créer `auth-pro.controller.ts` (Fastify `@Req()` + `@Public()` + `@Throttle({ default: { limit: 3, ttl: 60_000 } })` + merge acquisition first-touch)
+  - [x] 2.5 — Update `main.ts` (register `@fastify/multipart` avec `throwFileSizeLimit: true` + caps fileSize 5 MB / files 3 / parts 5 / fieldSize 1 MB) + ajout `AuthProController` dans `HttpModule`
+  - [x] 2.6 — Update `.env.example` (`THROTTLER_PRO_REGISTER_LIMIT=3` + `THROTTLER_PRO_REGISTER_TTL_MS=60000`)
+  - [x] 2.7 — Update `env.schema.ts` + `IConfigService.ThrottlerConfig` + `EnvironmentConfigService.getThrottlerConfig().proRegisterLimit/proRegisterTtlMs`
 
-- [ ] **Task 3 — Tests E2E backend** (AC: #1) — Story 1.3 parent Task 6.10
-  - [ ] 3.1 — Créer `test/auth-pro-register.e2e-spec.ts` (Nest e2e + nock identity-svc, 7+ cases)
-  - [ ] 3.2 — `pnpm --filter=gateway-api test:e2e auth-pro-register.e2e-spec.ts` pass
-  - [ ] 3.3 — `pnpm --filter=gateway-api lint && typecheck && test` → 0 errors
+- [x] **Task 3 — Tests E2E backend** (AC: #1) — Story 1.3 parent Task 6.10
+  - [x] 3.1 — Créer `test/auth-pro-register.e2e-spec.ts` (11 cas — Nest e2e harness + Fastify multipart enregistré + mock `IIdentitySvcClient` + `form-data` côté test : 201 happy, 422 Luhn, 409 SIRET conflict forwardé, 422 INSEE inactive forwardé avec issues, 502 INSEE down, 429 throttle 4ᵉ requête, tk_acq cookie wins, 400 MIME disallowed, 413 oversize > 5 MB, 400 rib missing, X-Tukio-Correlation-Id propagé)
+  - [x] 3.2 — `pnpm --filter=gateway-api test:e2e` pass (17/17 — 11 nouveaux + 6 customer regression)
+  - [x] 3.3 — `pnpm --filter=gateway-api lint && typecheck && test` → 0 errors (5 suites / 41 unit tests pass — pre-existing `@tukio/auth-client` `next/server.js` typecheck error hors scope)
+
+### Review Findings (AI — 2026-05-17)
+
+Blind Hunter + Edge Case Hunter + Acceptance Auditor parallèles (Sonnet 4.6). 10 dismissed, 4 deferred.
+
+#### Decisions
+
+- [x] [Review][Decision] D1 — Throttle env vars morts + scope 'default' au lieu de 'pro-register' nommé — **Résolu Option B** : suppression des dead env vars (`THROTTLER_PRO_REGISTER_LIMIT/TTL_MS`) de env.schema + config.port + service + .env.example. Valeurs hardcodées dans le controller (cohérent Story 1.2c pattern). — `THROTTLER_PRO_REGISTER_LIMIT/TTL_MS` sont validés dans env.schema + exposés via `ThrottlerConfig` mais jamais consommés ; `@Throttle({ default: { limit: 3, ttl: 60_000 } })` hardcode les valeurs à la compilation. Le spec AC1 exige un scope nommé `'pro-register'` dans `app.module.ts`. Deux options : (A) Enregistrer un second throttler nommé `'proRegister'` dans ThrottlerModule + utiliser `@Throttle({ proRegister: { limit: proRegisterLimit, ttl: proRegisterTtlMs } })` (flexibilité ops) ; (B) Supprimer les env vars morts et garder les valeurs hardcodées (simplifier). Choisir.
+
+#### Patches
+
+- [x] [Review][Patch] P1 — FST_PARTS_LIMIT / FST_FILES_LIMIT surfacent en 500 [parse-multipart-pro-register.ts:catch] — **Résolu** : `isFileTooLargeError` étendue en `isFastifyMultipartLimitError` (Set des 4 codes FST_*) → 413. 4 paramétrisés `.each()` dans le spec.
+- [x] [Review][Patch] P2 — `valueTruncated` non vérifié pour le field `payload` [parse-multipart-pro-register.ts:field-parse] — **Résolu** : contrôle `valueTruncated === true` avant stockage du JSON → 413 PayloadTooLargeException.
+- [x] [Review][Patch] P3 — `originalName` forwarded verbatim sans sanitization [parse-multipart-pro-register.ts:toBuffer] — **Résolu** : ajout `sanitizeFilename()` (strip traversal + non-alphanum → `_`, cap 200 chars, fallback `'upload'`).
+- [x] [Review][Patch] P4 — `IDENTITY_SVC_TIMEOUT_MS` default 5s trop court pour upload 16 MB [env.schema.ts:L22] — **Résolu** : relevé à 30 000 ms avec commentaire dans env.schema + .env.example.
+
+#### Deferred
+
+- [x] [Review][Defer] W1 — Throttler keyed sur proxy IP (`trustProxy` absent) [main.ts:FastifyAdapter] — `FastifyAdapter({ logger: false })` sans `trustProxy: true` : `req.ip` = IP du reverse proxy (Caddy) en prod, pas l'IP réelle du client. La limite 3/min est partagée par tous les utilisateurs derrière le proxy. Pre-existing depuis Story 1.2c (affecte aussi `/v1/auth/customer/register`). Ticket séparé.
+- [x] [Review][Defer] W2 — POST retry sur erreurs réseau/5xx potentiellement non-idempotent [identity-svc.client.ts:axiosRetry] — `err.response.status >= 500` déclenche le retry pour POST. Si identity-svc crée Keycloak user mais échoue avant DB, la compensation saga de 1.3a devrait annuler, mais pas garanti. Mitigé par contraintes DB (email/SIRET unique → 409 en cas de doublon). Pre-existing depuis 1.2c. Fix propre : idempotency key header — V1.
+- [x] [Review][Defer] W3 — Validation MIME par Content-Type header client seul, pas magic bytes [parse-multipart-pro-register.ts:ALLOWED_MIME_TYPES] — Un client peut uploader un fichier exécutable avec `Content-Type: image/jpeg`. Risk limité si R2 ne sert pas les fichiers KYC publiquement (accès signé uniquement). Magic byte validation V1 hardening (npm `file-type`).
+- [x] [Review][Defer] W4 — `form.getBuffer()` double le pic mémoire (~32 MB/requête) [identity-svc.client.ts:registerPro] — `toBuffer()` matérialise 3 × 5 MB puis `form.getBuffer()` concat une deuxième fois. Pic RSS ~32 MB par requête concurrente. Optimisation V1 : passer `form` directement comme stream body axios.
 
 ## Dev Notes
 
@@ -130,13 +152,52 @@ Voir parent ligne 191-281 pour la spec complète du endpoint.
 - Observability (1.3d)
 
 ## File List
-_(à remplir pendant le dev)_
+
+### NEW
+- `apps/gateway-api/src/usecases/register-pro.forwarder.ts`
+- `apps/gateway-api/src/usecases/register-pro.forwarder.spec.ts`
+- `apps/gateway-api/src/infrastructure/http/controllers/auth-pro.controller.ts`
+- `apps/gateway-api/src/infrastructure/http/utils/parse-multipart-pro-register.ts`
+- `apps/gateway-api/src/infrastructure/http/utils/parse-multipart-pro-register.spec.ts`
+- `apps/gateway-api/test/auth-pro-register.e2e-spec.ts`
+
+### MODIFIED
+- `apps/gateway-api/src/domain/ports/identity-svc.port.ts` (+`registerPro` / +`ForwardRegisterProInput` / +`RegisterProForwardedFile`)
+- `apps/gateway-api/src/domain/ports/config.port.ts` (+`proRegisterLimit` / +`proRegisterTtlMs` on `ThrottlerConfig`)
+- `apps/gateway-api/src/infrastructure/external/identity-svc/identity-svc.client.ts` (+`registerPro` + `MULTIPART_BODY_HASH_SENTINEL` + multipart envelope)
+- `apps/gateway-api/src/infrastructure/external/identity-svc/identity-svc.client.spec.ts` (+6 cases `registerPro` + `nock.activate()` guard against customer-suite `nock.restore()`)
+- `apps/gateway-api/src/infrastructure/usecases-proxy/usecases-proxy.module.ts` (+`REGISTER_PRO_FORWARDER` + factory)
+- `apps/gateway-api/src/infrastructure/http/http.module.ts` (+`AuthProController`)
+- `apps/gateway-api/src/infrastructure/config/env.schema.ts` (+2 throttler env vars)
+- `apps/gateway-api/src/infrastructure/config/environment-config.service.ts` (+throttler getters)
+- `apps/gateway-api/src/main.ts` (`@fastify/multipart` register with limits)
+- `apps/gateway-api/src/usecases/register-customer.forwarder.spec.ts` (mock now provides `registerPro` stub to satisfy full port)
+- `apps/gateway-api/test/auth-customer-register.e2e-spec.ts` (TestForwarderModule now provides `REGISTER_PRO_FORWARDER` for HttpModule wiring)
+- `apps/gateway-api/.env.example` (2 throttler env vars)
+- `apps/gateway-api/package.json` (deps `form-data` + `@fastify/multipart`; jest module-mapper extended with `.dto.ts` fallback to align with identity-svc)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (1.3c → in-progress → review)
+- `_bmad-output/implementation-artifacts/1-3c-gateway-api-pro-register-multipart-forwarder.md` (Tasks/File List/Change Log/Status)
 
 ## Change Log
-_(à remplir pendant le dev)_
+
+| Date | Change | Notes |
+| ---- | ------ | ----- |
+| 2026-05-17 | Implemented `registerPro` end-to-end on gateway-api BFF | New `POST /v1/auth/pro/register` (Fastify multipart) forwards to identity-svc `POST /v1/internal/pros` (Story 1.3b). Throttled 3/min, merges `tk_acq` first-touch acquisition cookie, signs HMAC with `MULTIPART_BODY_HASH_SENTINEL` (aligned with identity-svc 1.3b D1 — Fastify cannot expose multipart raw body to the guard). 41 unit + 17 e2e tests pass. |
+
+### Deviations from story spec
+- **Multipart parsing** : story called for `multer` + `FileFieldsInterceptor`. Gateway-api runs on Fastify (consistent with Story 1.2c) → switched to `@fastify/multipart` + custom parser (`parse-multipart-pro-register.ts`), same shape as identity-svc Story 1.3b for symmetry.
+- **HMAC body-hash** : story called for HMAC over `${ts}.POST.${path}.${sha256(body)}`. Fastify cannot expose the raw multipart body to `InternalServiceGuard` (parsing is opt-in at controller time). Both ends use the fixed `MULTIPART_BODY_HASH_SENTINEL = sha256('TUKIO_MULTIPART_NO_BODY_HASH')` as already accepted in identity-svc Story 1.3b code-review (D1). HMAC still binds (ts, method, path, sentinel) — within 5 min replay window, a network-internal attacker could tamper the body. Accepted for MVP given the DO firewall + V1+ mTLS plan.
+- **Payload field name** : story spec mentioned `data`; identity-svc Story 1.3b parser expects `payload`. Aligned with the server (`payload`).
+- **Multipart field Content-Type** : `form.append('payload', JSON.stringify(payload))` is sent WITHOUT `contentType: 'application/json'` — `@fastify/multipart` auto-parses JSON-typed fields, which would silently break the server-side `JSON.parse(payloadJson)` step.
+- **Oversize handling** : added explicit `FST_REQ_FILE_TOO_LARGE` → 413 `PayloadTooLargeException` translation in the parser (raw FastifyError otherwise bubbles as 500 INTERNAL-SERVER-ERROR-001).
+
+### Pre-existing issues observed (out of scope)
+- `@tukio/auth-client` typecheck fails on `next/server.js` import resolution — present on `develop` before this branch.
+- `@tukio/i18n-client` Vitest fails on `next/server.js` / `next/link` import — present on `develop` before this branch.
+- Both should be picked up separately (probably Story 1.6 or a sprint-status follow-up entry).
 
 ## Story Completion Status
-- [ ] All tasks complete
-- [ ] `pnpm --filter=gateway-api test:e2e auth-pro-register` pass (7+ cases)
-- [ ] `pnpm --filter=gateway-api lint && typecheck && test` pass (régression Story 1.2c)
-- [ ] Status updated to `review` then `done` après code-review
+- [x] All tasks complete
+- [x] `pnpm --filter=gateway-api test:e2e auth-pro-register` pass (11 cases — 4 more than required)
+- [x] `pnpm --filter=gateway-api lint && typecheck && test` pass (regression Story 1.2c verified — customer e2e still green)
+- [x] Status updated to `review` (sprint-status.yaml + this file)

@@ -31,6 +31,11 @@ const buildClient = (
   impl: Partial<IIdentitySvcClient> = {},
 ): IIdentitySvcClient => ({
   registerCustomer: jest.fn().mockResolvedValue(successResponse),
+  // Story 1.3c — `registerPro` not exercised here; provide a stub so the mock
+  // satisfies the full port interface.
+  registerPro: jest
+    .fn()
+    .mockRejectedValue(new Error('registerPro not stubbed in this spec')),
   ...impl,
 });
 

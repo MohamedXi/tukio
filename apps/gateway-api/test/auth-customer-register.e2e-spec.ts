@@ -38,9 +38,12 @@ import { HttpModule } from '../src/infrastructure/http/http.module.js';
 import { UseCaseProxy } from '../src/infrastructure/usecases-proxy/usecases-proxy.js';
 import {
   REGISTER_CUSTOMER_FORWARDER,
+  REGISTER_PRO_FORWARDER,
   type RegisterCustomerForwarderProxy,
+  type RegisterProForwarderProxy,
 } from '../src/infrastructure/usecases-proxy/usecases-proxy.module.js';
 import { RegisterCustomerForwarder } from '../src/usecases/register-customer.forwarder.js';
+import { RegisterProForwarder } from '../src/usecases/register-pro.forwarder.js';
 import { IDENTITY_SVC_CLIENT } from '../src/domain/ports/tokens.js';
 import type {
   ForwardRegisterCustomerInput,
@@ -105,6 +108,13 @@ class MockIdentitySvcClient implements IIdentitySvcClient {
       requiresEmailVerification: true,
     });
   }
+
+  // Story 1.3c — pro register is not exercised here; throw if called.
+  registerPro(): Promise<never> {
+    return Promise.reject(
+      new Error('registerPro not exercised in customer-register e2e'),
+    );
+  }
 }
 
 // ─── Test app builder ────────────────────────────────────────────────────────
@@ -131,8 +141,21 @@ class TestForwarderModule {
           ): RegisterCustomerForwarderProxy =>
             new UseCaseProxy(new RegisterCustomerForwarder(client)),
         },
+        // AuthProController (Story 1.3c) is wired into HttpModule and needs
+        // REGISTER_PRO_FORWARDER at boot — provide a stub so Nest can build
+        // the test app even though pro-register is not exercised here.
+        {
+          inject: [IDENTITY_SVC_CLIENT],
+          provide: REGISTER_PRO_FORWARDER,
+          useFactory: (client: IIdentitySvcClient): RegisterProForwarderProxy =>
+            new UseCaseProxy(new RegisterProForwarder(client)),
+        },
       ],
-      exports: [IDENTITY_SVC_CLIENT, REGISTER_CUSTOMER_FORWARDER],
+      exports: [
+        IDENTITY_SVC_CLIENT,
+        REGISTER_CUSTOMER_FORWARDER,
+        REGISTER_PRO_FORWARDER,
+      ],
     };
   }
 }

@@ -3,10 +3,11 @@ import { IdentitySvcModule } from '../external/identity-svc/identity-svc.module.
 import { IDENTITY_SVC_CLIENT } from '../../domain/ports/tokens.js';
 import type { IIdentitySvcClient } from '../../domain/ports/identity-svc.port.js';
 import { RegisterCustomerForwarder } from '../../usecases/register-customer.forwarder.js';
+import { RegisterProForwarder } from '../../usecases/register-pro.forwarder.js';
 import { UseCaseProxy } from './usecases-proxy.js';
 
 /**
- * Story 1.2c — Pattern Pretre wiring (BFF flavour). Maps domain ports →
+ * Story 1.2c + 1.3c — Pattern Pretre wiring (BFF flavour). Maps domain ports →
  * downstream-service-backed implementations, then exposes ready-to-inject
  * `UseCaseProxy` providers for controllers.
  *
@@ -16,6 +17,9 @@ import { UseCaseProxy } from './usecases-proxy.js';
 export const REGISTER_CUSTOMER_FORWARDER = 'REGISTER_CUSTOMER_FORWARDER';
 export type RegisterCustomerForwarderProxy =
   UseCaseProxy<RegisterCustomerForwarder>;
+
+export const REGISTER_PRO_FORWARDER = 'REGISTER_PRO_FORWARDER';
+export type RegisterProForwarderProxy = UseCaseProxy<RegisterProForwarder>;
 
 @Global()
 @Module({})
@@ -33,8 +37,14 @@ export class UseCasesProxyModule {
           ): RegisterCustomerForwarderProxy =>
             new UseCaseProxy(new RegisterCustomerForwarder(client)),
         },
+        {
+          inject: [IDENTITY_SVC_CLIENT],
+          provide: REGISTER_PRO_FORWARDER,
+          useFactory: (client: IIdentitySvcClient): RegisterProForwarderProxy =>
+            new UseCaseProxy(new RegisterProForwarder(client)),
+        },
       ],
-      exports: [REGISTER_CUSTOMER_FORWARDER],
+      exports: [REGISTER_CUSTOMER_FORWARDER, REGISTER_PRO_FORWARDER],
     };
   }
 }

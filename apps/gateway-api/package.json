@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
+    "@fastify/multipart": "^10.0.0",
     "@nest-lab/throttler-storage-redis": "^1.2.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
@@ -33,6 +34,7 @@
     "@tukio/messaging": "workspace:*",
     "axios": "^1.16.1",
     "axios-retry": "^4.5.0",
+    "form-data": "^4.0.5",
     "ioredis": "^5.10.1",
     "nestjs-pino": "^4.6.1",
     "nestjs-zod": "^5.3.0",
@@ -102,8 +104,18 @@
       "^@tukio/contracts$": "<rootDir>/../../../packages/contracts/src/index.ts",
       "^@tukio/contracts/exceptions/domain$": "<rootDir>/../../../packages/contracts/src/exceptions/domain.exception.ts",
       "^@tukio/contracts/exceptions$": "<rootDir>/../../../packages/contracts/src/exceptions/index.ts",
-      "^@tukio/contracts/(.*)\\.js$": "<rootDir>/../../../packages/contracts/src/$1.ts",
-      "^@tukio/contracts/(.*)$": "<rootDir>/../../../packages/contracts/src/$1.ts",
+      "^@tukio/contracts/(.*)\\.js$": [
+        "<rootDir>/../../../packages/contracts/src/$1.ts",
+        "<rootDir>/../../../packages/contracts/src/$1.dto.ts",
+        "<rootDir>/../../../packages/contracts/src/$1.exception.ts",
+        "<rootDir>/../../../packages/contracts/src/$1/index.ts"
+      ],
+      "^@tukio/contracts/(.*)$": [
+        "<rootDir>/../../../packages/contracts/src/$1.ts",
+        "<rootDir>/../../../packages/contracts/src/$1.dto.ts",
+        "<rootDir>/../../../packages/contracts/src/$1.exception.ts",
+        "<rootDir>/../../../packages/contracts/src/$1/index.ts"
+      ],
       "^@tukio/auth$": "<rootDir>/../../../packages/auth/src/index.ts",
       "^@tukio/auth/module$": "<rootDir>/../../../packages/auth/src/tukio-auth.module.ts",
       "^@tukio/auth/guards$": "<rootDir>/../../../packages/auth/src/guards/keycloak-jwt.guard.ts",

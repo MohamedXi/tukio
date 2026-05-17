@@ -6,13 +6,16 @@ import axios, {
   type AxiosResponse,
 } from 'axios';
 import axiosRetry from 'axios-retry';
+import FormData from 'form-data';
 import type {
   ForwardRegisterCustomerInput,
+  ForwardRegisterProInput,
   IIdentitySvcClient,
 } from '../../../domain/ports/identity-svc.port.js';
 import type { IConfigService } from '../../../domain/ports/config.port.js';
 import { CONFIG_SERVICE } from '../../../domain/ports/tokens.js';
 import type { RegisterCustomerResponseDto } from '@tukio/contracts/dtos/identity/register-customer';
+import type { RegisterProResponseDto } from '@tukio/contracts/dtos/identity/register-pro';
 import type { ValidationIssue } from '@tukio/contracts/envelope';
 import {
   IdentitySvcConflictError,
@@ -21,11 +24,28 @@ import {
 } from '../../../domain/ports/identity-svc.errors.js';
 
 /**
- * Path on identity-svc that handles `POST /internal/customers` (Story 1.2b).
- * Both gateway-api and identity-svc use Nest URI versioning (`/v1/...`),
- * so the actual exposed route is `/v1/internal/customers`.
+ * Paths on identity-svc — both Nest apps use URI versioning (`/v1/...`).
  */
 const REGISTER_CUSTOMER_PATH = '/v1/internal/customers';
+const REGISTER_PRO_PATH = '/v1/internal/pros';
+
+/**
+ * Multipart upload cap : 3 files × 5 MB + payload field + envelope boundary.
+ * Matches identity-svc `MAX_FILES_PER_REQUEST` × `MAX_FILE_SIZE_BYTES`
+ * (5 MB) + 1 MB headroom for the JSON payload and the multipart envelope.
+ */
+const MULTIPART_MAX_CONTENT_LENGTH = 16 * 1024 * 1024;
+
+/**
+ * Sentinel body-hash for multipart/form-data forwards (Story 1.3b code-review
+ * D1 — must match `MULTIPART_BODY_HASH_SENTINEL` in identity-svc
+ * `InternalServiceGuard`). Fastify cannot expose the raw multipart body to the
+ * guard before the controller invokes `req.parts()`, so the canonical signed
+ * string binds (timestamp, method, path, sentinel) but NOT the body bytes.
+ */
+const MULTIPART_BODY_HASH_SENTINEL = createHash('sha256')
+  .update('TUKIO_MULTIPART_NO_BODY_HASH')
+  .digest('hex');
 
 interface ErrorEnvelopeBody {
   error?: {
@@ -47,6 +67,8 @@ export class IdentitySvcClient implements IIdentitySvcClient {
     this.http = axios.create({
       baseURL: svcConfig.url,
       timeout: svcConfig.timeoutMs,
+      maxContentLength: MULTIPART_MAX_CONTENT_LENGTH,
+      maxBodyLength: MULTIPART_MAX_CONTENT_LENGTH,
       // Validate only 2xx as success — anything else is mapped to a domain error.
       validateStatus: (status) => status >= 200 && status < 300,
     });
@@ -96,14 +118,67 @@ export class IdentitySvcClient implements IIdentitySvcClient {
           'x-tukio-correlation-id': correlationId,
         },
       });
-      return extractRegisterResponse(response);
+      return extractCustomerResponse(response);
+    } catch (err) {
+      throw mapAxiosError(err);
+    }
+  }
+
+  async registerPro(
+    input: ForwardRegisterProInput,
+  ): Promise<RegisterProResponseDto> {
+    const { correlationId, files, ...payload } = input;
+
+    const form = new FormData();
+    // Do NOT set contentType: 'application/json' on the payload field.
+    // @fastify/multipart auto-parses fields whose Content-Type is JSON, which
+    // would make the server-side `value` an object instead of a JSON string
+    // and break the `JSON.parse(payloadJson)` step in `parse-multipart-pro-register`.
+    form.append('payload', JSON.stringify(payload));
+    form.append('idCard', files.idCard.buffer, {
+      filename: files.idCard.originalName,
+      contentType: files.idCard.contentType,
+    });
+    form.append('rib', files.rib.buffer, {
+      filename: files.rib.originalName,
+      contentType: files.rib.contentType,
+    });
+    if (files.kbisOrInsee) {
+      form.append('kbisOrInsee', files.kbisOrInsee.buffer, {
+        filename: files.kbisOrInsee.originalName,
+        contentType: files.kbisOrInsee.contentType,
+      });
+    }
+
+    const timestamp = Math.floor(Date.now() / 1000);
+    // Story 1.3b code-review D1 — multipart bypass on the guard side. Both ends
+    // sign (and verify) against the sentinel rather than a real body hash.
+    const bodySha256 = MULTIPART_BODY_HASH_SENTINEL;
+    const canonical = `${timestamp}.POST.${REGISTER_PRO_PATH}.${bodySha256}`;
+    const token = createHmac('sha256', this.secret)
+      .update(canonical)
+      .digest('hex');
+
+    try {
+      const response = await this.http.post<{
+        data?: RegisterProResponseDto;
+      }>(REGISTER_PRO_PATH, form.getBuffer(), {
+        headers: {
+          ...form.getHeaders(),
+          'x-internal-service-token': token,
+          'x-internal-service-timestamp': String(timestamp),
+          'x-internal-service-body-sha256': bodySha256,
+          'x-tukio-correlation-id': correlationId,
+        },
+      });
+      return extractProResponse(response);
     } catch (err) {
       throw mapAxiosError(err);
     }
   }
 }
 
-function extractRegisterResponse(
+function extractCustomerResponse(
   response: AxiosResponse<{ data?: RegisterCustomerResponseDto }>,
 ): RegisterCustomerResponseDto {
   // identity-svc wraps every success in `SuccessEnvelope { data, ... }` (ADR-014).
@@ -119,6 +194,29 @@ function extractRegisterResponse(
   }
   if (
     typeof data.userId !== 'string' ||
+    data.requiresEmailVerification !== true
+  ) {
+    throw new IdentitySvcUnreachableError(
+      'identity-svc returned an envelope with unexpected shape',
+    );
+  }
+  return data;
+}
+
+function extractProResponse(
+  response: AxiosResponse<{ data?: RegisterProResponseDto }>,
+): RegisterProResponseDto {
+  const envelope = response.data;
+  const data = envelope?.data;
+  if (data == null) {
+    throw new IdentitySvcUnreachableError(
+      'identity-svc returned a null or missing data field in the envelope',
+    );
+  }
+  if (
+    typeof data.userId !== 'string' ||
+    typeof data.proProfileId !== 'string' ||
+    data.requiresAdminReview !== true ||
     data.requiresEmailVerification !== true
   ) {
     throw new IdentitySvcUnreachableError(
