@@ -1,7 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
-import { Card } from '@tukio/ui/components/Card';
-import { Logo } from '@tukio/ui/patterns/Logo';
+import { Logo } from '@tukio/ui/logo';
 
 export async function generateMetadata({
   params,
@@ -79,28 +78,18 @@ export default async function OnboardingPendingPage({
           </p>
         </div>
 
-        <Card className="rounded-2xl">
-          <Card.Body className="p-6">
-            <p className="mb-5 text-sm font-semibold text-charcoal-700">{t('tasksTitle')}</p>
-            <ul className="flex flex-col gap-5">
-              <PendingTask
-                icon="📋"
-                title={t('tasks.listing')}
-                description={t('tasks.listingDesc')}
-              />
-              <PendingTask
-                icon="📸"
-                title={t('tasks.photos')}
-                description={t('tasks.photosDesc')}
-              />
-              <PendingTask
-                icon="🗂️"
-                title={t('tasks.policy')}
-                description={t('tasks.policyDesc')}
-              />
-            </ul>
-          </Card.Body>
-        </Card>
+        <div className="rounded-2xl border border-cream-200 bg-white p-6 shadow-sm">
+          <p className="mb-5 text-sm font-semibold text-charcoal-700">{t('tasksTitle')}</p>
+          <ul className="flex flex-col gap-5">
+            <PendingTask
+              icon="📋"
+              title={t('tasks.listing')}
+              description={t('tasks.listingDesc')}
+            />
+            <PendingTask icon="📸" title={t('tasks.photos')} description={t('tasks.photosDesc')} />
+            <PendingTask icon="🗂️" title={t('tasks.policy')} description={t('tasks.policyDesc')} />
+          </ul>
+        </div>
 
         <p className="text-center text-sm text-charcoal-500">
           {t.rich('support', {

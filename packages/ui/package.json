@@ -11,6 +11,8 @@
     ".": "./src/index.ts",
     "./styles/theme.css": "./src/styles/theme.css",
     "./styles/globals.css": "./src/styles/globals.css",
+    "./components/*": "./src/components/*/index.ts",
+    "./patterns/*": "./src/patterns/*/index.ts",
     "./tokens": "./src/tokens/index.ts",
     "./tokens/colors": "./src/tokens/colors.ts",
     "./tokens/typography": "./src/tokens/typography.ts",
