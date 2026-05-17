@@ -7,15 +7,11 @@ import type { UserRole } from '../model/user-role.enum.js';
  * Infrastructure adapters (Story 1.2b `@keycloak/keycloak-admin-client` wrapper)
  * translate library-specific errors to these — keeps the use case Pretre-pure
  * (no import from infrastructure).
+ *
+ * Note: `findUserById` returns `null` for not-found instead of throwing — the
+ * convert-customer-to-pro use case maps the null to an `IdentityValidationException`
+ * with `NOT_FOUND_USER`. No dedicated `KeycloakUserNotFoundError` class needed.
  */
-export class KeycloakUserNotFoundError extends Error {
-  constructor(keycloakUserId: string) {
-    super(`Keycloak user not found: "${keycloakUserId}"`);
-    this.name = 'KeycloakUserNotFoundError';
-    Object.setPrototypeOf(this, KeycloakUserNotFoundError.prototype);
-  }
-}
-
 export class KeycloakUserAlreadyExistsError extends Error {
   constructor(email: string) {
     super(`Keycloak user already exists for email "${email}"`);
