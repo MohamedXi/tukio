@@ -1,5 +1,4 @@
 'use client';
-import { Check } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { StepIndicatorProps, StepStatus } from './StepIndicator.types';
 
@@ -9,10 +8,16 @@ function getStatus(index: number, current: number): StepStatus {
   return 'upcoming';
 }
 
-const circleClasses: Record<StepStatus, string> = {
-  completed: 'bg-success-500 text-cream-50',
-  current: 'bg-brand-500 text-cream-50',
-  upcoming: 'bg-cream-200 text-charcoal-400',
+const barClasses: Record<StepStatus, string> = {
+  completed: 'bg-success-500',
+  current: 'bg-brand-500',
+  upcoming: 'bg-cream-200',
+};
+
+const labelColorClasses: Record<StepStatus, string> = {
+  completed: 'text-success-700',
+  current: 'text-brand-700',
+  upcoming: 'text-charcoal-400',
 };
 
 function defaultFormatLabel({
@@ -42,37 +47,39 @@ export function StepIndicator({
   const isVertical = orientation === 'vertical';
 
   return (
-    <ol className={cn('flex', isVertical ? 'flex-col gap-4' : 'items-center gap-3', className)}>
+    <ol className={cn('flex', isVertical ? 'flex-col gap-3' : 'gap-1.5', className)}>
       {steps.map((label, index) => {
         const status = getStatus(index, current);
         const isClickable = Boolean(onStepClick) && status === 'completed';
         const ariaLabel = formatStepLabel({ index, total: steps.length, label, status });
         const ariaCurrent = status === 'current' ? ('step' as const) : undefined;
 
-        const circle = (
-          <span
-            className={cn(
-              'inline-flex items-center justify-center rounded-full font-semibold flex-shrink-0',
-              'w-6 h-6 text-xs',
-              circleClasses[status],
-            )}
-            aria-hidden="true"
-          >
-            {status === 'completed' ? <Check size={14} /> : index + 1}
+        const inner = (
+          <span className={cn('flex flex-col gap-2', !isVertical && 'w-full')}>
+            <span
+              className={cn(
+                'block rounded-full transition-colors duration-300',
+                isVertical ? 'h-full w-1' : 'h-1 w-full',
+                barClasses[status],
+              )}
+              aria-hidden="true"
+            />
+            <span
+              className={cn(
+                'text-xs transition-colors duration-300',
+                status === 'current' ? 'font-semibold' : 'font-medium',
+                labelColorClasses[status],
+              )}
+            >
+              {index + 1}. {label}
+            </span>
           </span>
-        );
-
-        const content = (
-          <>
-            {circle}
-            <span className="text-sm font-medium text-charcoal-700">{label}</span>
-          </>
         );
 
         return (
           <li
             key={index}
-            className={cn('flex items-center gap-2', !isVertical && 'flex-1')}
+            className={cn('flex', !isVertical && 'flex-1')}
             aria-current={ariaCurrent}
           >
             {isClickable ? (
@@ -80,17 +87,14 @@ export function StepIndicator({
                 type="button"
                 onClick={() => onStepClick?.(index)}
                 aria-label={ariaLabel}
-                className="inline-flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 rounded"
+                className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 rounded"
               >
-                {content}
+                {inner}
               </button>
             ) : (
-              <span aria-label={ariaLabel} className="inline-flex items-center gap-2">
-                {content}
+              <span aria-label={ariaLabel} className="w-full">
+                {inner}
               </span>
-            )}
-            {!isVertical && index < steps.length - 1 && (
-              <span className="flex-1 border-t border-cream-200" aria-hidden="true" />
             )}
           </li>
         );

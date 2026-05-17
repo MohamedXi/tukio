@@ -1,7 +1,9 @@
 {
   "Home": {
     "title": "Tukio Design System",
-    "subtitle": "Sprint 0 — atomic components live."
+    "subtitle": "Sprint 0 — atomic components live.",
+    "becomePro": "Become a pro",
+    "proSpace": "My pro space"
   },
   "auth": {
     "signup": {

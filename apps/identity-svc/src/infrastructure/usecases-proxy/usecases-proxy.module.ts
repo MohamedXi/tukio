@@ -17,7 +17,7 @@ import {
 } from '../../domain/ports/tokens.js';
 import { GetUserProfileByIdUseCase } from '../../usecases/get-user-profile.usecase.js';
 import { RegisterCustomerUseCase } from '../../usecases/register-customer.usecase.js';
-import { RegisterProUseCase } from '../../usecases/register-pro.usecase.js';
+import { ConvertCustomerToProUseCase } from '../../usecases/convert-customer-to-pro.usecase.js';
 import { ConfigurationModule } from '../config/config.module.js';
 import { KeycloakAdminModule } from '../external/keycloak/keycloak-admin.module.js';
 import { KeycloakModule } from '../external/keycloak/keycloak.module.js';
@@ -36,7 +36,8 @@ import { UseCaseProxy } from './usecases-proxy.js';
 export class UseCasesProxyModule {
   static GET_USER_PROFILE_USECASES_PROXY = 'GET_USER_PROFILE_USECASES_PROXY';
   static REGISTER_CUSTOMER_USECASES_PROXY = 'REGISTER_CUSTOMER_USECASES_PROXY';
-  static REGISTER_PRO_USECASES_PROXY = 'REGISTER_PRO_USECASES_PROXY';
+  static CONVERT_CUSTOMER_TO_PRO_USECASES_PROXY =
+    'CONVERT_CUSTOMER_TO_PRO_USECASES_PROXY';
 
   static register(): DynamicModule {
     return {
@@ -92,7 +93,7 @@ export class UseCasesProxyModule {
             LOGGER,
             CONFIG_SERVICE,
           ],
-          provide: UseCasesProxyModule.REGISTER_PRO_USECASES_PROXY,
+          provide: UseCasesProxyModule.CONVERT_CUSTOMER_TO_PRO_USECASES_PROXY,
           useFactory: (
             userProfileRepo: IUserProfileRepository,
             proProfileRepo: IProProfileRepository,
@@ -103,7 +104,7 @@ export class UseCasesProxyModule {
             config: IConfigService,
           ) =>
             new UseCaseProxy(
-              new RegisterProUseCase(
+              new ConvertCustomerToProUseCase(
                 userProfileRepo,
                 proProfileRepo,
                 keycloakAdmin,
@@ -118,7 +119,7 @@ export class UseCasesProxyModule {
       exports: [
         UseCasesProxyModule.GET_USER_PROFILE_USECASES_PROXY,
         UseCasesProxyModule.REGISTER_CUSTOMER_USECASES_PROXY,
-        UseCasesProxyModule.REGISTER_PRO_USECASES_PROXY,
+        UseCasesProxyModule.CONVERT_CUSTOMER_TO_PRO_USECASES_PROXY,
       ],
     };
   }

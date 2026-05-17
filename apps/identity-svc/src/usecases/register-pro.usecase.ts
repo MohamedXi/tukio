@@ -378,6 +378,17 @@ export class RegisterProUseCase {
           legalCategory: inseeSnapshot.legalCategory,
           naf: inseeSnapshot.naf,
         },
+        // Story 1.3b-bis: conversion fields are not collected in this (legacy)
+        // signup-from-scratch flow. Providing sentinel defaults to satisfy the
+        // updated `RegisterProProps` shape — this flow is superseded by
+        // `ConvertCustomerToProUseCase`.
+        conversion: {
+          dateOfBirth: '',
+          legalForm: '',
+          vatStatus: '',
+          categories: [],
+          serviceZone: { city: '', radiusKm: 0 },
+        },
         now,
       });
 

@@ -118,6 +118,28 @@ export class ProProfileEntity {
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt!: Date;
 
+  // ── Conversion wizard fields (Story 1.3b-bis) ──────────────────────────
+
+  /** ISO `YYYY-MM-DD` date of birth supplied by the Pro at conversion time. */
+  @Column({ name: 'date_of_birth', type: 'varchar', length: 10 })
+  dateOfBirth!: string;
+
+  /** Legal form (business structure): SAS_SASU | EURL_SARL | MICRO_ENTREPRISE | AUTO_ENTREPRENEUR | ASSO_1901. */
+  @Column({ name: 'legal_form', type: 'varchar', length: 30 })
+  legalForm!: string;
+
+  /** VAT registration status: vat_registered | vat_exempt. */
+  @Column({ name: 'vat_status', type: 'varchar', length: 30 })
+  vatStatus!: string;
+
+  /** MVP activity categories (1-2 items from the whitelist). Stored as JSONB array. */
+  @Column({ name: 'categories', type: 'jsonb' })
+  categories!: string[];
+
+  /** Intervention zone: { city, radiusKm }. Stored as JSONB object. */
+  @Column({ name: 'service_zone', type: 'jsonb' })
+  serviceZone!: { city: string; radiusKm: number };
+
   @Column({ name: 'deleted_at', type: 'timestamptz', nullable: true })
   deletedAt!: Date | null;
 }

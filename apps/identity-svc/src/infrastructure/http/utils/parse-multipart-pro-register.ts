@@ -2,9 +2,9 @@ import { BadRequestException } from '@nestjs/common';
 import type { MultipartFile, MultipartValue } from '@fastify/multipart';
 import { RegisterProInputSchema } from '@tukio/contracts/dtos/identity/register-pro';
 import type {
-  RegisterProUseCaseInput,
-  RegisterProFile,
-} from '../../../usecases/register-pro.usecase.js';
+  ConvertCustomerToProInput,
+  ConvertCustomerToProFile,
+} from '../../../usecases/convert-customer-to-pro.usecase.js';
 
 // Structural type — avoids declaring `fastify` as a direct dep of identity-svc
 // (it arrives transitively via @nestjs/platform-fastify + @fastify/multipart).
@@ -31,23 +31,25 @@ function isFileField(name: string): name is FileField {
 }
 
 /**
- * Parses a multipart/form-data request for `POST /internal/pros`.
+ * Parses a multipart/form-data request for `POST /internal/pros` (Story 1.3b-bis).
  *
  * Expected parts:
- *   - `payload` (field): JSON string matching `RegisterProInputSchema`
+ *   - `payload` (field): JSON string matching `RegisterProInputSchema`. The `userId`
+ *     field is injected by gateway-api from the authenticated JWT `sub`.
  *   - `idCard`   (file): required — identity document (JPEG/PNG/PDF, ≤ 5 MB)
  *   - `rib`      (file): required — RIB/IBAN proof
  *   - `kbisOrInsee` (file): optional — KBIS or INSEE printout
  */
 export async function parseMultipartProRegister(
   req: MultipartRequest,
-): Promise<Omit<RegisterProUseCaseInput, 'correlationId'>> {
+): Promise<Omit<ConvertCustomerToProInput, 'correlationId'>> {
   if (!req.isMultipart()) {
     throw new BadRequestException('Expected multipart/form-data');
   }
 
   let payloadJson: string | undefined;
-  const uploadedFiles: Partial<Record<FileField, RegisterProFile>> = {};
+  const uploadedFiles: Partial<Record<FileField, ConvertCustomerToProFile>> =
+    {};
 
   // Limits are also enforced at the @fastify/multipart registration level in
   // main.ts (P2/P7). Repeating here documents the parser-side contract.
@@ -119,6 +121,24 @@ export async function parseMultipartProRegister(
     throw new BadRequestException('`payload` field is not valid JSON');
   }
 
+  // Extract `userId` from the raw payload BEFORE Zod validation (Zod strips
+  // unknown keys, so `userId` — injected by gateway-api from JWT sub — would
+  // be silently discarded by `RegisterProInputSchema.safeParse`).
+  const rawPayload = payload as Record<string, unknown>;
+  const userId = rawPayload['userId'];
+  const UUID_V4_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (
+    typeof userId !== 'string' ||
+    userId.trim().length === 0 ||
+    !UUID_V4_RE.test(userId.trim())
+  ) {
+    throw new BadRequestException(
+      'Missing or invalid `userId` in payload — must be a valid UUID v4 (JWT sub injected by gateway-api)',
+    );
+  }
+
+  // Validate the rest of the fields against the contract DTO.
   const parsed = RegisterProInputSchema.safeParse(payload);
   if (!parsed.success) {
     throw new BadRequestException(
@@ -126,8 +146,27 @@ export async function parseMultipartProRegister(
     );
   }
 
+  const dto = parsed.data;
+
   return {
-    ...parsed.data,
+    userId,
+    // Identity fields from the wizard (may have been edited by the user — D1 decision).
+    email: dto.email,
+    firstName: dto.firstName,
+    lastName: dto.lastName,
+    dateOfBirth: dto.dateOfBirth,
+    contactPhone: dto.contactPhone,
+    acceptMarketing: dto.acceptMarketing,
+    companyName: dto.companyName,
+    siret: dto.siret,
+    ...(dto.vatNumber !== undefined && { vatNumber: dto.vatNumber }),
+    legalForm: dto.legalForm,
+    vatStatus: dto.vatStatus,
+    categories: [...dto.categories],
+    serviceZone: dto.serviceZone,
+    address: dto.address,
+    acceptCharter: dto.acceptCharter,
+    ...(dto.acquisition !== undefined && { acquisition: dto.acquisition }),
     files: {
       idCard: uploadedFiles.idCard,
       rib: uploadedFiles.rib,

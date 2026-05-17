@@ -20,7 +20,7 @@
       "protocolMapper": "oidc-usermodel-attribute-mapper",
       "consentRequired": false,
       "config": {
-        "user.attribute": "status",
+        "user.attribute": "tukio:status",
         "claim.name": "tukio:status",
         "jsonType.label": "String",
         "id.token.claim": "false",

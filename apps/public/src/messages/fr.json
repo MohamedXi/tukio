@@ -1,7 +1,9 @@
 {
   "Home": {
     "title": "Tukio Design System",
-    "subtitle": "Sprint 0 — composants atomiques actifs."
+    "subtitle": "Sprint 0 — composants atomiques actifs.",
+    "becomePro": "Devenir pro",
+    "proSpace": "Mon espace pro"
   },
   "auth": {
     "signup": {

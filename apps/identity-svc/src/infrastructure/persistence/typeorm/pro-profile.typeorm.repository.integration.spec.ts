@@ -109,6 +109,13 @@ function makeProProfile(
       decidedBy: null,
       reason: null,
     },
+    conversion: {
+      dateOfBirth: '1990-06-15',
+      legalForm: 'SAS_SASU',
+      vatStatus: 'vat_registered',
+      categories: ['tents_marquees'],
+      serviceZone: { city: 'Nantes', radiusKm: 80 },
+    },
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,

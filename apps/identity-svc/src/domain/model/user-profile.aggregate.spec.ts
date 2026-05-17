@@ -218,4 +218,51 @@ describe('UserProfile.register() factory (Story 1.2a customer-specific)', () => 
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
     );
   });
+
+  describe('convertToPro', () => {
+    const now = new Date('2026-05-17T12:00:00Z');
+
+    it('flips role to pro and status to pending_admin_review', () => {
+      const profile = UserProfile.create(validProps());
+      const converted = profile.convertToPro(now);
+      expect(converted.role).toBe(UserRole.PRO);
+      expect(converted.status).toBe('pending_admin_review');
+      expect(converted.updatedAt).toBe(now);
+    });
+
+    it('keeps existing identity values when no options provided', () => {
+      const profile = UserProfile.create(validProps());
+      const converted = profile.convertToPro(now);
+      expect(converted.email.asString).toBe('jane@tukio.one');
+      expect(converted.firstName).toBe('Jane');
+      expect(converted.lastName).toBe('Doe');
+      expect(converted.marketingOptIn).toBe(false);
+    });
+
+    it('overrides identity values when options are passed (D1 wizard-wins)', () => {
+      const profile = UserProfile.create(validProps());
+      const converted = profile.convertToPro(now, {
+        email: Email.create('lea.contact@ateliertenteloire.fr'),
+        firstName: 'Léa',
+        lastName: 'Martineau',
+        marketingOptIn: true,
+      });
+      expect(converted.email.asString).toBe('lea.contact@ateliertenteloire.fr');
+      expect(converted.firstName).toBe('Léa');
+      expect(converted.lastName).toBe('Martineau');
+      expect(converted.marketingOptIn).toBe(true);
+    });
+
+    it('preserves immutable fields (id, keycloakUserId, locale, acquisition, createdAt)', () => {
+      const profile = UserProfile.create(validProps());
+      const converted = profile.convertToPro(now, {
+        firstName: 'Léa',
+      });
+      expect(converted.id).toBe(profile.id);
+      expect(converted.keycloakUserId).toBe(profile.keycloakUserId);
+      expect(converted.locale).toBe(profile.locale);
+      expect(converted.acquisition).toEqual(profile.acquisition);
+      expect(converted.createdAt).toBe(profile.createdAt);
+    });
+  });
 });

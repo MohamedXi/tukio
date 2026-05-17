@@ -213,11 +213,13 @@ function extractProResponse(
       'identity-svc returned a null or missing data field in the envelope',
     );
   }
+  // Story 1.3b-bis: requiresEmailVerification is now `false` (Customer is already
+  // email-verified). Updated from `!== true` to `!== false`.
   if (
     typeof data.userId !== 'string' ||
     typeof data.proProfileId !== 'string' ||
     data.requiresAdminReview !== true ||
-    data.requiresEmailVerification !== true
+    data.requiresEmailVerification !== false
   ) {
     throw new IdentitySvcUnreachableError(
       'identity-svc returned an envelope with unexpected shape',
@@ -252,7 +254,13 @@ function mapResponseToDomain(err: AxiosError): Error {
       body.error?.issues ?? [],
     );
   }
-  // 401/403 from identity-svc means the gateway HMAC was rejected — surfaces
+  // 403 may carry a domain error (e.g. IDENTITY-EMAIL-NOT-VERIFIED-001 from
+  // EmailNotVerifiedException). Forward it as a validation error so the caller
+  // can surface an actionable message instead of a generic 502.
+  if (status === 403) {
+    return new IdentitySvcValidationError(tukioCode, detail, []);
+  }
+  // 401 from identity-svc means the gateway HMAC was rejected — surfaces
   // as a 502 to the public caller (server misconfig, not a client problem).
   // 5xx and network errors funnel here after retries exhausted.
   return new IdentitySvcUnreachableError(

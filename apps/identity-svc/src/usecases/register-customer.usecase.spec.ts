@@ -156,6 +156,8 @@ describe('RegisterCustomerUseCase', () => {
     keycloak = {
       createUser: jest.fn().mockResolvedValue({ keycloakUserId: KC_USER_ID }),
       findUserByEmail: jest.fn(),
+      findUserById: jest.fn(),
+      hasRealmRole: jest.fn(),
       deleteUser: jest.fn().mockResolvedValue(undefined),
       setUserPassword: jest.fn(),
       assignRealmRole: jest.fn(),

@@ -1,6 +1,12 @@
-# Story 1.3d: frontend `<ProSignUpWizard>` 3 steps + apps/seller middleware redirect + Playwright e2e + observability
+# Story 1.3d v1: frontend `<ProSignUpWizard>` 3 steps + apps/seller middleware redirect + Playwright e2e + observability
 
-Status: ready-for-dev
+Status: rolled-back
+
+> 🔄 **Story rollbackée 2026-05-17** via `/bmad-correct-course` (sprint-change-proposal-2026-05-17.md) suite au constat que la spec divergeait du Cloud Design `mvp-pro-onboarding.jsx`. Le code mergé PR #45 vers `develop` 2026-05-17 sera nettoyé dans la **Story 1.3d v2** (cf. `1-3d-v2-conversion-wizard-seller-mvp-pro-onboarding.md`).
+>
+> **Salvageable conservé** : backend Story 1.3a/b/c (endpoint réutilisé), hook `useRegisterPro` (à adapter Bearer auth), middleware seller `pending-admin-review-{decision,redirect}.ts` (au bon endroit), page pending (à enrichir), métriques Prom + Grafana dashboard + 3 runbooks (mineures mises à jour).
+>
+> **À supprimer dans Story 1.3d v2** : `apps/public/src/features/auth/sign-up-pro/` (8 fichiers), `apps/public/e2e/auth/pro-register.spec.ts`, fixtures binaires, switch `?role=pro` sur `/auth/sign-up/page.tsx`, namespace i18n `auth.signupPro.*` (~120 keys).
 
 > 🧩 **Sub-story 4/4 de Story 1.3** (décomposée 2026-05-16 via `/bmad-correct-course`).
 > Parent : `_bmad-output/implementation-artifacts/1-3-pro-registration-pending-admin-review.md` (umbrella source-of-truth des ACs/Dev Notes complets).
@@ -140,52 +146,52 @@ Voir parent ligne 728-739.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Hook `useRegisterPro` + page sign-up switch role param** (AC: #1) — Story 1.3 parent Task 7.1-7.2
-  - [ ] 1.1 — Créer `packages/api-client/src/hooks/identity/use-register-pro.ts`
-  - [ ] 1.2 — Update `packages/api-client/src/hooks/index.ts` (barrel)
-  - [ ] 1.3 — Update `apps/public/src/app/[locale]/auth/sign-up/page.tsx` (switch sur `?role=pro`)
+- [x] **Task 1 — Hook `useRegisterPro` + page sign-up switch role param** (AC: #1)
+  - [x] 1.1 — Créer `packages/api-client/src/hooks/identity/use-register-pro.ts`
+  - [x] 1.2 — Update `packages/api-client/src/hooks/identity/index.ts` (barrel)
+  - [x] 1.3 — Update `apps/public/src/app/[locale]/auth/sign-up/page.tsx` (switch sur `?role=pro`)
 
-- [ ] **Task 2 — Components wizard 3 steps** (AC: #1) — Story 1.3 parent Task 7.3-7.5
-  - [ ] 2.1 — Créer `ProSignUpWizard.tsx` (useReducer state machine)
-  - [ ] 2.2 — Créer `StepAccount.tsx`
-  - [ ] 2.3 — Créer `StepCompany.tsx` (6 FormField + Luhn check immédiat)
-  - [ ] 2.4 — Créer `StepDocuments.tsx` (3 FileUpload)
-  - [ ] 2.5 — Créer `SignUpProProviders.tsx`
-  - [ ] 2.6 — Créer `services/sign-up-pro.service.ts` (FormData construction)
+- [x] **Task 2 — Components wizard 3 steps** (AC: #1)
+  - [x] 2.1 — Créer `ProSignUpWizard.tsx` (useReducer state machine + StepIndicator + cross-zone redirect)
+  - [x] 2.2 — Créer `StepAccount.tsx`
+  - [x] 2.3 — Créer `StepCompany.tsx` (6 fields + Luhn check immédiat + fieldset address)
+  - [x] 2.4 — Créer `StepDocuments.tsx` (3 FileUpload — MIME whitelist + 5 MB cap)
+  - [x] 2.5 — Créer `SignUpProProviders.tsx` (timeout 60s pour INSEE + R2)
+  - [x] 2.6 — Créer `services/sign-up-pro.service.ts` (`classifyProSignUpError`) + `wizard-state.ts` (reducer pur)
 
-- [ ] **Task 3 — i18n FR/EN** (AC: #1) — Story 1.3 parent Task 7.6
-  - [ ] 3.1 — Update `apps/public/messages/fr.json` (~40 keys `auth.signupPro.*`)
-  - [ ] 3.2 — Update `apps/public/messages/en.json` (mirror)
+- [x] **Task 3 — i18n FR/EN** (AC: #1)
+  - [x] 3.1 — Update `apps/public/src/messages/fr.json` (~120 keys `auth.signupPro.*`)
+  - [x] 3.2 — Update `apps/public/src/messages/en.json` (mirror)
 
-- [ ] **Task 4 — Apps/seller middleware + page pending** (AC: #2) — Story 1.3 parent Task 8
-  - [ ] 4.1 — Update (ou créer) `apps/seller/src/middleware.ts` (JWT claim check + whitelist)
-  - [ ] 4.2 — Créer `apps/seller/src/app/[locale]/seller/onboarding/pending/page.tsx`
-  - [ ] 4.3 — Update `apps/seller/messages/{fr,en}.json`
-  - [ ] 4.4 — Tests E2E `apps/seller/e2e/middleware/pending-redirect.spec.ts` (4 cases)
+- [x] **Task 4 — Apps/seller middleware + page pending** (AC: #2)
+  - [x] 4.1 — Créer `apps/seller/src/middleware/pending-admin-review-decision.ts` (pure logic) + `pending-admin-review-redirect.ts` (wrapper next/server) + wire dans `middleware.ts`
+  - [x] 4.2 — Créer `apps/seller/src/app/[locale]/seller/onboarding/pending/page.tsx`
+  - [-] 4.3 — Strings page pending hardcodées par locale (FR/EN literals) → déféré Story 7.1 (apps/seller pas encore équipé next-intl)
+  - [x] 4.4 — Tests vitest `pending-admin-review-redirect.spec.ts` (11 cases — déviation: vitest unit sur fonction pure au lieu de Playwright e2e, car apps/seller pas encore équipé Playwright et la logique est pure)
 
-- [ ] **Task 5 — Playwright e2e wizard 11 tests** (AC: #3) — Story 1.3 parent Task 9
-  - [ ] 5.1 — Créer `apps/public/e2e/auth/pro-register.spec.ts` (11 tests × 2 projects)
-  - [ ] 5.2 — Créer fixtures dans `apps/public/e2e/fixtures/`
-  - [ ] 5.3 — Setup mock INSEE (testcontainer wiremock OR nock identity-svc avec apiKey fixture)
-  - [ ] 5.4 — Setup mock R2 (aws-sdk-client-mock identity-svc — déjà 1.3b)
-  - [ ] 5.5 — Update `.github/workflows/e2e.yml` (ajouter grep "pro register")
-  - [ ] 5.6 — Run + vérifier 0 axe-core violations critical/serious
-  - [ ] 5.7 — Vérifier perf NFR48 ≤ 5 min p90 (5 runs)
+- [x] **Task 5 — Playwright e2e wizard 11 tests** (AC: #3)
+  - [x] 5.1 — Créer `apps/public/e2e/auth/pro-register.spec.ts` (11 cases × 2 projects)
+  - [x] 5.2 — Créer fixtures `apps/public/e2e/fixtures/{idCard.jpg,rib.pdf,kbis.pdf,idCard-wrong-mime.exe}` (oversize 6 MB généré dynamiquement via `Buffer.alloc`)
+  - [x] 5.3 — Mock INSEE inside identity-svc (Story 1.3b — déjà en place)
+  - [x] 5.4 — Mock R2 inside identity-svc (Story 1.3b — déjà en place)
+  - [-] 5.5 — `.github/workflows/e2e.yml` non-modifié (workflow Sprint 0 ne couvre pas encore Playwright — pattern identique Story 1.2d, agrégation déférée Story 1.10)
+  - [-] 5.6 — Execution Playwright non-runnée localement (cohérent accord 1.2b/1.2c/1.2d : Ismael run avec docker:up)
+  - [-] 5.7 — Perf NFR48 mesure idem 5.6
 
-- [ ] **Task 6 — Observability + runbooks** (AC: #4) — Story 1.3 parent Task 10
-  - [ ] 6.1 — Créer `gateway-api/src/infrastructure/metrics/pro-registration.metrics.ts`
-  - [ ] 6.2 — Créer `identity-svc/src/infrastructure/metrics/insee.metrics.ts` + `r2-kyc.metrics.ts`
-  - [ ] 6.3 — Créer `infra/k8s/grafana-dashboards/pro-registration.json` (5 panels)
-  - [ ] 6.4 — Créer `docs/runbook/pro-registration-debug.md` (~80 lignes)
-  - [ ] 6.5 — Créer `docs/runbook/kyc-docs-retention.md` (~40 lignes)
-  - [ ] 6.6 — Créer `docs/runbook/insee-sirene-integration.md` (~50 lignes — flag deviation apiKey)
-  - [ ] 6.7 — Update `packages/contracts/README.md` (ajouter pro-registered.v1 à la section Identity events)
+- [x] **Task 6 — Observability + runbooks** (AC: #4)
+  - [x] 6.1 — Créer `gateway-api/src/infrastructure/metrics/pro-registration.metrics.ts`
+  - [x] 6.2 — Créer `identity-svc/src/infrastructure/metrics/insee.metrics.ts` + `r2-kyc.metrics.ts`
+  - [x] 6.3 — Créer `infra/k8s/grafana-dashboards/pro-registration.json` (5 panels)
+  - [x] 6.4 — Créer `docs/runbook/pro-registration-debug.md` (~110 lignes)
+  - [x] 6.5 — Créer `docs/runbook/kyc-docs-retention.md` (~60 lignes)
+  - [x] 6.6 — Créer `docs/runbook/insee-sirene-integration.md` (~80 lignes — flag deviation apiKey)
+  - [x] 6.7 — Update `packages/contracts/README.md` (ajouté `identity.pro.registered.v1` à la section Identity events)
 
-- [ ] **Task 7 — Final validation + commit** (AC: #5)
-  - [ ] 7.1 — `pnpm lint && pnpm typecheck && pnpm test` racine → 0 errors
-  - [ ] 7.2 — Coverage frontend wizard ≥ 80%
-  - [ ] 7.3 — Smoke local : `pnpm dev` apps/public + apps/seller + gateway-api + identity-svc + docker:up → wizard fonctionnel
-  - [ ] 7.4 — Status story → review
+- [x] **Task 7 — Final validation + commit** (AC: #5)
+  - [x] 7.1 — Lint + typecheck + tests verts sur packages touchés (api-client 62/62, gateway-api 44/44, seller 12/12). Erreurs typecheck `Cannot find module 'next-intl'` sur apps/public + `next/server` sur apps/seller sont préexistantes (présentes aussi sur SignUpForm.tsx 1.2d + acquisition-cookie.ts 0.13).
+  - [-] 7.2 — Coverage frontend wizard non-mesurée séparément (apps/public coverage = lint + typecheck only sur ce sprint, pas de vitest pour composants UI). Reporté Story 1.10.
+  - [-] 7.3 — Smoke local `pnpm dev` reporté à Ismael (cohérent pattern 1.2b/1.2c/1.2d).
+  - [x] 7.4 — Status story → review
 
 ## Dev Notes
 
@@ -208,10 +214,49 @@ Voir parent ligne 728-739.
 - Story 1.6 implémente flow email verification → flip `tukio:status` à `active` si admin approve
 
 ## File List
-_(à remplir pendant le dev)_
+
+**NEW files** (24) :
+- `packages/api-client/src/hooks/identity/use-register-pro.ts`
+- `apps/public/src/features/auth/sign-up-pro/index.ts`
+- `apps/public/src/features/auth/sign-up-pro/wizard-state.ts`
+- `apps/public/src/features/auth/sign-up-pro/services/sign-up-pro.service.ts`
+- `apps/public/src/features/auth/sign-up-pro/components/ProSignUpWizard.tsx`
+- `apps/public/src/features/auth/sign-up-pro/components/StepAccount.tsx`
+- `apps/public/src/features/auth/sign-up-pro/components/StepCompany.tsx`
+- `apps/public/src/features/auth/sign-up-pro/components/StepDocuments.tsx`
+- `apps/public/src/features/auth/sign-up-pro/components/SignUpProProviders.tsx`
+- `apps/public/playwright.config.ts`
+- `apps/public/e2e/auth/pro-register.spec.ts`
+- `apps/public/e2e/fixtures/idCard.jpg`
+- `apps/public/e2e/fixtures/rib.pdf`
+- `apps/public/e2e/fixtures/kbis.pdf`
+- `apps/public/e2e/fixtures/idCard-wrong-mime.exe`
+- `apps/seller/src/middleware/pending-admin-review-decision.ts`
+- `apps/seller/src/middleware/pending-admin-review-redirect.ts`
+- `apps/seller/src/middleware/pending-admin-review-redirect.spec.ts`
+- `apps/seller/src/app/[locale]/seller/onboarding/pending/page.tsx`
+- `apps/gateway-api/src/infrastructure/metrics/pro-registration.metrics.ts`
+- `apps/identity-svc/src/infrastructure/metrics/insee.metrics.ts`
+- `apps/identity-svc/src/infrastructure/metrics/r2-kyc.metrics.ts`
+- `infra/k8s/grafana-dashboards/pro-registration.json`
+- `docs/runbook/pro-registration-debug.md`
+- `docs/runbook/kyc-docs-retention.md`
+- `docs/runbook/insee-sirene-integration.md`
+
+**MODIFIED files** (6) :
+- `packages/api-client/src/hooks/identity/index.ts` — export `useRegisterPro` + types
+- `apps/public/src/app/[locale]/auth/sign-up/page.tsx` — switch sur `?role=pro`
+- `apps/public/src/messages/fr.json` — namespace `auth.signupPro.*` (~120 keys)
+- `apps/public/src/messages/en.json` — mirror
+- `apps/seller/src/middleware.ts` — wire `pendingAdminReviewRedirect` avant `acquisitionCookieMiddleware`
+- `packages/contracts/README.md` — section Identity events ajoute `identity.pro.registered.v1`
 
 ## Change Log
-_(à remplir pendant le dev)_
+
+| Date       | Author  | Change |
+| ---------- | ------- | ------ |
+| 2026-05-17 | Claude  | Tasks 1-6 implémentés. **Déviations spec documentées** : (1) Le service `submitProRegistration` est remplacé par un hook `useRegisterPro` qui prend `{ input, files }` et construit le FormData inline — équivalent fonctionnel, juste plus ergonomique pour le wizard. Le service file héberge à la place `classifyProSignUpError` (mirror Customer Story 1.2d + cas SIRET conflict/inactive). (2) Field name FormData : `payload` (et non `data` comme dans la spec) — aligné identity-svc 1.3b/1.3c qui attend `payload`. (3) Cross-zone redirect via `window.location.assign` (pas `router.push` cross-origin) — utilise `NEXT_PUBLIC_SELLER_BASE_URL` (fallback `http://localhost:3002`). (4) apps/seller pas encore équipé next-intl — page pending utilise literals locale-switch FR/EN (refactor Story 7.1). (5) Middleware tests = vitest unit sur `decidePendingRedirect` (fonction pure extraite) au lieu de Playwright e2e — couverture équivalente, plus économique. apps/seller n'a pas encore de Playwright harness. (6) Types des sub-step schemas dérivés via `Pick<RegisterProInputDto, …>` au lieu de `z.infer` — apps/public n'a pas zod comme dep directe (Pattern Pretre boundary respecté). (7) Coverage + perf NFR48 + Playwright execution non-runnés localement (cohérent accord 1.2b/1.2c/1.2d : Ismael run avec docker:up). Tests verts : api-client 62/62, gateway-api 44/44, seller 12/12. Lint clean sur gateway-api / seller / api-client. Typecheck OK sur gateway-api + identity-svc + api-client. Erreurs typecheck `Cannot find module 'next-intl'` / `next/server` préexistantes (présentes aussi sur SignUpForm.tsx 1.2d + acquisition-cookie.ts 0.13).
+
 
 ## Story Completion Status
 - [ ] All tasks complete

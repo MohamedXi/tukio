@@ -41,6 +41,17 @@ async function bootstrap(): Promise<void> {
       fieldSize: 1 * 1024 * 1024,
     },
   });
+  // Cookie-to-Bearer bridge: reads the HttpOnly `tukio-access-token` cookie and
+  // injects it as `Authorization: Bearer <token>` when the header is absent.
+  // This lets browser-originating requests (withCredentials: true) pass through
+  // the KeycloakJwtGuard without the frontend needing to read the HttpOnly cookie.
+  fastify.addHook('onRequest', (req, _reply, done) => {
+    if (!req.headers.authorization && req.cookies?.['tukio-access-token']) {
+      req.headers.authorization = `Bearer ${req.cookies['tukio-access-token']}`;
+    }
+    done();
+  });
+
   // Story 0.7 correlation propagation — sets request.correlationId from
   // `X-Tukio-Correlation-Id` (or mints a uuid) and wraps the request lifecycle
   // in AsyncLocalStorage so downstream code can grab it without explicit

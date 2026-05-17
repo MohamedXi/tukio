@@ -1102,7 +1102,7 @@ Le scoping a été conçu pour mitiger explicitement chaque grand risque identif
 
 - **FR1** : Visitor peut s'inscrire en tant que Customer particulier (B2C) avec email + mot de passe, en moins de 30 secondes
 - **FR2** : Customer peut s'inscrire en tant qu'entreprise cliente (B2B) avec raison sociale, SIRET et facturation pro `[V1]`
-- **FR3** : Visitor peut s'inscrire en tant que Pro avec soumission documents (SIRET, RIB, pièce d'identité) — le compte reste en `pending_admin_review` jusqu'à validation
+- **FR3** : Customer authentifié + email-verified peut convertir son compte en Pro via un wizard 4 steps (Identité pré-remplie / Activité / Documents / Récap) sur `seller.tukio.one/{locale}/seller/onboarding/{step}` — le compte passe en `pending_admin_review` jusqu'à validation admin (Epic 2 Stories 2.3-2.5)
 - **FR4** : Customer / Pro / Admin peut se connecter avec email + mot de passe via Keycloak
 - **FR5** : Customer / Pro peut se connecter via login social Google ou Apple `[V1]`
 - **FR6** : Customer Enterprise peut se connecter via SSO SAML fédéré `[V2]`
@@ -1112,7 +1112,7 @@ Le scoping a été conçu pour mitiger explicitement chaque grand risque identif
 - **FR10** : Pro peut activer une 2FA TOTP optionnelle sur son compte `[V1]`
 - **FR11** : Pro peut compléter son profil enrichi (portfolio, équipe, certifications) `[V1]`
 - **FR12** : Pro peut soumettre une vérification d'identité complète via Stripe Identity `[V1]`
-- **FR13** : Customer ayant un rôle `client` peut convertir son compte en Pro (ajout rôle `pro` côté Keycloak + flow KYC) sans perte d'historique `[V1]`
+- **FR13** : Customer ayant un rôle `client` peut convertir son compte en Pro via le wizard 4 steps (ajout rôle `pro` côté Keycloak + flow KYC) sans perte d'historique `[MVP]` — entry point CTA "Devenir pro" dans dropdown avatar Customer
 - **FR14** : Customer / Pro peut consulter et modifier ses informations de profil
 - **FR15** : Customer / Pro peut supprimer son compte (soft-delete avec conservation comptable 10 ans, anonymisation au-delà du délai utile)
 - **FR16** : System empêche la création de plusieurs comptes Pro sur le même SIRET (sauf cas Enterprise groupes)

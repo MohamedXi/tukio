@@ -1,0 +1,252 @@
+'use client';
+
+import { useReducer, useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
+import { Logo } from '@tukio/ui/patterns/Logo';
+import { WizardShell } from '@tukio/ui/patterns/WizardShell';
+import { WizardStepperBand } from '@tukio/ui/patterns/WizardStepperBand';
+import { StepIdentity } from './StepIdentity';
+import { StepActivity } from './StepActivity';
+import { StepDocuments } from './StepDocuments';
+import { StepReview } from './StepReview';
+import {
+  STEP_KEYS,
+  TOTAL_STEPS,
+  initialWizardState,
+  wizardReducer,
+  type IdentityStepValues,
+  type ActivityStepValues,
+  type DocumentsState,
+  type WizardStep,
+} from '../wizard-state';
+import { classifyConversionError } from '../services/conversion.service';
+import { useRegisterProMutation } from '../hooks/use-register-pro-mutation';
+
+const SELLER_BASE_FALLBACK = 'http://localhost:3002';
+const PUBLIC_BASE_FALLBACK = 'http://localhost:3000';
+
+function resolveSellerBaseUrl(): string {
+  const raw = process.env['NEXT_PUBLIC_SELLER_BASE_URL'];
+  if (raw && raw.length > 0) return raw;
+  return SELLER_BASE_FALLBACK;
+}
+
+function resolvePublicBaseUrl(): string {
+  const raw = process.env['NEXT_PUBLIC_PUBLIC_BASE_URL'];
+  if (raw && raw.length > 0) return raw;
+  return PUBLIC_BASE_FALLBACK;
+}
+
+function resolveLocale(locale: string): 'fr' | 'en' {
+  return locale === 'en' ? 'en' : 'fr';
+}
+
+interface ProConversionWizardProps {
+  locale: string;
+  prefillIdentity?: Partial<IdentityStepValues>;
+}
+
+export function ProConversionWizard({ locale, prefillIdentity }: ProConversionWizardProps) {
+  const resolvedLocale = resolveLocale(locale);
+  const tCommon = useTranslations('seller.onboarding.common');
+  const tReview = useTranslations('seller.onboarding.review');
+  const mutation = useRegisterProMutation();
+
+  const [state, dispatch] = useReducer(wizardReducer, {
+    ...initialWizardState,
+    identity: prefillIdentity
+      ? {
+          firstName: prefillIdentity.firstName ?? '',
+          lastName: prefillIdentity.lastName ?? '',
+          email: prefillIdentity.email ?? '',
+          contactPhone: prefillIdentity.contactPhone ?? '',
+          dateOfBirth: prefillIdentity.dateOfBirth ?? '',
+          acceptMarketing: prefillIdentity.acceptMarketing ?? false,
+        }
+      : null,
+  });
+
+  const [bannerError, setBannerError] = useState<string | undefined>(undefined);
+  const [siretServerError, setSiretServerError] = useState<string | undefined>(undefined);
+  const [documentsErrors, setDocumentsErrors] = useState<Record<string, string>>({});
+
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (bannerError && bannerRef.current) {
+      bannerRef.current.focus();
+    }
+  }, [bannerError]);
+
+  function handleIdentitySubmit(values: IdentityStepValues) {
+    setBannerError(undefined);
+    dispatch({ type: 'SAVE_IDENTITY', payload: values });
+  }
+
+  function handleActivitySubmit(values: ActivityStepValues) {
+    setBannerError(undefined);
+    setSiretServerError(undefined);
+    dispatch({ type: 'SAVE_ACTIVITY', payload: values });
+  }
+
+  function handleDocumentChange(field: keyof DocumentsState, file: File | null) {
+    dispatch({ type: 'SET_DOCUMENT', field, file });
+  }
+
+  function handleBack() {
+    setBannerError(undefined);
+    dispatch({ type: 'GO_BACK' });
+  }
+
+  function handleEditStep(step: WizardStep) {
+    dispatch({ type: 'GO_TO', step });
+  }
+
+  function handleCancel() {
+    const target = `${resolvePublicBaseUrl()}/${locale}/account/dashboard`;
+    if (typeof window !== 'undefined') {
+      window.location.assign(target);
+    }
+  }
+
+  function validateDocuments(): boolean {
+    const errs: Record<string, string> = {};
+    if (!state.documents.idCard) errs['idCard'] = tReview('errors.generic');
+    if (!state.documents.rib) errs['rib'] = tReview('errors.generic');
+    setDocumentsErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  function handleContinue() {
+    if (state.currentStep === 1) {
+      document.getElementById('step-identity-continue')?.click();
+    } else if (state.currentStep === 2) {
+      document.getElementById('step-activity-continue')?.click();
+    } else if (state.currentStep === 3) {
+      if (!validateDocuments()) return;
+      dispatch({ type: 'GO_TO', step: 4 });
+    } else if (state.currentStep === 4) {
+      document.getElementById('step-review-submit')?.click();
+    }
+  }
+
+  function handleFinalSubmit() {
+    if (!state.identity || !state.activity || !state.documents.idCard || !state.documents.rib) {
+      dispatch({ type: 'GO_TO', step: state.identity ? (state.activity ? 3 : 2) : 1 });
+      return;
+    }
+    setBannerError(undefined);
+    setSiretServerError(undefined);
+
+    mutation.mutate(
+      { state, locale: resolvedLocale },
+      {
+        onSuccess: () => {
+          mutation.reset();
+          const target = `${resolveSellerBaseUrl()}/${resolvedLocale}/seller/onboarding/pending`;
+          if (typeof window !== 'undefined') {
+            window.location.assign(target);
+          }
+        },
+        onError: (error) => {
+          mutation.reset();
+          const failure = classifyConversionError(error);
+          switch (failure.kind) {
+            case 'rate_limited':
+              setBannerError(
+                tReview('errors.rateLimit', { seconds: failure.retryAfterSeconds ?? 60 }),
+              );
+              break;
+            case 'siret_conflict':
+              setSiretServerError(tReview('errors.conflictSiret'));
+              dispatch({ type: 'GO_TO', step: 2 });
+              break;
+            case 'siret_inactive':
+              setSiretServerError(tReview('errors.inactiveInsee'));
+              dispatch({ type: 'GO_TO', step: 2 });
+              break;
+            case 'already_pro':
+              setBannerError(tReview('errors.alreadyPro'));
+              break;
+            case 'email_not_verified':
+              setBannerError(tReview('errors.emailNotVerified'));
+              break;
+            case 'external':
+              setBannerError(tReview('errors.external'));
+              break;
+            case 'network':
+              setBannerError(tReview('errors.network'));
+              break;
+            default:
+              setBannerError(tReview('errors.generic'));
+              break;
+          }
+        },
+      },
+    );
+  }
+
+  const stepLabels = STEP_KEYS.map((k) => tCommon(`steps.${k}`));
+  const currentStepLabel = stepLabels[state.currentStep - 1] ?? '';
+
+  return (
+    <WizardShell
+      step={state.currentStep}
+      totalSteps={TOTAL_STEPS}
+      logo={<Logo size={22} />}
+      band={
+        <WizardStepperBand
+          steps={stepLabels}
+          current={state.currentStep - 1}
+          counterLabel={tCommon('stepCounter', {
+            n: state.currentStep,
+            total: TOTAL_STEPS,
+          })}
+        />
+      }
+      onBack={state.currentStep > 1 ? handleBack : undefined}
+      onContinue={handleContinue}
+      onCancel={handleCancel}
+      isContinueLoading={mutation.isPending}
+      isContinueDisabled={mutation.isPending}
+      labels={{
+        back: tCommon('back'),
+        continue: tCommon('continue'),
+        submit: tCommon('submit'),
+        cancel: tCommon('cancel'),
+        continueLater: tCommon('continueLater'),
+        draftSaved: tCommon('draftSaved', { n: 1 }),
+        stepLabel: tCommon('stepLabel', { n: state.currentStep, label: currentStepLabel }),
+      }}
+    >
+      <div ref={bannerRef} tabIndex={-1} style={{ outline: 'none' }}>
+        {state.currentStep === 1 && (
+          <StepIdentity initialValues={state.identity} onSubmit={handleIdentitySubmit} />
+        )}
+        {state.currentStep === 2 && (
+          <StepActivity
+            initialValues={state.activity}
+            onSubmit={handleActivitySubmit}
+            serverSiretError={siretServerError}
+          />
+        )}
+        {state.currentStep === 3 && (
+          <StepDocuments
+            values={state.documents}
+            errors={documentsErrors}
+            onChange={handleDocumentChange}
+          />
+        )}
+        {state.currentStep === 4 && (
+          <StepReview
+            state={state}
+            onEdit={handleEditStep}
+            onSubmit={handleFinalSubmit}
+            isSubmitting={mutation.isPending}
+            bannerError={bannerError}
+          />
+        )}
+      </div>
+    </WizardShell>
+  );
+}

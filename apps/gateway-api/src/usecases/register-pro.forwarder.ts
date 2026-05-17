@@ -13,6 +13,10 @@ import {
   IdentitySvcUnreachableError,
   IdentitySvcValidationError,
 } from '../domain/ports/identity-svc.errors.js';
+import {
+  proRegistrationAttempts,
+  proRegistrationDuration,
+} from '../infrastructure/metrics/pro-registration.metrics.js';
 
 /**
  * Pretre forwarder use case (Story 1.3c).
@@ -36,12 +40,27 @@ export class RegisterProForwarder {
   async execute(
     input: ForwardRegisterProInput,
   ): Promise<RegisterProResponseDto> {
+    const end = proRegistrationDuration.startTimer();
     try {
-      return await this.identitySvcClient.registerPro(input);
+      const result = await this.identitySvcClient.registerPro(input);
+      proRegistrationAttempts.inc({ outcome: 'success' });
+      end({ outcome: 'success' });
+      return result;
     } catch (err) {
-      throw mapError(err);
+      const mapped = mapError(err);
+      const outcome = classifyOutcome(mapped);
+      proRegistrationAttempts.inc({ outcome });
+      end({ outcome });
+      throw mapped;
     }
   }
+}
+
+function classifyOutcome(err: Error): string {
+  if (err instanceof IdentityConflictException) return 'conflict';
+  if (err instanceof ValidationFailedException) return 'validation_failed';
+  if (err instanceof ExternalServiceException) return 'external_unreachable';
+  return 'validation_failed';
 }
 
 function mapError(err: unknown): Error {

@@ -9,8 +9,8 @@ const STEPS = ['Profile', 'KYC', 'Stripe', 'Service'];
 describe('StepIndicator', () => {
   it('renders all steps', () => {
     render(<StepIndicator steps={STEPS} current={1} />);
-    STEPS.forEach((step) => {
-      expect(screen.getByText(step)).toBeInTheDocument();
+    STEPS.forEach((step, i) => {
+      expect(screen.getByText(`${i + 1}. ${step}`)).toBeInTheDocument();
     });
   });
 

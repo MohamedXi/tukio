@@ -1,5 +1,16 @@
 # Deferred Work
 
+## Deferred from: code review of 1-3a-bis-extend-register-pro-input-schema (2026-05-17)
+
+- **D1** — `requiresEmailVerification: z.literal(false)` dans `RegisterProResponseSchema` : la valeur est logiquement correcte (Customer déjà vérifié) mais la response schema complète sera redéfinie dans Story 1.3b-bis handler refactor. Actuellement `literal(false)` — confirmer ou ajuster lors de 1.3b-bis review. [décision review 2026-05-17]
+- **W1** — Année 0000 acceptée comme DoB (pas de borne inférieure min, ex: 1900) [register-pro.dto.ts] — Cas hypothétique, aucun impact pratique. Ajouter `.refine(y >= 1900)` en V1+.
+- **W2** — City Unicode-whitespace-only (zero-width space `​` non trimmé par `String.prototype.trim()`) [register-pro.dto.ts] — Cas extrêmement rare pour un nom de ville FR MVP. Déféré.
+- **W3** — `radiusKm` float/entier : message d'erreur Zod non testé [register-pro.spec.ts] — Fonctionnellement correct, test message fin déféré.
+- **W4** — `vatNumber` avec lettres exclues I/O non testées explicitement [register-pro.spec.ts] — Regex `[0-9A-HJ-NP-Z]` correct, test exhaustif déféré.
+- **W5** — Téléphone `+337XXXXXXXX` (mobile 07) non explicitement testé [register-pro.spec.ts] — Regex valide (7 match `[1-9]`), test déféré.
+- **W6** — `legalForm` avec valeurs limites (null, numérique, empty string) non testées [register-pro.spec.ts] — Enum Zod rejette automatiquement, test fin déféré.
+- **W7** — Cast `(noCharter as { acceptCharter?: true }).acceptCharter` cosmétiquement trompeur [register-pro.spec.ts] — Fonctionne correctement à runtime, refactor cosmétique déféré.
+
 ## Deferred from: code review of 1-3c-gateway-api-pro-register-multipart-forwarder (2026-05-17)
 
 - **W1** — Throttler keyed sur proxy IP (`trustProxy` absent) [`main.ts:FastifyAdapter`] — `FastifyAdapter({ logger: false })` sans `trustProxy: true` : `req.ip` = IP Caddy reverse proxy en prod, pas l'IP client réelle. Limite 3/min partagée par tous derrière le proxy. Pre-existing depuis Story 1.2c (affecte aussi `/v1/auth/customer/register`). Fix : ajouter `trustProxy: true` à `FastifyAdapter`.
@@ -225,3 +236,15 @@
 - **AC8 Slack alert + Prometheus AlertingRule → infra ops phase** — Dépend du wiring metrics (defer précédent) ET du déploiement Prometheus + Alertmanager + Slack receiver sur DO droplet (pas encore en place). À ship en story infra dédiée quand staging Prometheus est up (probablement post-Sprint 1).
 - **AC7 Playwright execution + CI workflow update → Ismael run avec docker:up** — Specs Playwright (9 tests) + helpers `e2e/helpers/test-user.ts` livrés mais non exécutés (require `pnpm docker:up` + `KEYCLOAK_CLIENT_SECRET_TUKIO_API` env var). Cohérent avec accord 1.2b/1.2c (Ismael run e2e/integration après livraison code). `.github/workflows/e2e.yml` à updater dans la même passe pour CI parallel chromium-fr + chromium-en. Story 1.2d marquée done sur le code ; validation AC7 "9/9 + axe-core 0 critical + NFR48 p90 ≤ 30s" à valider hors-revue.
 - **HMAC signature cookie `tk_acq` → ré-évaluer Story 7.6 (referral codes foundation)** — Cookie acquisition `tk_acq` est `httpOnly: false` (spec, lu par hook JS) et non-signé ; un attaquant peut forger `?utm_source=partner_evil` pour pollution analytics. Modèle de confiance MVP accepté car pas d'affiliation monétaire pré-Story 7.6 ; risque borné, atténué par normalisation source à l'enum `ACQUISITION_SOURCES` + clamp longueur (patch P2 du code-review 1.2d). Réévaluer signature HS256 + revalidation gateway quand Story 7.6 introduit la dimension financière des referrals.
+
+## Deferred from: code review of 1-3d-v2-conversion-wizard-seller-mvp-pro-onboarding (2026-05-17)
+
+- **W1** — `RegisterProUseCase` sentinel conversion invalides (`dateOfBirth: ''`, `legalForm: ''`, `vatStatus: ''`, `categories: []`, `serviceZone: { city: '', radiusKm: 0 }`) — flow supersédé, pas de route active. Nettoyer en V1+ ou ajouter un guard `throw new Error('RegisterProUseCase is deprecated')`.
+- **W2** — `KeycloakUserNotFoundError` classe déclarée dans le port mais jamais lancée — dead code. Usecase lance `ExternalServiceException` à la place. Supprimer ou utiliser en V1+.
+- **W3** — `ProConversionFields.legalForm` et `vatStatus` typés `string` (pas les union types `LegalForm`/`VatStatus` de contracts) — couplage faible au domaine. Renforcer en V1+.
+- **W4** — Code d'erreur `IDENTITY-EMAIL-NOT-VERIFIED-001` suit le pattern `DOMAIN-PHRASE-NNN` au lieu de `DOMAIN-WORD-NNN` — incohérence avec les autres codes. Déféré car brisant de changer maintenant.
+- **W5** — `existingAttributes` snapshot Keycloak pris à step 1, utilisé à step 8 après transaction DB — race condition si attributs KC modifiés entre-temps. Best-effort acceptable pour MVP.
+- **W6** — Transaction atomicity repose sur `TransactionContext` implicite pour que `txn.userProfileRepo` partage le même `EntityManager` que `proProfileRepo.runInTransaction` — architecture correcte mais sans garantie compile-time. Ajouter un contrat explicite en V1+.
+- **W7** — Age check : `Date.UTC` comparé à `Date.now()` pour "not in future" peut avoir une différence de 1 jour en cas de soumission à minuit UTC. Acceptable MVP.
+- **W8** — `ProConversionWizard.handleContinue` utilise `document.getElementById('step-identity-continue')?.click()` — couplage DOM fragile. Refactorer avec `useImperativeHandle` en V1+.
+- **W9** — `requiresEmailVerification: z.literal(false)` défini dans 1.3a-bis scope au lieu de 1.3b-bis (violation de sequencing decision D1). Sans impact runtime car même branch.

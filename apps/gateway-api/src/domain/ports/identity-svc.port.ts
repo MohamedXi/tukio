@@ -59,6 +59,8 @@ export interface RegisterProForwardedFile {
 }
 
 export interface ForwardRegisterProInput extends RegisterProInputDto {
+  /** Keycloak user id (JWT `sub`) — injected by gateway-api from the authenticated actor. */
+  userId: string;
   /** Inbound `X-Tukio-Correlation-Id` (or freshly minted by gateway-api). */
   correlationId: string;
   files: {

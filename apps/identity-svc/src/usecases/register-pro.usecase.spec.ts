@@ -89,6 +89,14 @@ const baseInput = (
   ...overrides,
 });
 
+const STUB_CONVERSION = {
+  dateOfBirth: '1990-06-15',
+  legalForm: 'SAS_SASU',
+  vatStatus: 'vat_registered',
+  categories: ['tents_marquees'] as string[],
+  serviceZone: { city: 'Nantes', radiusKm: 80 },
+};
+
 const existingPro = (): ProProfile =>
   ProProfile.register({
     userProfileId: 'existing-up',
@@ -109,6 +117,7 @@ const existingPro = (): ProProfile =>
       legalCategory: null,
       naf: null,
     },
+    conversion: STUB_CONVERSION,
   });
 
 const existingUser = (): UserProfile =>
@@ -220,6 +229,8 @@ const buildMocks = (): Mocks => {
   const keycloak: jest.Mocked<IKeycloakAdmin> = {
     createUser: jest.fn().mockResolvedValue({ keycloakUserId: KC_USER_ID }),
     findUserByEmail: jest.fn(),
+    findUserById: jest.fn(),
+    hasRealmRole: jest.fn(),
     deleteUser: jest.fn().mockResolvedValue(undefined),
     setUserPassword: jest.fn(),
     assignRealmRole: jest.fn(),

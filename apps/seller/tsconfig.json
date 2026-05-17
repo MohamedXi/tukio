@@ -22,6 +22,8 @@
       "@/*": ["./src/*"],
       "@tukio/contracts": ["../../packages/contracts/src/index.ts"],
       "@tukio/contracts/*": ["../../packages/contracts/src/*"],
+      "@tukio/ui/components/*": ["../../packages/ui/src/components/*"],
+      "@tukio/ui/patterns/*": ["../../packages/ui/src/patterns/*"],
       "@tukio/*": ["../../packages/*/src"]
     }
   },

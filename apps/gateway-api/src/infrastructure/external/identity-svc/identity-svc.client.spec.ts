@@ -9,6 +9,7 @@ import {
   IdentitySvcUnreachableError,
   IdentitySvcValidationError,
 } from '../../../domain/ports/identity-svc.errors.js';
+import type { ForwardRegisterProInput } from '../../../domain/ports/identity-svc.port.js';
 import { IdentitySvcClient } from './identity-svc.client.js';
 
 const IDENTITY_SVC_URL = 'http://identity.test';
@@ -220,24 +221,29 @@ const MULTIPART_BODY_HASH_SENTINEL = createHash('sha256')
   .update('TUKIO_MULTIPART_NO_BODY_HASH')
   .digest('hex');
 
-const buildProInput = () => ({
+const buildProInput = (): ForwardRegisterProInput => ({
+  userId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   email: 'pro@example.com',
-  password: 'StrongPass-2026!',
   firstName: 'Jean',
   lastName: 'Dupont',
-  locale: 'fr' as const,
-  acceptTerms: true as const,
+  locale: 'fr',
+  dateOfBirth: '1990-06-15',
   acceptMarketing: false,
   companyName: 'Pro SAS',
   // Valid Luhn-passing SIRET — same test fixture as identity-svc 1.3b specs.
   siret: '73282932000074',
+  vatStatus: 'vat_registered',
+  legalForm: 'SAS_SASU',
+  categories: ['tents_marquees'],
+  serviceZone: { city: 'Nantes', radiusKm: 80 },
   address: {
     street: '1 rue de la République',
     postalCode: '44000',
     city: 'Nantes',
-    country: 'FR' as const,
+    country: 'FR',
   },
   contactPhone: '+33612345678',
+  acceptCharter: true,
   correlationId: 'corr-pro-1',
   files: {
     idCard: {
@@ -289,7 +295,7 @@ describe('IdentitySvcClient.registerPro', () => {
               userId: '11111111-1111-1111-1111-111111111111',
               proProfileId: '22222222-2222-2222-2222-222222222222',
               requiresAdminReview: true,
-              requiresEmailVerification: true,
+              requiresEmailVerification: false,
             },
             meta: {
               timestamp: '2026-05-17T00:00:00Z',
@@ -307,7 +313,7 @@ describe('IdentitySvcClient.registerPro', () => {
       userId: '11111111-1111-1111-1111-111111111111',
       proProfileId: '22222222-2222-2222-2222-222222222222',
       requiresAdminReview: true,
-      requiresEmailVerification: true,
+      requiresEmailVerification: false,
     });
 
     expect(capturedContentType).toMatch(/^multipart\/form-data; boundary=/);
@@ -344,7 +350,7 @@ describe('IdentitySvcClient.registerPro', () => {
           userId: '11111111-1111-1111-1111-111111111111',
           proProfileId: '22222222-2222-2222-2222-222222222222',
           requiresAdminReview: true,
-          requiresEmailVerification: true,
+          requiresEmailVerification: false,
         },
         meta: { timestamp: '', correlationId: 'corr-pro-1', locale: 'fr' },
       });
@@ -464,7 +470,7 @@ describe('IdentitySvcClient.registerPro', () => {
         data: {
           userId: '11111111-1111-1111-1111-111111111111',
           requiresAdminReview: true,
-          requiresEmailVerification: true,
+          requiresEmailVerification: false,
         },
         meta: { timestamp: '', correlationId: '', locale: 'fr' },
       });
