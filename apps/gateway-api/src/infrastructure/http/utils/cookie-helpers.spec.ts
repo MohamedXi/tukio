@@ -220,7 +220,11 @@ describe('buildPkceStateCookie + readPkceStateCookie — DN2 (JWE A256GCM)', () 
       .slice(1)
       .join('=')
       .split('.');
-    parts[4] = parts[4]!.replace(/.$/, (c) => (c === 'A' ? 'B' : 'A'));
+    // Replace the entire auth tag with a fixed garbage string — single-char
+    // replacement can occasionally survive GCM auth-tag verification in some
+    // environments (tag bit pattern survives a 1-char base64url swap). Full
+    // replacement is guaranteed to fail.
+    parts[4] = 'AAAAAAAAAAAAAAAAAAAAAA';
     const tampered = parts.join('.');
     await expect(readPkceStateCookie(tampered, SECRET)).rejects.toBeInstanceOf(
       AuthInvalidStateException,
