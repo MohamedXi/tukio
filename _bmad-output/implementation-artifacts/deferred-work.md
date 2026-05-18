@@ -254,3 +254,9 @@
 - **W7** — Age check : `Date.UTC` comparé à `Date.now()` pour "not in future" peut avoir une différence de 1 jour en cas de soumission à minuit UTC. Acceptable MVP.
 - **W8** — `ProConversionWizard.handleContinue` utilise `document.getElementById('step-identity-continue')?.click()` — couplage DOM fragile. Refactorer avec `useImperativeHandle` en V1+.
 - **W9** — `requiresEmailVerification: z.literal(false)` défini dans 1.3a-bis scope au lieu de 1.3b-bis (violation de sequencing decision D1). Sans impact runtime car même branch.
+
+## Deferred from: dev of 1-4b-gateway-api-endpoints-usecases-csrf-e2e (2026-05-18)
+
+- **D1 (1.4b) — Redis replay nonce store for `state.requestId`** — Detect state JWT replay attacks within the 10-min TTL window. Currently the state JWT signature + pkce-cookie binding (`originalState === state`) already mitigate the attack window. Move to Story 1.4d or post-MVP defense-in-depth pass.
+- **D4 (1.4b) — Real NATS `LoginAuditEventPublisher` adapter** — Replace `NoopLoginAuditEventPublisher` (logs to pino) with a NATS-backed adapter using `@tukio/messaging/nats/client`. Wire `NatsJetStreamModule` into `app.module.ts` with conditional boot (catch connection failures so gateway-api still boots if NATS is down). Spec marks the `identity.user.logged-in.v1` event as fire-and-forget audit telemetry → losing one on a NATS outage is acceptable. Defer to Story 1.4d (observability sprint already owns NATS metrics + Grafana panels).
+- **D-e2e (1.4b) — Keycloak-backed e2e cases** (callback happy path with real OAuth code exchange + refresh rotation + Keycloak DOWN scenarios) — Testcontainer fixture (`test/auth/keycloak-testcontainer.fixture.ts`) is ready but actual flows require minting authorization codes outside a browser. Unit suite covers logic exhaustively (16 cases for `HandleCallbackUseCase` alone). Defer to Story 1.4d which already owns chaos + observability coverage.
