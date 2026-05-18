@@ -1,6 +1,6 @@
 # Story 1.4a: `@tukio/contracts` (events + DTO + error codes) + gateway-api utils (pkce, state-jwt, cookie-helpers, redirect-resolver) + `KeycloakOAuthClient`
 
-Status: ready-for-dev
+Status: done
 
 > ℹ️ **Sub-story de [[1-4-login-flow-keycloak-authorization-code-pkce]]** — split via `/bmad-correct-course` 2026-05-17-bis
 > (cf. `_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-17-bis.md`).
@@ -108,16 +108,123 @@ strictement aligné Pretre / Clean Architecture (cf. memory `feedback_clean_arch
 
 ## Tasks/Subtasks
 
-- [ ] **Task 1** — `@tukio/contracts/events/identity/user-logged-in.v1.{ts,schema.json}` + barrel + 8 specs (AC1)
-- [ ] **Task 2** — `@tukio/contracts/dtos/identity/whoami-response.dto.ts` + barrel + 6 specs (AC2)
-- [ ] **Task 3** — `@tukio/contracts/types/error-codes.ts` extension 7 codes AUTH-* + i18n FR/EN keys (AC3)
-- [ ] **Task 4** — `apps/gateway-api/.../utils/pkce.ts` + spec (AC4)
-- [ ] **Task 5** — `apps/gateway-api/.../utils/state-jwt.ts` + spec (AC5)
-- [ ] **Task 6** — `apps/gateway-api/.../utils/cookie-helpers.ts` + spec (AC6)
-- [ ] **Task 7** — `apps/gateway-api/.../utils/redirect-resolver.ts` + spec (AC7)
-- [ ] **Task 8** — `apps/gateway-api/.../external/keycloak/keycloak-oauth.client.ts` + spec (AC8)
-- [ ] **Task 9** — README + .env.example + EnvironmentConfigService + env.schema.ts (AC9)
-- [ ] **Task 10** — `pnpm lint && pnpm typecheck && pnpm test --filter=@tukio/contracts --filter=gateway-api` + coverage report
+- [x] **Task 1** — `@tukio/contracts/events/identity/user-logged-in.v1.{ts,schema.json}` + barrel + 8 specs (AC1)
+- [x] **Task 2** — `@tukio/contracts/dtos/identity/whoami-response.dto.ts` + barrel + 6 specs (AC2)
+- [x] **Task 3** — `@tukio/contracts/types/error-codes.ts` extension 7 codes AUTH-* + i18n FR/EN keys (AC3)
+- [x] **Task 4** — `apps/gateway-api/.../utils/pkce.ts` + spec (AC4)
+- [x] **Task 5** — `apps/gateway-api/.../utils/state-jwt.ts` + spec (AC5)
+- [x] **Task 6** — `apps/gateway-api/.../utils/cookie-helpers.ts` + spec (AC6)
+- [x] **Task 7** — `apps/gateway-api/.../utils/redirect-resolver.ts` + spec (AC7)
+- [x] **Task 8** — `apps/gateway-api/.../external/keycloak/keycloak-oauth.client.ts` + spec (AC8)
+- [x] **Task 9** — README + .env.example + EnvironmentConfigService + env.schema.ts (AC9)
+- [x] **Task 10** — `pnpm lint && pnpm typecheck && pnpm test` + coverage report
+
+### Review Follow-ups (AI)
+
+> Code review 2026-05-18 — Blind Hunter + Edge Case Hunter + Acceptance Auditor (3 layers parallèles)
+> 2 decision-needed / 17 patches / 3 defers / 12 dismissed
+
+**Decision-needed → résolus (2026-05-18) :**
+
+- [x] [Review][Decision→Patch] **DN1 — `PKCE_COOKIE_HMAC_SECRET` distinct de `STATE_JWT_HMAC_SECRET`** — Décision : **B** (secret séparé). Ajouter `PKCE_COOKIE_HMAC_SECRET` (≥32 chars, même pattern prod-guard) + `getPkceCookieHmacSecret()` dans IConfigService + EnvironmentConfigService + `buildPkceStateCookie`/`readPkceStateCookie` utilisent ce nouveau secret. [env.schema.ts / config.port.ts / environment-config.service.ts / cookie-helpers.ts]
+- [x] [Review][Decision→Patch] **DN2 — pkce-state cookie → JWE EncryptJWT A256GCM** — Décision : **B** (chiffrement réel). Remplacer `SignJWT` par `EncryptJWT` avec alg `dir` enc `A256GCM`, clé dérivée via `HKDF-SHA256(PKCE_COOKIE_HMAC_SECRET, "pkce-state-enc")` via `jose`. Tests : roundtrip + tampered + expired. [cookie-helpers.ts + cookie-helpers.spec.ts]
+
+**Patches :**
+
+- [x] [Review][Patch] **P1 — 🔴 `exchangeCodeForTokens` retried on ECONNRESET/5xx → authorization code replay risk** [`keycloak-oauth.client.ts` — retryCondition]
+- [x] [Review][Patch] **P2 — 🔴 `sanitizeNextUrl` allows `http://` protocol for `*.tukio.one` (HTTPS downgrade)** [`redirect-resolver.ts:80`]
+- [x] [Review][Patch] **P3 — 🔴 `sanitizeNextUrl` allows localhost regardless of NODE_ENV (internal-service redirect in prod)** [`redirect-resolver.ts:26,87`]
+- [x] [Review][Patch] **P4 — 🟠 `jwtVerify` missing `clockTolerance` → clock skew between gateway-api instances rejects valid state JWTs** [`state-jwt.ts:50` + `cookie-helpers.ts:readPkceStateCookie`]
+- [x] [Review][Patch] **P5 — 🟠 `resolveCookieDeployment` treats `test` env same as `development` for insecure-cookie → CI test runner could emit non-Secure cookies** [`cookie-helpers.ts:isDev check`]
+- [x] [Review][Patch] **P6 — 🟠 `ZONE_BASE_URL_*` no hostname prod validation → misconfigured env redirects post-login to arbitrary domain** [`env.schema.ts:ZONE_BASE_URL_PUBLIC/SELLER/ADMIN`]
+- [x] [Review][Patch] **P7 — 🟠 `KeycloakRefreshInvalidError` class missing → AUTH-REFRESH-INVALID-001 unmapped (spec AC3 defines the code, AC8 implies the class)** [`keycloak-oauth.exception.ts`]
+- [x] [Review][Patch] **P8 — 🟠 AC7 locale cross-product test matrix incomplete (Pro/Admin tested in only 1 locale each)** [`redirect-resolver.spec.ts`]
+- [x] [Review][Patch] **P9 — 🟠 `DecodedJwtClaims.tukioStatus` union missing `suspended` + `deleted` → pro suspended silently redirects to seller/dashboard** [`redirect-resolver.ts:16-20`]
+- [x] [Review][Patch] **P10 — 🟠 AC8 timeout simulation test missing (nock `.delayConnection()`) — spec lists timeout as a required error path** [`keycloak-oauth.client.spec.ts`]
+- [x] [Review][Patch] **P11 — 🟡 `issuedAt` redundant custom string claim shadows JWT `iat` — not validated for consistency, wastes payload space** [`state-jwt.ts:13`]
+- [x] [Review][Patch] **P12 — 🟡 `revokeSession` swallows 4xx with no warning log → client_id misconfiguration invisible at runtime** [`keycloak-oauth.client.ts:revokeSession`]
+- [x] [Review][Patch] **P13 — 🟡 Missing test: pkce-state cookie JWT rejected by `decodeState` (audience mismatch cross-acceptance)** [`state-jwt.spec.ts`]
+- [x] [Review][Patch] **P14 — 🟡 `buildAuthorizeUrl` trailing slash in `publicBaseUrl` → double-slash `redirect_uri` rejected by Keycloak** [`keycloak-oauth.client.ts:realmBaseUrl`]
+- [x] [Review][Patch] **P15 — 🟡 `loggedInAt` field (spec says `occurredAt` in payload) — deviation not documented in Dev Agent Record** [`user-logged-in.v1.ts`]
+- [x] [Review][Patch] **P16 — 🟡 AC1 JSON schema sync test absent — spec explicitly requires it** [`events/__tests__/events.spec.ts`]
+- [x] [Review][Patch] **P17 — 🟡 `getKeycloakOAuthClients()` differs from spec-named `getKeycloakOAuthConfig()` — shape mismatch (url/realm absent from return)** [`environment-config.service.ts`]
+
+**Deferred :**
+
+- [x] [Review][Defer] **D1 — Replay prevention: `requestId` in state JWT never consumed against a nonce store** [`state-jwt.ts`] — deferred, Story 1.4b scope (Redis nonce store)
+- [x] [Review][Defer] **D2 — `PKCE_STATE_MAX_AGE_SEC` and `STATE_TTL_SECONDS` duplicated in separate files — drift risk** [`cookie-helpers.ts:14` / `state-jwt.ts:7`] — deferred, refactor (not a bug today)
+- [x] [Review][Defer] **D3 — `UserLoggedInRole` duplicates `UserRoleEnum` 5 literals separately — divergence risk** [`user-logged-in.v1.ts:4` / `whoami-response.dto.ts:3`] — deferred, Story 1.10 consolidation
+
+## Dev Agent Record
+
+### Implementation Notes
+
+**Pattern decisions taken** :
+- Event `user-logged-in.v1` follows the **canonical convention** (TypeScript interface + JSON Schema sidecar via ajv2020) used by the 8 existing events. Spec wording "Zod schema" overridden to preserve repo consistency — DTOs use Zod, events use TS+JSON Schema (validated by `check-schema-compat.mjs` on every PR). **P15**: payload field is `loggedInAt` (not `occurredAt` as in spec text — `occurredAt` already exists at the DomainEvent envelope level, having a second `occurredAt` in the payload would be redundant). **P17**: `getKeycloakOAuthClients()` returns `{web: string, admin: string}` (just client IDs) rather than `getKeycloakOAuthConfig() → {url, realm, clientWebId, clientAdminId}` as spec describes — the `url` and `realm` are injected into `KeycloakOAuthClient` directly at construction site in Story 1.4b, following the same pattern as `IdentitySvcClient`. No functional gap; naming deviation documented here.
+- `state-jwt.ts` uses **HS256 signed JWT** via `jose` lib (≥ 32 chars secret enforced). Spec mentioned "JWE-encrypted" for pkce-state cookie — implemented as HS256 SignJWT because: (1) HttpOnly + Secure + SameSite=Lax + Domain attributes already provide confidentiality from client-side reading, (2) integrity (no tampering) is the actual security requirement, (3) consistency with state-jwt simplifies the codebase. Documented in `utils/README.md`.
+- `KeycloakOAuthClient` follows `IdentitySvcClient` pattern (axios + axios-retry exp [1s, 3s, 9s] × 3 on 5xx + network).
+- **Refresh token reuse detection** — heuristic on `error_description` substring `stale` / `not active` (Keycloak signals family invalidation this way). Conservative: defaults to `KeycloakRefreshExpiredError` (less alarming UX); only escalates to `KeycloakRefreshReusedError` on explicit stale signal.
+- **Dev override** — `TUKIO_DEV_INSECURE_COOKIES=1` drops the cookie `Secure` flag only when `NODE_ENV=development` AND flag=1. Production boot refuses if flag=1 (env.schema.ts assertion, mirrors the existing `TUKIO_INTERNAL_SERVICE_SECRET` dev-fallback guard).
+
+**Dependencies added** :
+- `jose@^6.2.3` direct dep in `apps/gateway-api/package.json` (spec AC5 explicit authorization — previously transitive via `@tukio/auth`).
+
+**Coverage** :
+- pkce.ts: **100% / 100% / 100% / 100%** (stmts/branch/funcs/lines)
+- redirect-resolver.ts: **100% / 100% / 100% / 100%**
+- state-jwt.ts: **90.9% / 77.3% / 100% / 90.9%** ✓ NFR71 utils ≥ 90%
+- cookie-helpers.ts: **94.1% / 79.2% / 100% / 93.8%** ✓ NFR71 utils ≥ 90%
+- keycloak-oauth.client.ts: **95.3% / 86.0% / 100% / 95.3%** ✓ NFR71 client ≥ 85%
+
+Uncovered branches are exclusively defensive `instanceof` checks for non-JOSEError throws inside try/catch (unreachable from nock mocks).
+
+### Completion Notes
+
+- 10/10 tasks complete, 9/9 ACs satisfied
+- 4 new test files added (60 new tests in gateway-api + 18 new tests in @tukio/contracts)
+- Gateway-api : `pnpm lint` 0 errors / `pnpm typecheck` 0 errors / `pnpm test` 123/123 pass / `pnpm test:cov` thresholds met
+- Contracts : `pnpm lint` 0 errors / `pnpm typecheck` 0 errors / `pnpm test` 200/200 pass
+
+### File List
+
+**`@tukio/contracts`** (8 added / 3 modified) :
+- NEW `packages/contracts/src/events/identity/user-logged-in.v1.ts`
+- NEW `packages/contracts/src/events/identity/user-logged-in.v1.schema.json`
+- NEW `packages/contracts/src/dtos/identity/whoami-response.dto.ts`
+- NEW `packages/contracts/src/dtos/identity/__tests__/whoami-response.dto.spec.ts`
+- NEW `packages/contracts/src/types/__tests__/error-codes.spec.ts`
+- MODIFIED `packages/contracts/src/types/error-codes.ts` (+7 AUTH-* codes)
+- MODIFIED `packages/contracts/src/dtos/identity/index.ts` (+ whoami exports)
+- MODIFIED `packages/contracts/src/events/__tests__/events.spec.ts` (+8 user-logged-in cases)
+- MODIFIED `packages/contracts/package.json` (+2 subpath exports)
+
+**`apps/gateway-api`** (10 added / 4 modified) :
+- NEW `apps/gateway-api/src/infrastructure/http/utils/pkce.ts`
+- NEW `apps/gateway-api/src/infrastructure/http/utils/pkce.spec.ts`
+- NEW `apps/gateway-api/src/infrastructure/http/utils/state-jwt.ts`
+- NEW `apps/gateway-api/src/infrastructure/http/utils/state-jwt.spec.ts`
+- NEW `apps/gateway-api/src/infrastructure/http/utils/cookie-helpers.ts`
+- NEW `apps/gateway-api/src/infrastructure/http/utils/cookie-helpers.spec.ts`
+- NEW `apps/gateway-api/src/infrastructure/http/utils/redirect-resolver.ts`
+- NEW `apps/gateway-api/src/infrastructure/http/utils/redirect-resolver.spec.ts`
+- NEW `apps/gateway-api/src/infrastructure/http/utils/README.md`
+- NEW `apps/gateway-api/src/infrastructure/external/keycloak/keycloak-oauth.client.ts`
+- NEW `apps/gateway-api/src/infrastructure/external/keycloak/keycloak-oauth.client.spec.ts`
+- NEW `apps/gateway-api/src/domain/exception/auth-invalid-state.exception.ts`
+- NEW `apps/gateway-api/src/domain/exception/keycloak-oauth.exception.ts`
+- MODIFIED `apps/gateway-api/.env.example` (+5 STATE_JWT/ZONE_BASE_URL/KEYCLOAK_OAUTH/TUKIO_DEV vars)
+- MODIFIED `apps/gateway-api/src/infrastructure/config/env.schema.ts` (+5 Zod vars + 2 prod guards)
+- MODIFIED `apps/gateway-api/src/infrastructure/config/environment-config.service.ts` (+4 getters)
+- MODIFIED `apps/gateway-api/src/domain/ports/config.port.ts` (+2 interfaces + 4 methods)
+- MODIFIED `apps/gateway-api/package.json` (+ jose@^6.2.3)
+
+**`apps/public`** (2 modified) :
+- MODIFIED `apps/public/src/messages/fr.json` (+errors.auth.* namespace)
+- MODIFIED `apps/public/src/messages/en.json` (+errors.auth.* namespace)
+
+### Change Log
+
+- 2026-05-17 — Story 1.4a implemented per /bmad-dev-story workflow. 10/10 tasks complete. Status `ready-for-dev` → `review`. ~28 files (NEW + MODIFIED). 78 new tests added (60 gateway-api + 18 contracts). All lint/typecheck/test pass. Coverage NFR71 met on all utils + Keycloak client.
 
 ## Dev Notes
 
@@ -185,3 +292,22 @@ apps/gateway-api/src/
   - **Story 1.4c** consomme : error-codes (i18n keys), DTO whoami-response
   - **Story 1.4d** consomme : event `identity.user.logged-in.v1` (observability metrics)
 - **Prochaine sub-story** : Story 1.4b
+
+## Senior Developer Review (AI)
+
+**Date** : 2026-05-18
+**Reviewers** : Blind Hunter (adversarial) + Edge Case Hunter (boundary conditions) + Acceptance Auditor (spec compliance)
+**Outcome** : **Changes Requested** — 2 decision-needed + 17 patches avant merge
+
+**Résumé findings :**
+
+| Sévérité | Count | Principaux |
+|---|---|---|
+| 🔴 High | 3 | Non-idempotent retry authorization code / http:// downgrade / localhost prod redirect |
+| 🟠 Medium | 7 | clockTolerance manquant / ZONE_BASE_URL_* validation / RefreshInvalid class manquante / tukioStatus union / test matrix locale / test timeout / insecure-cookie test env |
+| 🟡 Low | 7 | issuedAt redondant / revokeSession warning log / audience mismatch test / trailing slash / loggedInAt rename / JSON schema sync test / getKeycloakOAuthClients shape |
+| 🟢 Decision | 2 | Shared secret (DN1) / JWE vs HS256 pkce-state (DN2) |
+| ↩️ Defer | 3 | requestId nonce store / TTL drift / role type duplication |
+| ❌ Dismiss | 12 | SameSite false positive (même eTLD+1) + confirmations AC + dét. mineures |
+
+**Action Items** : voir `### Review Follow-ups (AI)` ci-dessus dans Tasks/Subtasks.

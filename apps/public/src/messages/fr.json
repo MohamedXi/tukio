@@ -115,5 +115,16 @@
         }
       }
     }
+  },
+  "errors": {
+    "auth": {
+      "invalidState": "Session expirée. Veuillez réessayer.",
+      "invalidCode": "Lien de connexion invalide ou expiré. Veuillez réessayer.",
+      "csrfMismatch": "Session expirée. Veuillez recharger la page.",
+      "refreshInvalid": "Session invalide. Veuillez vous reconnecter.",
+      "refreshExpired": "Session expirée. Veuillez vous reconnecter.",
+      "refreshReused": "Anomalie de sécurité détectée. Veuillez vous reconnecter et changer votre mot de passe.",
+      "external": "Service d'authentification momentanément indisponible. Réessayez dans quelques instants."
+    }
   }
 }

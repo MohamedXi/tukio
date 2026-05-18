@@ -1,5 +1,11 @@
 # Deferred Work
 
+## Deferred from: code review of 1-4a-contracts-utils-keycloak-oauth-client (2026-05-18)
+
+- **D1** — `requestId` dans le state JWT n'est jamais validé contre un nonce store Redis. Sans stockage des IDs utilisés, un token intercepté peut être rejoué pendant les 10 min de TTL. Scope prévu : Story 1.4b (Redis nonce store, même instance que ThrottlerModule). [state-jwt.ts]
+- **D2** — `PKCE_STATE_MAX_AGE_SEC` dans `cookie-helpers.ts` et `STATE_TTL_SECONDS` dans `state-jwt.ts` sont deux constantes indépendantes à la même valeur (600s). Un changement sur l'une sans l'autre crée un désynchronisation Max-Age cookie vs JWT exp. Refactor : exporter une constante partagée depuis un fichier constants.ts ou la config. Non-bloquant (bug latent seulement si quelqu'un change une seule valeur). [cookie-helpers.ts:14 / state-jwt.ts:7]
+- **D3** — `UserLoggedInRole` dans `user-logged-in.v1.ts` redéfinit les 5 mêmes littéraux que `UserRoleEnum` dans `whoami-response.dto.ts`. Si un nouveau rôle est ajouté, il faut mettre à jour les deux définitions séparément. Refactor Story 1.10 : faire dériver `UserLoggedInRole` de `UserRoleEnum` ou extraire une constante commune. [user-logged-in.v1.ts:4 / whoami-response.dto.ts:3]
+
 ## Deferred from: code review of 1-3a-bis-extend-register-pro-input-schema (2026-05-17)
 
 - **D1** — `requiresEmailVerification: z.literal(false)` dans `RegisterProResponseSchema` : la valeur est logiquement correcte (Customer déjà vérifié) mais la response schema complète sera redéfinie dans Story 1.3b-bis handler refactor. Actuellement `literal(false)` — confirmer ou ajuster lors de 1.3b-bis review. [décision review 2026-05-17]

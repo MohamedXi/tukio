@@ -44,6 +44,26 @@ export interface ThrottlerConfig {
   sensitiveTtlMs: number;
 }
 
+/**
+ * Frontend zone base URLs consumed by the post-login redirect resolver
+ * (Story 1.4a). Each maps to a `*.tukio.one` host in production.
+ */
+export interface ZoneBaseUrlsConfig {
+  public: string;
+  seller: string;
+  admin: string;
+}
+
+/**
+ * Keycloak OAuth client IDs used when initiating the Authorization Code +
+ * PKCE flow (Story 1.4a). `tukio-web` covers customers and pros; `tukio-admin`
+ * is reserved for the admin console (forces TOTP via the dedicated flow).
+ */
+export interface KeycloakOAuthClientsConfig {
+  web: string;
+  admin: string;
+}
+
 export interface IConfigService {
   getNodeEnv(): 'development' | 'test' | 'production';
   getServiceName(): string;
@@ -58,4 +78,14 @@ export interface IConfigService {
   getInternalServiceSecret(): string;
   /** Public-facing apex URL — used by downstream services to build email-verify links. */
   getPublicBaseUrl(): string;
+  /** HMAC secret signing the state JWT (Story 1.4a). */
+  getStateJwtSecret(): string;
+  /** Separate HMAC secret for the pkce-state cookie JWE (Story 1.4a review DN1). */
+  getPkceCookieHmacSecret(): string;
+  /** Frontend zone base URLs for the post-login redirect resolver (Story 1.4a). */
+  getZoneBaseUrls(): ZoneBaseUrlsConfig;
+  /** Keycloak OAuth client IDs (Story 1.4a). */
+  getKeycloakOAuthClients(): KeycloakOAuthClientsConfig;
+  /** Dev-only flag dropping cookie Secure attribute (Story 1.4a AC6). */
+  isDevInsecureCookiesEnabled(): boolean;
 }

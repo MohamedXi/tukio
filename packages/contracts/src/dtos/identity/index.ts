@@ -27,3 +27,12 @@ export {
   AcquisitionInputSchema,
   type AcquisitionInputDto,
 } from './acquisition.dto.js';
+
+export {
+  UserRoleEnum,
+  type UserRole,
+  UserStatusEnum,
+  type UserStatus,
+  WhoamiResponseSchema,
+  type WhoamiResponseDto,
+} from './whoami-response.dto.js';

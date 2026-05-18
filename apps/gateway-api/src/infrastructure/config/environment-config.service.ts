@@ -4,8 +4,10 @@ import type {
   IConfigService,
   IdentitySvcConfig,
   KeycloakConfig,
+  KeycloakOAuthClientsConfig,
   RedisConfig,
   ThrottlerConfig,
+  ZoneBaseUrlsConfig,
 } from '../../domain/ports/config.port.js';
 import type { Env } from './env.schema.js';
 
@@ -82,5 +84,32 @@ export class EnvironmentConfigService implements IConfigService {
 
   getPublicBaseUrl(): string {
     return this.get('PUBLIC_BASE_URL');
+  }
+
+  getStateJwtSecret(): string {
+    return this.get('STATE_JWT_HMAC_SECRET');
+  }
+
+  getPkceCookieHmacSecret(): string {
+    return this.get('PKCE_COOKIE_HMAC_SECRET');
+  }
+
+  getZoneBaseUrls(): ZoneBaseUrlsConfig {
+    return {
+      public: this.get('ZONE_BASE_URL_PUBLIC'),
+      seller: this.get('ZONE_BASE_URL_SELLER'),
+      admin: this.get('ZONE_BASE_URL_ADMIN'),
+    };
+  }
+
+  getKeycloakOAuthClients(): KeycloakOAuthClientsConfig {
+    return {
+      web: this.get('KEYCLOAK_OAUTH_CLIENT_WEB_ID'),
+      admin: this.get('KEYCLOAK_OAUTH_CLIENT_ADMIN_ID'),
+    };
+  }
+
+  isDevInsecureCookiesEnabled(): boolean {
+    return this.get('TUKIO_DEV_INSECURE_COOKIES') === '1';
   }
 }

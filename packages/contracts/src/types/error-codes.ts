@@ -35,6 +35,20 @@ export const AuthErrorCodes = {
   FORBIDDEN_ROLE: 'AUTH-FORBIDDEN-001',
   FORBIDDEN_INTERNAL: 'AUTH-FORBIDDEN-002',
   MFA_REQUIRED: 'AUTH-MFA-REQUIRED-001',
+  /** Login state JWT invalid / expired / tampered (Story 1.4a). */
+  INVALID_STATE: 'AUTH-INVALID-STATE-001',
+  /** Authorization code invalid / expired during callback exchange (Story 1.4a). */
+  INVALID_CODE: 'AUTH-INVALID-CODE-001',
+  /** X-CSRF-Token header does not match the cookie (Story 1.4a). */
+  CSRF_MISMATCH: 'AUTH-CSRF-MISMATCH-001',
+  /** Refresh token malformed or unparseable (Story 1.4a). */
+  REFRESH_INVALID: 'AUTH-REFRESH-INVALID-001',
+  /** Refresh token expired — user must sign in again (Story 1.4a). */
+  REFRESH_EXPIRED: 'AUTH-REFRESH-EXPIRED-001',
+  /** Refresh token re-use detected — Keycloak rotation invariant breached, security alert (Story 1.4a). */
+  REFRESH_REUSED: 'AUTH-REFRESH-REUSED-001',
+  /** Keycloak unreachable / down (Story 1.4a). */
+  EXTERNAL: 'AUTH-EXTERNAL-001',
 } as const;
 
 export type AuthErrorCode = (typeof AuthErrorCodes)[keyof typeof AuthErrorCodes];
