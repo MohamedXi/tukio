@@ -1,4 +1,7 @@
 {
+  "auth": {
+    "logout": "Se déconnecter"
+  },
   "seller": {
     "onboarding": {
       "common": {

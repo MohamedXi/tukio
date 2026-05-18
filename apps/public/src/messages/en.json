@@ -80,6 +80,38 @@
         }
       }
     },
+    "login": {
+      "kicker": "Sign in · customer",
+      "title": "Welcome back to Tukio",
+      "subtitle": "Access your bookings and favourite pros.",
+      "fields": {
+        "email": { "label": "Email" },
+        "password": { "label": "Password" }
+      },
+      "forgotPassword": "Forgot password?",
+      "cta": "Sign in",
+      "loading": "Signing in…",
+      "noAccount": "No account?",
+      "noAccountLink": "Sign up",
+      "logout": "Sign out",
+      "errors": {
+        "invalidCredentials": "Invalid email or password.",
+        "serviceUnavailable": "Service temporarily unavailable. Please try again shortly."
+      },
+      "footer": {
+        "terms": "Terms of service",
+        "privacy": "Privacy policy",
+        "copyright": "© tukio.one · 2026"
+      },
+      "editorial": {
+        "kicker": "Pays de la Loire · 2026 pilot",
+        "quote": "“Our first booking came in three days after sign-up. The customer was 12 km away.”",
+        "author": {
+          "name": "Léa Martineau",
+          "role": "Atelier Tente Loire — pro since March 2026"
+        }
+      }
+    },
     "verifyEmailRequired": {
       "kicker": "Email verification · final step",
       "title": "Check your inbox.",

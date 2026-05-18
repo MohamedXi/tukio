@@ -132,7 +132,7 @@ development_status:
   1-4-login-flow-keycloak-authorization-code-pkce: split-umbrella  # voir 1.4a-d ci-dessous
   1-4a-contracts-utils-keycloak-oauth-client: done
   1-4b-gateway-api-endpoints-usecases-csrf-e2e: done
-  1-4c-frontend-login-callback-authprovider-logout: ready-for-dev
+  1-4c-frontend-login-callback-authprovider-logout: review
   1-4d-middlewares-auth-client-hooks-observability: ready-for-dev
   1-5-password-reset-flow: ready-for-dev
   1-6-email-verification-flow-landing-page: ready-for-dev
@@ -195,7 +195,7 @@ development_status:
 
   # ─── Epic 5 — Messaging, Reviews & Transactional Notifications (MVP) ──
   epic-5: in-progress
-  5-1-messaging-svc-pretre-conversation-message-aggregates: ready-for-dev
+  5-1-messaging-svc-pretre-conversation-message-aggregates: backlog
   5-2-conversation-thread-ui: backlog
   5-3-send-message-rate-limiting-retention: ready-for-dev
   5-4-notification-svc-pretre-resend-templates: backlog

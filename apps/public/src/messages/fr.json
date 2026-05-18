@@ -80,6 +80,38 @@
         }
       }
     },
+    "login": {
+      "kicker": "Se connecter · client",
+      "title": "Bon retour sur Tukio",
+      "subtitle": "Accédez à vos réservations et vos pros favoris.",
+      "fields": {
+        "email": { "label": "Email" },
+        "password": { "label": "Mot de passe" }
+      },
+      "forgotPassword": "Mot de passe oublié ?",
+      "cta": "Se connecter",
+      "loading": "Connexion…",
+      "noAccount": "Pas de compte ?",
+      "noAccountLink": "S'inscrire",
+      "logout": "Se déconnecter",
+      "errors": {
+        "invalidCredentials": "Email ou mot de passe incorrect.",
+        "serviceUnavailable": "Service temporairement indisponible. Réessayez dans quelques instants."
+      },
+      "footer": {
+        "terms": "CGU",
+        "privacy": "Politique de confidentialité",
+        "copyright": "© tukio.one · 2026"
+      },
+      "editorial": {
+        "kicker": "Pays de la Loire · pilote 2026",
+        "quote": "« Notre première location s'est faite trois jours après l'inscription. Le client était à 12 km. »",
+        "author": {
+          "name": "Léa Martineau",
+          "role": "Atelier Tente Loire — pro depuis mars 2026"
+        }
+      }
+    },
     "verifyEmailRequired": {
       "kicker": "Vérification email · étape finale",
       "title": "Vérifiez votre boîte mail.",

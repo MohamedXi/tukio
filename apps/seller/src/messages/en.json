@@ -1,4 +1,7 @@
 {
+  "auth": {
+    "logout": "Sign out"
+  },
   "seller": {
     "onboarding": {
       "common": {

@@ -4,7 +4,20 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { LOCALES } from '@tukio/i18n-client/config';
+import { AuthProvider } from '@tukio/auth-client/provider';
 import './globals.css';
+
+function getKeycloakConfig() {
+  const url = process.env['NEXT_PUBLIC_KEYCLOAK_URL'];
+  if (!url && process.env.NODE_ENV === 'production') {
+    throw new Error('NEXT_PUBLIC_KEYCLOAK_URL is required in production builds.');
+  }
+  return {
+    url: url ?? 'http://localhost:9010',
+    realm: process.env['NEXT_PUBLIC_KEYCLOAK_REALM'] ?? 'tukio',
+    clientId: process.env['NEXT_PUBLIC_KEYCLOAK_CLIENT_ID'] ?? 'tukio-web',
+  };
+}
 
 const fraunces = Fraunces({
   subsets: ['latin', 'latin-ext'],
@@ -56,7 +69,7 @@ export default async function RootLayout({
     >
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
+          <AuthProvider config={getKeycloakConfig()}>{children}</AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>
