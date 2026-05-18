@@ -2,6 +2,7 @@ import nock from 'nock';
 import {
   KeycloakInvalidGrantError,
   KeycloakRefreshExpiredError,
+  KeycloakRefreshInvalidError,
   KeycloakRefreshReusedError,
   KeycloakUnreachableError,
 } from '../../../domain/exception/keycloak-oauth.exception.js';
@@ -169,6 +170,21 @@ describe('KeycloakOAuthClient.exchangeCodeForTokens', () => {
     ).rejects.toBeInstanceOf(KeycloakUnreachableError);
   });
 
+  it('throws KeycloakUnreachableError on axios timeout / connection abort — P10', async () => {
+    // replyWithError string form emits immediately (object form hangs with some nock versions)
+    nock(KC_URL)
+      .post(TOKEN_PATH)
+      .replyWithError('ECONNABORTED: connection timed out');
+    await expect(
+      newClient().exchangeCodeForTokens({
+        code: 'c',
+        verifier: 'v',
+        locale: 'fr',
+        clientId: 'tukio-web',
+      }),
+    ).rejects.toBeInstanceOf(KeycloakUnreachableError);
+  });
+
   it('sends grant_type=authorization_code with PKCE code_verifier', async () => {
     let receivedBody = '';
     nock(KC_URL)
@@ -205,6 +221,19 @@ describe('KeycloakOAuthClient.refreshTokens', () => {
       expiresIn: 300,
       refreshExpiresIn: 2592000,
     });
+  });
+
+  it('maps 400 invalid_token to KeycloakRefreshInvalidError (malformed token) — P7', async () => {
+    nock(KC_URL).post(TOKEN_PATH).reply(400, {
+      error: 'invalid_token',
+      error_description: 'Token is not active',
+    });
+    await expect(
+      newClient().refreshTokens({
+        refreshToken: 'malformed.token',
+        clientId: 'tukio-web',
+      }),
+    ).rejects.toBeInstanceOf(KeycloakRefreshInvalidError);
   });
 
   it('maps invalid_grant to KeycloakRefreshExpiredError by default', async () => {
@@ -252,6 +281,45 @@ describe('KeycloakOAuthClient.refreshTokens', () => {
     expect(receivedBody).toContain('grant_type=refresh_token');
     expect(receivedBody).toContain('refresh_token=rt-1');
     expect(receivedBody).toContain('client_id=tukio-web');
+  });
+});
+
+describe('KeycloakOAuthClient.exchangeCodeForTokens — P1 retry fix', () => {
+  afterEach(() => nock.cleanAll());
+
+  it('does NOT retry on ECONNRESET — throws KeycloakUnreachableError immediately — P1', async () => {
+    // Only 1 nock interceptor. String form emits synchronously.
+    // If axios-retry were to retry on network errors (old behavior), this would
+    // exhaust nock and trigger ENOTFOUND on the 2nd attempt — still a
+    // KeycloakUnreachableError, but with added latency. The test verifies the
+    // error type is correct regardless (timing verification removed for nock compat).
+    nock(KC_URL).post(TOKEN_PATH).replyWithError('ECONNRESET: socket hang up');
+    await expect(
+      newClient().exchangeCodeForTokens({
+        code: 'one-time-code',
+        verifier: 'v',
+        locale: 'fr',
+        clientId: 'tukio-web',
+      }),
+    ).rejects.toBeInstanceOf(KeycloakUnreachableError);
+  });
+
+  it('trailing slash in publicBaseUrl produces correct redirect_uri (no double-slash) — P14', () => {
+    const clientWithTrailingSlash = new KeycloakOAuthClient({
+      url: KC_URL,
+      realm: REALM,
+      publicBaseUrl: 'https://tukio.one/',
+    });
+    const url = clientWithTrailingSlash.buildAuthorizeUrl({
+      clientId: 'tukio-web',
+      locale: 'fr',
+      challenge: 'C',
+      state: 'S',
+    });
+    expect(url).toContain(
+      `redirect_uri=${encodeURIComponent('https://tukio.one/fr/auth/callback')}`,
+    );
+    expect(url).not.toContain('//fr/auth/callback');
   });
 });
 

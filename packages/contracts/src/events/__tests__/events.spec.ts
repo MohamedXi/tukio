@@ -299,6 +299,22 @@ describe('identity.user.registered.v1', () => {
   });
 });
 
+describe('identity.user.logged-in.v1 — JSON schema sync check (P16)', () => {
+  it('schema payload properties match UserLoggedInV1Payload TS interface fields', () => {
+    // Inspect schema JSON structure directly (no ajv.compile to avoid $id conflict
+    // with the existing describe block below that also compiles this schema).
+    const schema = loadSchema('identity/user-logged-in.v1.schema.json') as {
+      properties?: { payload?: { properties?: Record<string, unknown> } };
+    };
+    const payloadProps = schema.properties?.payload?.properties ?? {};
+    for (const field of ['userId', 'locale', 'role', 'ipHash', 'userAgentHash', 'loggedInAt']) {
+      expect(payloadProps).toHaveProperty(field);
+    }
+    // Spec said `occurredAt` in payload — implementation uses `loggedInAt` (documented deviation P15)
+    expect(payloadProps).not.toHaveProperty('occurredAt');
+  });
+});
+
 describe('identity.user.logged-in.v1', () => {
   const schema = loadSchema('identity/user-logged-in.v1.schema.json');
   const compile = () => ajv.compile(schema);

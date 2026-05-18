@@ -1,4 +1,5 @@
-import { SignJWT, jwtVerify, errors as joseErrors } from 'jose';
+import { hkdfSync } from 'node:crypto';
+import { EncryptJWT, jwtDecrypt, errors as joseErrors } from 'jose';
 import { AuthInvalidStateException } from '../../../domain/exception/auth-invalid-state.exception.js';
 
 export const COOKIE_NAMES = {
@@ -17,9 +18,15 @@ const PKCE_STATE_MAX_AGE_SEC = 10 * 60;
 const REFRESH_TOKEN_PATH = '/v1/auth';
 
 const PKCE_STATE_SECRET_MIN_LENGTH = 32;
-const PKCE_STATE_ALG = 'HS256';
+// DN2: JWE A256GCM with `dir` algorithm requires a 32-byte content encryption key
+const PKCE_STATE_JWE_ALG = 'dir';
+const PKCE_STATE_JWE_ENC = 'A256GCM';
+const PKCE_STATE_KEY_LENGTH = 32;
+const PKCE_STATE_KEY_INFO = 'pkce-state-enc';
 const PKCE_STATE_ISSUER = 'tukio-gateway';
 const PKCE_STATE_AUDIENCE = 'tukio-pkce-state';
+// P4: tolerate 60 s clock skew between gateway-api instances
+const PKCE_CLOCK_TOLERANCE_SECONDS = 60;
 
 export interface CookieDeployment {
   /** Cookie Domain attribute. Use `.tukio.one` in prod, omit in localhost dev. */
@@ -154,31 +161,49 @@ export function buildClearCookies(deployment: CookieDeployment): string[] {
   ];
 }
 
-function secretToKey(secret: string): Uint8Array {
+/**
+ * Derive a 32-byte AES key from the PKCE cookie HMAC secret via HKDF-SHA256.
+ * DN1: uses a separate secret from STATE_JWT_HMAC_SECRET to limit blast-radius.
+ * DN2: produces the content encryption key for JWE A256GCM encryption.
+ */
+function derivePkceEncryptionKey(secret: string): Uint8Array {
   if (secret.length < PKCE_STATE_SECRET_MIN_LENGTH) {
     throw new AuthInvalidStateException(
-      `STATE_JWT_HMAC_SECRET must be at least ${PKCE_STATE_SECRET_MIN_LENGTH} characters`,
+      `PKCE_COOKIE_HMAC_SECRET must be at least ${PKCE_STATE_SECRET_MIN_LENGTH} characters`,
     );
   }
-  return new TextEncoder().encode(secret);
+  return new Uint8Array(
+    hkdfSync(
+      'sha256',
+      Buffer.from(secret, 'utf8'),
+      '',
+      PKCE_STATE_KEY_INFO,
+      PKCE_STATE_KEY_LENGTH,
+    ),
+  );
 }
 
+/**
+ * Build the pkce-state Set-Cookie header value.
+ * DN2: encrypted using JWE (EncryptJWT A256GCM) so the PKCE verifier is opaque
+ * even in server logs — not merely HttpOnly-protected.
+ */
 export async function buildPkceStateCookie(
   payload: PkceStatePayload,
   secret: string,
   deployment: CookieDeployment,
 ): Promise<string> {
-  const key = secretToKey(secret);
-  const value = await new SignJWT({
+  const key = derivePkceEncryptionKey(secret);
+  const value = await new EncryptJWT({
     verifier: payload.verifier,
     originalState: payload.originalState,
   })
-    .setProtectedHeader({ alg: PKCE_STATE_ALG })
+    .setProtectedHeader({ alg: PKCE_STATE_JWE_ALG, enc: PKCE_STATE_JWE_ENC })
     .setIssuer(PKCE_STATE_ISSUER)
     .setAudience(PKCE_STATE_AUDIENCE)
     .setIssuedAt()
     .setExpirationTime(`${PKCE_STATE_MAX_AGE_SEC}s`)
-    .sign(key);
+    .encrypt(key);
 
   return formatCookie({
     name: COOKIE_NAMES.PKCE_STATE,
@@ -196,13 +221,14 @@ export async function readPkceStateCookie(
   cookieValue: string,
   secret: string,
 ): Promise<PkceStatePayload> {
-  const key = secretToKey(secret);
+  const key = derivePkceEncryptionKey(secret);
   let result;
   try {
-    result = await jwtVerify(cookieValue, key, {
+    result = await jwtDecrypt(cookieValue, key, {
       issuer: PKCE_STATE_ISSUER,
       audience: PKCE_STATE_AUDIENCE,
-      algorithms: [PKCE_STATE_ALG],
+      // P4: tolerate clock skew between gateway-api instances
+      clockTolerance: PKCE_CLOCK_TOLERANCE_SECONDS,
     });
   } catch (err) {
     if (err instanceof joseErrors.JOSEError) {
@@ -234,17 +260,17 @@ export async function readPkceStateCookie(
 }
 
 /**
- * Resolve cookie deployment attributes from runtime environment. Mirrors the
- * dev override documented in Story 1.4a AC6 — when `NODE_ENV=development` AND
- * `TUKIO_DEV_INSECURE_COOKIES=1`, drop the `Secure` flag so localhost
- * testcontainers running over plain HTTP can still issue session cookies.
+ * Resolve cookie deployment attributes from runtime environment.
+ * P5: insecure-cookie override restricted to NODE_ENV === 'development' only
+ * (was previously also triggered by 'test', which could emit non-Secure cookies
+ * in CI integration environments).
  */
 export function resolveCookieDeployment(env: {
   nodeEnv: string;
   domain: string | null;
   devInsecureFlag: string | undefined;
 }): CookieDeployment {
-  const isDev = env.nodeEnv === 'development' || env.nodeEnv === 'test';
+  const isDev = env.nodeEnv === 'development';
   const secure = !(isDev && env.devInsecureFlag === '1');
   return { domain: env.domain, secure };
 }

@@ -43,3 +43,13 @@ export class KeycloakRefreshReusedError extends DomainException {
     super(detail);
   }
 }
+
+export class KeycloakRefreshInvalidError extends DomainException {
+  readonly tukioCode = AuthErrorCodes.REFRESH_INVALID;
+  readonly httpStatus = 400;
+  readonly title = 'Refresh token malformed';
+
+  constructor(detail: string) {
+    super(detail);
+  }
+}

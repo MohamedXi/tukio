@@ -90,6 +90,10 @@ export class EnvironmentConfigService implements IConfigService {
     return this.get('STATE_JWT_HMAC_SECRET');
   }
 
+  getPkceCookieHmacSecret(): string {
+    return this.get('PKCE_COOKIE_HMAC_SECRET');
+  }
+
   getZoneBaseUrls(): ZoneBaseUrlsConfig {
     return {
       public: this.get('ZONE_BASE_URL_PUBLIC'),

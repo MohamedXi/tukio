@@ -78,8 +78,10 @@ export interface IConfigService {
   getInternalServiceSecret(): string;
   /** Public-facing apex URL — used by downstream services to build email-verify links. */
   getPublicBaseUrl(): string;
-  /** HMAC secret signing the state JWT + pkce-state cookie (Story 1.4a). */
+  /** HMAC secret signing the state JWT (Story 1.4a). */
   getStateJwtSecret(): string;
+  /** Separate HMAC secret for the pkce-state cookie JWE (Story 1.4a review DN1). */
+  getPkceCookieHmacSecret(): string;
   /** Frontend zone base URLs for the post-login redirect resolver (Story 1.4a). */
   getZoneBaseUrls(): ZoneBaseUrlsConfig;
   /** Keycloak OAuth client IDs (Story 1.4a). */

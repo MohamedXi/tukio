@@ -13,7 +13,7 @@ function basePayload(overrides: Partial<StatePayload> = {}): StatePayload {
   return {
     next: 'https://tukio.one/fr/account/dashboard',
     requestId: 'req-123',
-    issuedAt: '2026-05-17T12:00:00Z',
+    issuedAt: '2026-05-17T12:00:00Z', // caller-supplied, overridden at decode with JWT iat
     ...overrides,
   };
 }
@@ -22,7 +22,10 @@ describe('state-jwt — encode / decode roundtrip (8 cases)', () => {
   it('roundtrips a typical Customer post-login next URL', async () => {
     const token = await encodeState(basePayload(), SECRET);
     const decoded = await decodeState(token, SECRET);
-    expect(decoded).toEqual(basePayload());
+    expect(decoded.next).toBe(basePayload().next);
+    expect(decoded.requestId).toBe(basePayload().requestId);
+    // P11: issuedAt is derived from JWT iat, not from caller-supplied value
+    expect(decoded.issuedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   });
 
   it('roundtrips with null next (default dashboard)', async () => {
@@ -41,11 +44,14 @@ describe('state-jwt — encode / decode roundtrip (8 cases)', () => {
     expect(decoded.requestId).toBe(payload.requestId);
   });
 
-  it('preserves the original issuedAt verbatim', async () => {
-    const payload = basePayload({ issuedAt: '2026-12-31T23:59:59Z' });
-    const token = await encodeState(payload, SECRET);
+  it('issuedAt is derived from JWT iat (ISO string) — P11', async () => {
+    const before = Date.now();
+    const token = await encodeState(basePayload(), SECRET);
+    const after = Date.now();
     const decoded = await decodeState(token, SECRET);
-    expect(decoded.issuedAt).toBe(payload.issuedAt);
+    const decodedMs = new Date(decoded.issuedAt).getTime();
+    expect(decodedMs).toBeGreaterThanOrEqual(Math.floor(before / 1000) * 1000);
+    expect(decodedMs).toBeLessThanOrEqual(after + 1000);
   });
 
   it('accepts a non-ASCII next URL (URL-encoded path segments)', async () => {
@@ -66,10 +72,11 @@ describe('state-jwt — encode / decode roundtrip (8 cases)', () => {
     const longSecret = SECRET + '-extra-padding-bytes-for-fun-and-profit';
     const token = await encodeState(basePayload(), longSecret);
     const decoded = await decodeState(token, longSecret);
-    expect(decoded).toEqual(basePayload());
+    expect(decoded.next).toBe(basePayload().next);
+    expect(decoded.requestId).toBe(basePayload().requestId);
   });
 
-  it('decodes a token signed within the TTL window (defaults to 10 min exp)', async () => {
+  it('decodes a token signed within the TTL window', async () => {
     const token = await encodeState(basePayload(), SECRET);
     const decoded = await decodeState(token, SECRET);
     expect(decoded).toBeDefined();
@@ -79,9 +86,10 @@ describe('state-jwt — encode / decode roundtrip (8 cases)', () => {
 describe('state-jwt — error paths', () => {
   it('rejects an expired token (manually crafted with exp in the past)', async () => {
     const key = new TextEncoder().encode(SECRET);
-    const token = await new SignJWT(
-      basePayload() as unknown as Record<string, unknown>,
-    )
+    const token = await new SignJWT({
+      next: null,
+      requestId: 'req-1',
+    })
       .setProtectedHeader({ alg: ALG })
       .setIssuer(ISSUER)
       .setAudience(AUDIENCE)
@@ -112,24 +120,7 @@ describe('state-jwt — error paths', () => {
 
   it('rejects a token missing requestId claim', async () => {
     const key = new TextEncoder().encode(SECRET);
-    const token = await new SignJWT({
-      next: null,
-      issuedAt: '2026-05-17T12:00:00Z',
-    })
-      .setProtectedHeader({ alg: ALG })
-      .setIssuer(ISSUER)
-      .setAudience(AUDIENCE)
-      .setIssuedAt()
-      .setExpirationTime('10m')
-      .sign(key);
-    await expect(decodeState(token, SECRET)).rejects.toBeInstanceOf(
-      AuthInvalidStateException,
-    );
-  });
-
-  it('rejects a token missing issuedAt claim', async () => {
-    const key = new TextEncoder().encode(SECRET);
-    const token = await new SignJWT({ next: null, requestId: 'req-1' })
+    const token = await new SignJWT({ next: null })
       .setProtectedHeader({ alg: ALG })
       .setIssuer(ISSUER)
       .setAudience(AUDIENCE)
@@ -146,7 +137,6 @@ describe('state-jwt — error paths', () => {
     const token = await new SignJWT({
       next: { weird: true },
       requestId: 'req-1',
-      issuedAt: '2026-05-17T12:00:00Z',
     })
       .setProtectedHeader({ alg: ALG })
       .setIssuer(ISSUER)
@@ -163,5 +153,24 @@ describe('state-jwt — error paths', () => {
     await expect(
       encodeState(basePayload(), 'too-short'),
     ).rejects.toBeInstanceOf(AuthInvalidStateException);
+  });
+
+  it('rejects a pkce-state cookie JWT (audience mismatch) when verified as state JWT — P13', async () => {
+    // The pkce-state audience is `tukio-pkce-state`; decodeState expects `tukio-auth-callback`.
+    // This verifies that the two JWT roles cannot be cross-accepted even with the same secret family.
+    const key = new TextEncoder().encode(SECRET);
+    const pkceStateToken = await new SignJWT({
+      verifier: 'v',
+      originalState: 's',
+    })
+      .setProtectedHeader({ alg: ALG })
+      .setIssuer(ISSUER)
+      .setAudience('tukio-pkce-state')
+      .setIssuedAt()
+      .setExpirationTime('10m')
+      .sign(key);
+    await expect(decodeState(pkceStateToken, SECRET)).rejects.toBeInstanceOf(
+      AuthInvalidStateException,
+    );
   });
 });

@@ -13,11 +13,15 @@ export interface ZoneBaseUrls {
  */
 export interface DecodedJwtClaims {
   realmAccess: { roles: string[] };
+  // P9: full domain status union — suspended/deleted should be blocked at
+  // Keycloak account level but are modelled here for defensive completeness.
   tukioStatus?:
     | 'active'
     | 'pending_email_verification'
     | 'pending_admin_review'
-    | 'rejected';
+    | 'rejected'
+    | 'suspended'
+    | 'deleted';
   amr?: string[];
 }
 
@@ -53,6 +57,11 @@ function defaultRedirect(
         return `${zones.seller}/${locale}/seller/onboarding/pending`;
       case 'rejected':
         return `${zones.seller}/${locale}/seller/onboarding/rejected`;
+      // P9: suspended/deleted accounts should be blocked at KC, but redirect
+      // to a generic error page if a token somehow arrives for these states.
+      case 'suspended':
+      case 'deleted':
+        return `${zones.public}/${locale}/auth/login?error=account_suspended`;
       case 'active':
       default:
         return `${zones.seller}/${locale}/seller/dashboard`;
@@ -62,13 +71,21 @@ function defaultRedirect(
 }
 
 /**
- * Whitelist a `?next=` redirect target. Allows only canonical Tukio hostnames
- * (`*.tukio.one`) or localhost (dev). Returns `null` for anything else
- * (open-redirect / XSS / data-URI / malformed input). Per OWASP — never trust
- * `next` blindly; always parse and validate the hostname.
+ * Whitelist a `?next=` redirect target. Accepts:
+ * - `https://` URLs on `tukio.one` or `*.tukio.one` (production-safe)
+ * - `http://` or `https://` on `localhost`/`127.0.0.1` when `isDev = true`
+ *
+ * Returns `null` for open-redirect / XSS / data: URIs / plain `http://` on
+ * production hosts. Always parse and validate the hostname — never trust `next`
+ * blindly (OWASP A10).
+ *
+ * P2: http:// rejected for non-localhost hosts (HTTPS-only in production).
+ * P3: localhost only allowed when `isDev = true` (prevents internal-service
+ *     redirect in containerised production environments).
  */
 export function sanitizeNextUrl(
   next: string | null | undefined,
+  isDev = false,
 ): string | null {
   if (typeof next !== 'string' || next.length === 0) return null;
   let parsed: URL;
@@ -77,16 +94,20 @@ export function sanitizeNextUrl(
   } catch {
     return null;
   }
-  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-    return null;
-  }
+
   const hostname = parsed.hostname.toLowerCase();
-  if (hostname === 'tukio.one' || hostname.endsWith(ALLOWED_HOSTNAME_SUFFIX)) {
-    return parsed.toString();
-  }
+
+  // Localhost — only permitted in dev/test environments
   if (ALLOWED_LOCALHOST_HOSTNAMES.has(hostname)) {
-    return parsed.toString();
+    return isDev ? parsed.toString() : null;
   }
+
+  // Tukio.one domains — must use HTTPS (P2: http:// downgrade rejected)
+  if (hostname === 'tukio.one' || hostname.endsWith(ALLOWED_HOSTNAME_SUFFIX)) {
+    return parsed.protocol === 'https:' ? parsed.toString() : null;
+  }
+
+  // Everything else (external domains, javascript:, data:, etc.) — rejected
   return null;
 }
 
@@ -95,8 +116,9 @@ export function resolvePostLoginRedirect(input: {
   locale: Locale;
   next: string | null | undefined;
   zones: ZoneBaseUrls;
+  isDev?: boolean;
 }): string {
-  const sanitized = sanitizeNextUrl(input.next);
+  const sanitized = sanitizeNextUrl(input.next, input.isDev ?? false);
   if (sanitized) return sanitized;
   return defaultRedirect(input.claims, input.locale, input.zones);
 }

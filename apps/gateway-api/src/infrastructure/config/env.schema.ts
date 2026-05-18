@@ -48,10 +48,14 @@ export const EnvSchema = z
     // Public apex (used by downstream services to build email-verify links).
     PUBLIC_BASE_URL: z.string().url().min(1).default('http://localhost:3000'),
     // ─── Login flow Keycloak Authorization Code + PKCE (Story 1.4a) ─────
-    // HMAC secret signing the state JWT carried through Keycloak callback +
-    // pkce-state cookie. Generate per env via `openssl rand -base64 32`.
-    // NEVER committed; stored in droplet secrets in prod. ≥ 32 chars enforced.
+    // HMAC secret signing the state JWT carried through Keycloak callback.
+    // Generate per env via `openssl rand -base64 32`. NEVER committed; stored
+    // in droplet secrets in prod. ≥ 32 chars enforced.
     STATE_JWT_HMAC_SECRET: z.string().min(32),
+    // Separate HMAC secret for the pkce-state cookie (JWE A256GCM) — distinct
+    // from STATE_JWT_HMAC_SECRET to limit blast-radius if either secret leaks.
+    // Generate independently: `openssl rand -base64 32`. NEVER committed.
+    PKCE_COOKIE_HMAC_SECRET: z.string().min(32),
     // Frontend zone base URLs for the post-login redirect resolver. Each must
     // resolve to a `*.tukio.one` host in production (or localhost in dev).
     ZONE_BASE_URL_PUBLIC: z
@@ -93,6 +97,7 @@ export type Env = z.infer<typeof EnvSchema>;
 
 const DEV_INTERNAL_SECRET = 'dev-internal-svc-secret-32-bytes!!';
 const DEV_STATE_JWT_SECRET = 'dev-state-jwt-secret-32-bytes-minimum!';
+const DEV_PKCE_COOKIE_SECRET = 'dev-pkce-cookie-secret-32-bytes-ok!!';
 
 export const validateEnv = (raw: Record<string, unknown>): Env => {
   const isNonProd = raw['NODE_ENV'] !== 'production';
@@ -103,9 +108,10 @@ export const validateEnv = (raw: Record<string, unknown>): Env => {
     withDefaults['TUKIO_INTERNAL_SERVICE_SECRET'] = DEV_INTERNAL_SECRET;
   }
   if (!withDefaults['STATE_JWT_HMAC_SECRET'] && isNonProd) {
-    // Mirror the internal-secret dev fallback pattern — boot succeeds in dev
-    // without an explicit secret, but production refuses (see check below).
     withDefaults['STATE_JWT_HMAC_SECRET'] = DEV_STATE_JWT_SECRET;
+  }
+  if (!withDefaults['PKCE_COOKIE_HMAC_SECRET'] && isNonProd) {
+    withDefaults['PKCE_COOKIE_HMAC_SECRET'] = DEV_PKCE_COOKIE_SECRET;
   }
 
   const parsed = EnvSchema.safeParse(withDefaults);
@@ -132,6 +138,31 @@ export const validateEnv = (raw: Record<string, unknown>): Env => {
         'Refusing to start in production with dev fallback for STATE_JWT_HMAC_SECRET. ' +
           'Set explicit value via secret store before deploy.',
       );
+    }
+    if (parsed.data.PKCE_COOKIE_HMAC_SECRET === DEV_PKCE_COOKIE_SECRET) {
+      throw new Error(
+        'Refusing to start in production with dev fallback for PKCE_COOKIE_HMAC_SECRET. ' +
+          'Set explicit value via secret store before deploy.',
+      );
+    }
+    // P6: zone base URLs must point to *.tukio.one (or tukio.one apex) in prod
+    for (const key of [
+      'ZONE_BASE_URL_PUBLIC',
+      'ZONE_BASE_URL_SELLER',
+      'ZONE_BASE_URL_ADMIN',
+    ] as const) {
+      const raw = parsed.data[key];
+      let hostname: string;
+      try {
+        hostname = new URL(raw).hostname.toLowerCase();
+      } catch {
+        throw new Error(`Invalid URL for ${key}: ${raw}`);
+      }
+      if (hostname !== 'tukio.one' && !hostname.endsWith('.tukio.one')) {
+        throw new Error(
+          `${key} must resolve to tukio.one or a *.tukio.one subdomain in production. Got: ${raw}`,
+        );
+      }
     }
     if (parsed.data.TUKIO_DEV_INSECURE_COOKIES === '1') {
       throw new Error(

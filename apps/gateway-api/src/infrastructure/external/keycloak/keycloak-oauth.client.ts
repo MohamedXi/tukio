@@ -1,9 +1,11 @@
+import { Logger } from '@nestjs/common';
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import axiosRetry from 'axios-retry';
 import type { Locale } from '@tukio/contracts';
 import {
   KeycloakInvalidGrantError,
   KeycloakRefreshExpiredError,
+  KeycloakRefreshInvalidError,
   KeycloakRefreshReusedError,
   KeycloakUnreachableError,
 } from '../../../domain/exception/keycloak-oauth.exception.js';
@@ -75,21 +77,30 @@ interface KeycloakErrorResponse {
 
 export class KeycloakOAuthClient {
   private readonly http: AxiosInstance;
+  private readonly normalizedPublicBaseUrl: string;
+  // P14: use static logger (no DI injection needed for infra adapter logging)
+  private readonly logger = new Logger(KeycloakOAuthClient.name);
 
   constructor(private readonly config: KeycloakOAuthClientConfig) {
+    // P14: strip trailing slash to prevent double-slash redirect_uri
+    this.normalizedPublicBaseUrl = config.publicBaseUrl.replace(/\/+$/, '');
+
     this.http = axios.create({
       baseURL: this.realmBaseUrl(),
       timeout: TOKEN_TIMEOUT_MS,
       validateStatus: (status) => status >= 200 && status < 300,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
+    // P1: only retry on explicit 5xx responses — never on network errors.
+    // Authorization code exchange is non-idempotent: a code consumed by
+    // Keycloak before a TCP drop would return `invalid_grant` on retry,
+    // indistinguishable from a genuine code-reuse attack.
     axiosRetry(this.http, {
       retries: TOKEN_RETRY_COUNT,
       retryDelay: (retryCount) =>
         TOKEN_RETRY_BACKOFF_MS[retryCount - 1] ?? 9_000,
       retryCondition: (err) =>
-        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
-        (err.response?.status !== undefined && err.response.status >= 500),
+        err.response?.status !== undefined && err.response.status >= 500,
     });
   }
 
@@ -97,7 +108,7 @@ export class KeycloakOAuthClient {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: input.clientId,
-      redirect_uri: `${this.config.publicBaseUrl}/${input.locale}/auth/callback`,
+      redirect_uri: `${this.normalizedPublicBaseUrl}/${input.locale}/auth/callback`,
       code_challenge: input.challenge,
       code_challenge_method: 'S256',
       state: input.state,
@@ -111,7 +122,7 @@ export class KeycloakOAuthClient {
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       code: input.code,
-      redirect_uri: `${this.config.publicBaseUrl}/${input.locale}/auth/callback`,
+      redirect_uri: `${this.normalizedPublicBaseUrl}/${input.locale}/auth/callback`,
       client_id: input.clientId,
       code_verifier: input.verifier,
     });
@@ -151,14 +162,20 @@ export class KeycloakOAuthClient {
     try {
       await this.http.post('/protocol/openid-connect/logout', body.toString());
     } catch (err) {
-      // Logout is best-effort — only surface unreachable failures so the caller
-      // can still clear cookies. Keycloak returns 204 even for already-revoked
-      // sessions, so 4xx here is unusual but not fatal.
       if (
         axios.isAxiosError(err) &&
         err.response &&
         err.response.status < 500
       ) {
+        // P12: warn on 4xx — a 401 invalid_client here means client_id is wrong,
+        // not just an already-revoked token. Session may still be active in KC.
+        this.logger.warn(
+          {
+            status: err.response.status,
+            error: (err.response.data as KeycloakErrorResponse)?.error,
+          },
+          'Keycloak revokeSession returned 4xx — session may remain active',
+        );
         return;
       }
       throw mapTokenError(err, 'revoke');
@@ -235,15 +252,13 @@ function mapTokenError(
     );
   }
 
+  // P7: malformed / unparseable refresh token → AUTH-REFRESH-INVALID-001
+  if (status === 400 && code === 'invalid_token' && operation === 'refresh') {
+    return new KeycloakRefreshInvalidError(detail);
+  }
+
   if (status === 400 && code === 'invalid_grant') {
     if (operation === 'refresh') {
-      // Keycloak's `refresh_token_max_reuse=0` (default) marks the whole token
-      // family invalid when a refresh token is presented twice; the response is
-      // still `invalid_grant`. We split on `error_description` heuristics:
-      // "Session not active" / "stale" indicates a reuse / family invalidation,
-      // anything else is treated as a normal expiration. Conservative: default
-      // to expired (less alarming UX) and only escalate when KC explicitly
-      // signals stale.
       const description = detail.toLowerCase();
       if (description.includes('stale') || description.includes('not active')) {
         return new KeycloakRefreshReusedError(detail);
