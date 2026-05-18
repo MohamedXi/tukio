@@ -143,7 +143,11 @@ describe('buildClearCookies', () => {
 describe('buildPkceStateCookie + readPkceStateCookie — DN2 (JWE A256GCM)', () => {
   it('produces a HttpOnly+SameSite=Lax cookie with Max-Age=600', async () => {
     const cookie = await buildPkceStateCookie(
-      { verifier: 'verifier-abc', originalState: 'state-xyz' },
+      {
+        verifier: 'verifier-abc',
+        originalState: 'state-xyz',
+        clientId: 'tukio-web',
+      },
       SECRET,
       PROD,
     );
@@ -157,7 +161,7 @@ describe('buildPkceStateCookie + readPkceStateCookie — DN2 (JWE A256GCM)', () 
 
   it('JWE token has 5 dot-separated parts (compact serialization) — DN2', async () => {
     const cookie = await buildPkceStateCookie(
-      { verifier: 'v', originalState: 's' },
+      { verifier: 'v', originalState: 's', clientId: 'tukio-web' },
       SECRET,
       PROD,
     );
@@ -167,7 +171,11 @@ describe('buildPkceStateCookie + readPkceStateCookie — DN2 (JWE A256GCM)', () 
 
   it('JWE is opaque — verifier not readable in plaintext — DN2', async () => {
     const cookie = await buildPkceStateCookie(
-      { verifier: 'my-sensitive-verifier', originalState: 's' },
+      {
+        verifier: 'my-sensitive-verifier',
+        originalState: 's',
+        clientId: 'tukio-web',
+      },
       SECRET,
       PROD,
     );
@@ -177,19 +185,23 @@ describe('buildPkceStateCookie + readPkceStateCookie — DN2 (JWE A256GCM)', () 
 
   it('roundtrips verifier + originalState through JWE encrypt/decrypt', async () => {
     const cookie = await buildPkceStateCookie(
-      { verifier: 'v1', originalState: 'state-1' },
+      { verifier: 'v1', originalState: 'state-1', clientId: 'tukio-web' },
       SECRET,
       PROD,
     );
     const value = cookie.split(';')[0]!.split('=').slice(1).join('=');
     const decoded = await readPkceStateCookie(value, SECRET);
-    expect(decoded).toEqual({ verifier: 'v1', originalState: 'state-1' });
+    expect(decoded).toEqual({
+      verifier: 'v1',
+      originalState: 'state-1',
+      clientId: 'tukio-web',
+    });
   });
 
   it('rejects encode with too-short secret (PKCE_COOKIE_HMAC_SECRET < 32)', async () => {
     await expect(
       buildPkceStateCookie(
-        { verifier: 'v', originalState: 's' },
+        { verifier: 'v', originalState: 's', clientId: 'tukio-web' },
         'short',
         PROD,
       ),
@@ -198,7 +210,7 @@ describe('buildPkceStateCookie + readPkceStateCookie — DN2 (JWE A256GCM)', () 
 
   it('rejects read with tampered ciphertext (auth tag mismatch)', async () => {
     const cookie = await buildPkceStateCookie(
-      { verifier: 'v', originalState: 's' },
+      { verifier: 'v', originalState: 's', clientId: 'tukio-web' },
       SECRET,
       PROD,
     );
@@ -208,7 +220,11 @@ describe('buildPkceStateCookie + readPkceStateCookie — DN2 (JWE A256GCM)', () 
       .slice(1)
       .join('=')
       .split('.');
-    parts[4] = parts[4]!.replace(/.$/, (c) => (c === 'A' ? 'B' : 'A'));
+    // Replace the entire auth tag with a fixed garbage string — single-char
+    // replacement can occasionally survive GCM auth-tag verification in some
+    // environments (tag bit pattern survives a 1-char base64url swap). Full
+    // replacement is guaranteed to fail.
+    parts[4] = 'AAAAAAAAAAAAAAAAAAAAAA';
     const tampered = parts.join('.');
     await expect(readPkceStateCookie(tampered, SECRET)).rejects.toBeInstanceOf(
       AuthInvalidStateException,

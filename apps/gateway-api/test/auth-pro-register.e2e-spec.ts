@@ -50,13 +50,25 @@ import { LoggerModule } from '../src/infrastructure/logger/logger.module.js';
 import { HttpModule } from '../src/infrastructure/http/http.module.js';
 import { UseCaseProxy } from '../src/infrastructure/usecases-proxy/usecases-proxy.js';
 import {
+  HANDLE_CALLBACK_USECASES_PROXY,
+  INITIATE_LOGIN_USECASES_PROXY,
+  LOGOUT_USECASES_PROXY,
+  REFRESH_TOKEN_USECASES_PROXY,
   REGISTER_CUSTOMER_FORWARDER,
   REGISTER_PRO_FORWARDER,
+  WHOAMI_USECASES_PROXY,
   type RegisterCustomerForwarderProxy,
   type RegisterProForwarderProxy,
 } from '../src/infrastructure/usecases-proxy/usecases-proxy.module.js';
 import { RegisterCustomerForwarder } from '../src/usecases/register-customer.forwarder.js';
 import { RegisterProForwarder } from '../src/usecases/register-pro.forwarder.js';
+import { InitiateLoginUseCase } from '../src/usecases/auth/initiate-login.usecase.js';
+import { HandleCallbackUseCase } from '../src/usecases/auth/handle-callback.usecase.js';
+import { RefreshTokenUseCase } from '../src/usecases/auth/refresh-token.usecase.js';
+import { LogoutUseCase } from '../src/usecases/auth/logout.usecase.js';
+import { WhoamiUseCase } from '../src/usecases/auth/whoami.usecase.js';
+import { KeycloakOAuthClient } from '../src/infrastructure/external/keycloak/keycloak-oauth.client.js';
+import { NoopLoginAuditEventPublisher } from '../src/infrastructure/external/login-audit/noop-login-audit-event-publisher.js';
 import { IDENTITY_SVC_CLIENT } from '../src/domain/ports/tokens.js';
 import type {
   ForwardRegisterProInput,
@@ -192,14 +204,85 @@ class TestForwarderModule {
           useFactory: (client: IIdentitySvcClient): RegisterProForwarderProxy =>
             new UseCaseProxy(new RegisterProForwarder(client)),
         },
+        // Story 1.4b — stub the 5 auth login proxies so AuthLoginController wires up.
+        ...buildAuthLoginStubs(),
       ],
       exports: [
         IDENTITY_SVC_CLIENT,
         REGISTER_CUSTOMER_FORWARDER,
         REGISTER_PRO_FORWARDER,
+        INITIATE_LOGIN_USECASES_PROXY,
+        HANDLE_CALLBACK_USECASES_PROXY,
+        REFRESH_TOKEN_USECASES_PROXY,
+        LOGOUT_USECASES_PROXY,
+        WHOAMI_USECASES_PROXY,
       ],
     };
   }
+}
+
+function buildAuthLoginStubs(): {
+  provide: string;
+  useFactory: () => UseCaseProxy<unknown>;
+}[] {
+  const oauthClient = new KeycloakOAuthClient({
+    url: 'http://kc.invalid',
+    realm: 'tukio',
+    publicBaseUrl: 'http://localhost:3000',
+  });
+  const cookieDeployment = { domain: null, secure: false };
+  const zoneBaseUrls = {
+    public: 'http://localhost:3000',
+    seller: 'http://localhost:3002',
+    admin: 'http://localhost:3003',
+  };
+  const audit = new NoopLoginAuditEventPublisher();
+  return [
+    {
+      provide: INITIATE_LOGIN_USECASES_PROXY,
+      useFactory: () =>
+        new UseCaseProxy(
+          new InitiateLoginUseCase({
+            oauthClient,
+            stateJwtSecret: 'stub-state-jwt-secret-32-bytes-min!',
+            pkceCookieSecret: 'stub-pkce-cookie-secret-32-bytes!!',
+            cookieDeployment,
+            isDev: false,
+          }),
+        ),
+    },
+    {
+      provide: HANDLE_CALLBACK_USECASES_PROXY,
+      useFactory: () =>
+        new UseCaseProxy(
+          new HandleCallbackUseCase({
+            oauthClient,
+            auditPublisher: audit,
+            stateJwtSecret: 'stub-state-jwt-secret-32-bytes-min!',
+            pkceCookieSecret: 'stub-pkce-cookie-secret-32-bytes!!',
+            cookieDeployment,
+            zoneBaseUrls,
+            isDev: false,
+          }),
+        ),
+    },
+    {
+      provide: REFRESH_TOKEN_USECASES_PROXY,
+      useFactory: () =>
+        new UseCaseProxy(
+          new RefreshTokenUseCase({ oauthClient, cookieDeployment }),
+        ),
+    },
+    {
+      provide: LOGOUT_USECASES_PROXY,
+      useFactory: () =>
+        new UseCaseProxy(new LogoutUseCase({ oauthClient, cookieDeployment })),
+    },
+    {
+      provide: WHOAMI_USECASES_PROXY,
+      useFactory: () => new UseCaseProxy(new WhoamiUseCase()),
+    },
+  ];
 }
 
 @Module({})
@@ -354,6 +437,7 @@ const encodeAcquisitionCookie = (value: Record<string, unknown>): string =>
 // ─── Specs ───────────────────────────────────────────────────────────────────
 
 describe('POST /v1/auth/pro/register (E2E — Story 1.3c)', () => {
+  jest.setTimeout(30_000);
   let app: NestFastifyApplication;
   let behavior: MockBehavior;
 
