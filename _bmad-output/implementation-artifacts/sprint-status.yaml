@@ -131,7 +131,7 @@ development_status:
   # - split en 4 sub-stories 1.4a/b/c/d (scope ~85 fichiers / 5-8j)
   1-4-login-flow-keycloak-authorization-code-pkce: split-umbrella  # voir 1.4a-d ci-dessous
   1-4a-contracts-utils-keycloak-oauth-client: done
-  1-4b-gateway-api-endpoints-usecases-csrf-e2e: review
+  1-4b-gateway-api-endpoints-usecases-csrf-e2e: done
   1-4c-frontend-login-callback-authprovider-logout: ready-for-dev
   1-4d-middlewares-auth-client-hooks-observability: ready-for-dev
   1-5-password-reset-flow: ready-for-dev

@@ -101,13 +101,17 @@ function buildHarness(opts: {
   };
 }
 
-async function buildValidPkceFor(state: string): Promise<string> {
+async function buildValidPkceFor(
+  state: string,
+  clientId = 'tukio-web',
+): Promise<string> {
   // strip the cookie-attribute formatting to keep only the value (between
   // `tukio-pkce-state=` and the first `;`).
   const raw = await buildPkceStateCookie(
     {
       verifier: 'verifier-32-bytes-aaaaaaaaaaaaaaaaaaaa',
       originalState: state,
+      clientId,
     },
     PKCE_SECRET,
     deployment,
@@ -142,7 +146,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
       state,
       locale: 'fr',
       pkceCookie: pkce,
-      clientId: 'tukio-web',
+
       ipHash: 'a'.repeat(64),
       userAgentHash: 'b'.repeat(64),
     });
@@ -173,7 +177,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
       state,
       locale: 'fr',
       pkceCookie: pkce,
-      clientId: 'tukio-web',
+
       ipHash: 'a'.repeat(64),
       userAgentHash: 'b'.repeat(64),
     });
@@ -203,7 +207,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
       state,
       locale: 'fr',
       pkceCookie: pkce,
-      clientId: 'tukio-web',
+
       ipHash: 'a'.repeat(64),
       userAgentHash: 'b'.repeat(64),
     });
@@ -233,7 +237,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
       state,
       locale: 'fr',
       pkceCookie: pkce,
-      clientId: 'tukio-web',
+
       ipHash: 'a'.repeat(64),
       userAgentHash: 'b'.repeat(64),
     });
@@ -263,29 +267,28 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
       state,
       locale: 'fr',
       pkceCookie: pkce,
-      clientId: 'tukio-admin',
+
       ipHash: 'a'.repeat(64),
       userAgentHash: 'b'.repeat(64),
     });
     expect(out.redirectUrl).toBe('https://admin.tukio.one/fr/admin/dashboard');
   });
 
-  it('honors whitelisted next override', async () => {
+  it('honors whitelisted next override (tukio.one apex)', async () => {
+    // P8 review patch: customer.tukio.one is retired (ADR-016); use apex tukio.one.
     const harness = buildHarness({});
-    const state = await buildValidState(
-      'https://customer.tukio.one/account/messages',
-    );
+    const state = await buildValidState('https://tukio.one/account/messages');
     const pkce = await buildValidPkceFor(state);
     const out = await harness.useCase.execute({
       code: 'auth-code',
       state,
       locale: 'fr',
       pkceCookie: pkce,
-      clientId: 'tukio-web',
+
       ipHash: 'a'.repeat(64),
       userAgentHash: 'b'.repeat(64),
     });
-    expect(out.redirectUrl).toBe('https://customer.tukio.one/account/messages');
+    expect(out.redirectUrl).toBe('https://tukio.one/account/messages');
   });
 
   it('throws AuthInvalidStateException when pkce cookie absent', async () => {
@@ -297,7 +300,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
         state,
         locale: 'fr',
         pkceCookie: undefined,
-        clientId: 'tukio-web',
+
         ipHash: 'a'.repeat(64),
         userAgentHash: 'b'.repeat(64),
       }),
@@ -313,7 +316,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
         state,
         locale: 'fr',
         pkceCookie: 'totally-not-a-jwe',
-        clientId: 'tukio-web',
+
         ipHash: 'a'.repeat(64),
         userAgentHash: 'b'.repeat(64),
       }),
@@ -331,7 +334,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
         state: stateB,
         locale: 'fr',
         pkceCookie: pkce,
-        clientId: 'tukio-web',
+
         ipHash: 'a'.repeat(64),
         userAgentHash: 'b'.repeat(64),
       }),
@@ -348,7 +351,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
         state: goodState,
         locale: 'fr',
         pkceCookie: pkce,
-        clientId: 'tukio-web',
+
         ipHash: 'a'.repeat(64),
         userAgentHash: 'b'.repeat(64),
       }),
@@ -370,7 +373,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
         state,
         locale: 'fr',
         pkceCookie: pkce,
-        clientId: 'tukio-web',
+
         ipHash: 'a'.repeat(64),
         userAgentHash: 'b'.repeat(64),
       }),
@@ -390,7 +393,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
         state,
         locale: 'fr',
         pkceCookie: pkce,
-        clientId: 'tukio-web',
+
         ipHash: 'a'.repeat(64),
         userAgentHash: 'b'.repeat(64),
       }),
@@ -406,7 +409,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
       state,
       locale: 'fr',
       pkceCookie: pkce,
-      clientId: 'tukio-web',
+
       ipHash: 'a'.repeat(64),
       userAgentHash: 'b'.repeat(64),
     });
@@ -432,7 +435,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
         state,
         locale: 'fr',
         pkceCookie: pkce,
-        clientId: 'tukio-web',
+
         ipHash: 'a'.repeat(64),
         userAgentHash: 'b'.repeat(64),
       }),
@@ -449,7 +452,7 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
       state,
       locale: 'fr',
       pkceCookie: pkce,
-      clientId: 'tukio-web',
+
       ipHash: 'a'.repeat(64),
       userAgentHash: 'b'.repeat(64),
     });
@@ -477,10 +480,64 @@ describe('HandleCallbackUseCase (Story 1.4b AC2)', () => {
       state,
       locale: 'fr',
       pkceCookie: pkce,
-      clientId: 'tukio-web',
+
       ipHash: 'a'.repeat(64),
       userAgentHash: 'b'.repeat(64),
     });
     expect(out.redirectUrl).toContain('error=account_suspended');
+  });
+
+  // P5 review patch: expired-state error path was unspecified in original suite.
+  it('throws AuthInvalidStateException when state JWT is expired (P5)', async () => {
+    const harness = buildHarness({});
+    // clockTolerance is 60s — the JWT must be expired by > 60s to be rejected.
+    // Set exp = now - 120s (2 min in the past) so no waiting is needed.
+    const key = new TextEncoder().encode(STATE_SECRET);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const expiredState = await new (await import('jose')).SignJWT({
+      next: null,
+      requestId: '00000000-0000-0000-0000-000000000099',
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt(nowSec - 130)
+      .setIssuer('tukio-gateway')
+      .setAudience('tukio-auth-callback')
+      .setExpirationTime(nowSec - 120)
+      .sign(key);
+    const pkce = await buildValidPkceFor(expiredState);
+    await expect(
+      harness.useCase.execute({
+        code: 'auth-code',
+        state: expiredState,
+        locale: 'fr',
+        pkceCookie: pkce,
+        ipHash: 'a'.repeat(64),
+        userAgentHash: 'b'.repeat(64),
+      }),
+    ).rejects.toBeInstanceOf(AuthInvalidStateException);
+  });
+
+  // P6 review patch: reuse detection during initial exchange is AC2 error path 6.
+  it('propagates KeycloakRefreshReusedError during initial code exchange (P6)', async () => {
+    const { KeycloakRefreshReusedError } =
+      await import('../../domain/exception/keycloak-oauth.exception.js');
+    const harness = buildHarness({
+      exchangeImpl: () =>
+        Promise.reject(
+          new KeycloakRefreshReusedError('Token already redeemed'),
+        ),
+    });
+    const state = await buildValidState();
+    const pkce = await buildValidPkceFor(state);
+    await expect(
+      harness.useCase.execute({
+        code: 'auth-code',
+        state,
+        locale: 'fr',
+        pkceCookie: pkce,
+        ipHash: 'a'.repeat(64),
+        userAgentHash: 'b'.repeat(64),
+      }),
+    ).rejects.toBeInstanceOf(KeycloakRefreshReusedError);
   });
 });

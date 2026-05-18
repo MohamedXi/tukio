@@ -8,8 +8,9 @@
  * Cases here:
  *   1. Missing `code` query → 302 to /<locale>/auth/login?error=invalid_request
  *   2. Missing `state` query → 302 to /<locale>/auth/login?error=invalid_request
- *   3. Missing pkce-state cookie → 500 (the use case throws AuthInvalidStateException,
- *      mapped by EnvelopeExceptionFilter to httpStatus 400 — confirmed below).
+ *   3. Missing pkce-state cookie → 400 INVALID_STATE (P9 patch: comment fixed)
+ *   4. locale=en propagated to error redirect
+ *   5. P3: Keycloak ?error=access_denied (user cancels) → redirect + clear pkce cookie
  */
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { buildTestApp, TEST_PUBLIC_BASE } from './build-test-app.js';
@@ -46,6 +47,7 @@ describe('GET /v1/auth/callback (E2E — Story 1.4b AC10)', () => {
   });
 
   it('case 3 — missing pkce cookie → 400 INVALID_STATE envelope', async () => {
+    // P9 patch: comment now says 400 directly (old wording said "500 … confirmed below").
     const res = await app.inject({
       method: 'GET',
       url: '/v1/auth/callback?code=x&state=y',
@@ -62,5 +64,20 @@ describe('GET /v1/auth/callback (E2E — Story 1.4b AC10)', () => {
     });
     expect(res.statusCode).toBe(302);
     expect(res.headers['location']).toContain('/en/auth/login');
+  });
+
+  it('case 5 — P3: Keycloak ?error=access_denied (user cancels) → redirect with that error', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/v1/auth/callback?error=access_denied',
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers['location']).toContain('error=access_denied');
+    // pkce-state clear cookie should be emitted (Max-Age=0)
+    const setCookie = res.headers['set-cookie'];
+    const cookies = Array.isArray(setCookie)
+      ? setCookie.join('\n')
+      : String(setCookie ?? '');
+    expect(cookies).toMatch(/tukio-pkce-state=.*Max-Age=0/);
   });
 });

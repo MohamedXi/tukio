@@ -1,5 +1,13 @@
 # Deferred Work
 
+## Deferred from: code review of 1-4b-gateway-api-endpoints-usecases-csrf-e2e (2026-05-18, round 2)
+
+- **D9** — `auth-customer-register.e2e-spec.ts:2509` + `auth-pro-register.e2e-spec.ts:2635` bumped `jest.setTimeout(30_000)` (6× the 5s default) to mask slow module-wiring boot. Either 6s real boot (alarming) or hedge against flake. Root cause investigation deferred to ops sprint.
+- **D10** — Keycloak refresh-reuse detection relies on fragile error-description string match (`'Token is not active'` / `'stale'`). Keycloak version-upgrade can change the description and silently break reuse detection. Add a Story 0.9 contract test asserting Keycloak 25 emits the expected string.
+- **D11** — `csrf.guard.ts` references `req.cookies` which depends on `fastifyCookie` plugin being registered on the production boot path. Diff doesn't show `main.ts`; verify `fastifyCookie` is wired in production `bootstrap()` (the `@Cookies(PKCE_COOKIE) pkceCookie: string | undefined` decorator resolution would throw without it).
+- **D12** — No fuzz test for refresh token with newline / null-byte / extremely long string passed via cookie. `KeycloakOAuthClient.refreshTokens` posts as form data ; a null-byte could break form encoding. Property-based testing not in MVP scope.
+- **D13** — Throttler state is in-process and shared across e2e cases inside the same suite ; cases are coupled by ordering. Currently safe because each suite stays under the per-route limit, but adding a 6th login case would silently fail. Refactor into `beforeEach` Throttler reset would help.
+
 ## Deferred from: code review of 1-4a-contracts-utils-keycloak-oauth-client (2026-05-18)
 
 - **D1** — `requestId` dans le state JWT n'est jamais validé contre un nonce store Redis. Sans stockage des IDs utilisés, un token intercepté peut être rejoué pendant les 10 min de TTL. Scope prévu : Story 1.4b (Redis nonce store, même instance que ThrottlerModule). [state-jwt.ts]
@@ -260,3 +268,14 @@
 - **D1 (1.4b) — Redis replay nonce store for `state.requestId`** — Detect state JWT replay attacks within the 10-min TTL window. Currently the state JWT signature + pkce-cookie binding (`originalState === state`) already mitigate the attack window. Move to Story 1.4d or post-MVP defense-in-depth pass.
 - **D4 (1.4b) — Real NATS `LoginAuditEventPublisher` adapter** — Replace `NoopLoginAuditEventPublisher` (logs to pino) with a NATS-backed adapter using `@tukio/messaging/nats/client`. Wire `NatsJetStreamModule` into `app.module.ts` with conditional boot (catch connection failures so gateway-api still boots if NATS is down). Spec marks the `identity.user.logged-in.v1` event as fire-and-forget audit telemetry → losing one on a NATS outage is acceptable. Defer to Story 1.4d (observability sprint already owns NATS metrics + Grafana panels).
 - **D-e2e (1.4b) — Keycloak-backed e2e cases** (callback happy path with real OAuth code exchange + refresh rotation + Keycloak DOWN scenarios) — Testcontainer fixture (`test/auth/keycloak-testcontainer.fixture.ts`) is ready but actual flows require minting authorization codes outside a browser. Unit suite covers logic exhaustively (16 cases for `HandleCallbackUseCase` alone). Defer to Story 1.4d which already owns chaos + observability coverage.
+
+## Deferred from: code review of 1-4b-gateway-api-endpoints-usecases-csrf-e2e (2026-05-18)
+
+- **D1-review (1.4b) — Unverified JWT for admin redirect routing** — `decodeJwt` (no signature check) in `HandleCallbackUseCase.extractJwtClaims` drives the post-login redirect decision including admin routing. Pre-existing architectural constraint: `KeycloakJwtGuard` verifies signature on all subsequent API calls; TLS + PKCE mitigates MITM at the callback. Move full token verification at callback to Story 1.4d if deemed necessary.
+- **D2-review (1.4b) — Parallel login overwrites pkce-state cookie** — Inherent limitation of single-cookie PKCE: two simultaneous login flows from the same browser overwrite each other's JWE cookie, causing a confusing `AUTH-INVALID-STATE-001` 400 error. Redis nonce store (already deferred as D1 from Story 1.4a) would fix. Acceptable for MVP single-device use pattern.
+- **D3-review (1.4b) — revokeSession axiosRetry could block under KC outage** — Latency concern: 3 retries × 9s = 27s worst-case blocking on `POST /v1/auth/logout`. Not a correctness bug. Add an explicit per-call timeout to `revokeSession` in Story 1.4d or infra ops.
+- **D4-review (1.4b) — ipHash spoofable via X-Forwarded-For** — `@Ip()` returns proxy IP if `trustProxy` is not enabled on the Fastify adapter. Infrastructure-level fix (set `trustProxy` when behind Caddy/Nginx). Not a correctness bug.
+- **D5-review (1.4b) — Refresh token cookie path `/v1/auth` fragile with proxy prefix** — If gateway-api is mounted behind a proxy with a path prefix (e.g. `/api`), the browser won't send the refresh-token cookie. Infrastructure concern; fix via Caddy/Nginx rewrite rules if needed.
+- **D6-review (1.4b) — ThrottlerModule.forFeature not used** — Spec called for `ThrottlerModule.forFeature` scopes; implementation uses per-route `@Throttle({ default: … })` overrides which achieve identical rate-limit values. Behaviour equivalent.
+- **D7-review (1.4b) — getCsrfTimingSafe() absent from EnvironmentConfigService** — AC8 spec called for this method but no code path uses it and the CsrfGuard always uses `timingSafeEqual`. Low-risk spec wording gap.
+- **D8-review (1.4b) — safeEqual length short-circuit leaks 1 bit** — CSRF guard returns `false` early when token lengths differ instead of comparing a dummy buffer. Fixed-length base64url tokens (always 43 chars for `randomBytes(32).toString('base64url')`) make this theoretical. Documented acceptable for MVP.

@@ -44,6 +44,8 @@ export interface SessionCookieInputs {
 export interface PkceStatePayload {
   verifier: string;
   originalState: string;
+  /** OAuth client_id used to initiate the flow — propagated so callback can exchange with the correct client. */
+  clientId: string;
 }
 
 interface AttributeSet {
@@ -197,6 +199,7 @@ export async function buildPkceStateCookie(
   const value = await new EncryptJWT({
     verifier: payload.verifier,
     originalState: payload.originalState,
+    clientId: payload.clientId,
   })
     .setProtectedHeader({ alg: PKCE_STATE_JWE_ALG, enc: PKCE_STATE_JWE_ENC })
     .setIssuer(PKCE_STATE_ISSUER)
@@ -253,9 +256,13 @@ export async function readPkceStateCookie(
       'pkce-state cookie missing originalState',
     );
   }
+  if (typeof claims['clientId'] !== 'string' || claims['clientId'] === '') {
+    throw new AuthInvalidStateException('pkce-state cookie missing clientId');
+  }
   return {
     verifier: claims['verifier'],
     originalState: claims['originalState'],
+    clientId: claims['clientId'],
   };
 }
 

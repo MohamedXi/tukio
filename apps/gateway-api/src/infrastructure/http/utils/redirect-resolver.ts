@@ -28,6 +28,9 @@ export interface DecodedJwtClaims {
 const ADMIN_ROLE_PREFIX = 'admin-';
 const ALLOWED_HOSTNAME_SUFFIX = '.tukio.one';
 const ALLOWED_LOCALHOST_HOSTNAMES = new Set(['localhost', '127.0.0.1']);
+// P8 review patch: ADR-016 (Story 0.14) merged apps/customer into apps/public (apex
+// tukio.one). Redirecting to customer.tukio.one would hit a dead host.
+const RETIRED_SUBDOMAINS = new Set(['customer.tukio.one']);
 
 function hasAdminRole(claims: DecodedJwtClaims): boolean {
   return claims.realmAccess.roles.some((r) => r.startsWith(ADMIN_ROLE_PREFIX));
@@ -102,8 +105,10 @@ export function sanitizeNextUrl(
     return isDev ? parsed.toString() : null;
   }
 
-  // Tukio.one domains — must use HTTPS (P2: http:// downgrade rejected)
+  // Tukio.one domains — must use HTTPS (P2: http:// downgrade rejected).
+  // Retired subdomains (ADR-016) are blocked even if they match *.tukio.one.
   if (hostname === 'tukio.one' || hostname.endsWith(ALLOWED_HOSTNAME_SUFFIX)) {
+    if (RETIRED_SUBDOMAINS.has(hostname)) return null;
     return parsed.protocol === 'https:' ? parsed.toString() : null;
   }
 

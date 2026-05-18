@@ -10,7 +10,7 @@ import { AuthInvalidStateException } from '../../domain/exception/auth-invalid-s
 import type { ILoginAuditEventPublisher } from '../../domain/ports/login-audit-event-publisher.port.js';
 import { decodeState } from '../../infrastructure/http/utils/state-jwt.js';
 import {
-  buildClearCookies,
+  COOKIE_NAMES,
   buildSessionCookies,
   readPkceStateCookie,
   type CookieDeployment,
@@ -35,7 +35,6 @@ export interface HandleCallbackInput {
   state: string;
   locale: Locale;
   pkceCookie: string | undefined;
-  clientId: string;
   ipHash: string;
   userAgentHash: string;
 }
@@ -81,7 +80,7 @@ export class HandleCallbackUseCase {
       throw new AuthInvalidStateException('pkce-state cookie missing');
     }
 
-    const { verifier, originalState } = await readPkceStateCookie(
+    const { verifier, originalState, clientId } = await readPkceStateCookie(
       input.pkceCookie,
       this.deps.pkceCookieSecret,
     );
@@ -101,7 +100,7 @@ export class HandleCallbackUseCase {
       code: input.code,
       verifier,
       locale: input.locale,
-      clientId: input.clientId,
+      clientId,
     });
 
     const claims = extractJwtClaims(tokens.accessToken);
@@ -212,12 +211,9 @@ function extractJwtClaims(
 }
 
 function buildClearPkceStateCookie(deployment: CookieDeployment): string {
-  // Reuse buildClearCookies output then extract pkce — simpler: format inline.
-  // buildClearCookies returns access + refresh + session-active + csrf only;
-  // PKCE state cookie needs its own clear directive.
-  void buildClearCookies; // referenced so linter keeps import consistent
+  // P4 review patch: use COOKIE_NAMES.PKCE_STATE constant so a rename propagates here.
   const parts: string[] = [
-    'tukio-pkce-state=',
+    `${COOKIE_NAMES.PKCE_STATE}=`,
     'Path=/',
     'Max-Age=0',
     'SameSite=Lax',

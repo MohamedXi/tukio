@@ -66,18 +66,30 @@ describe('InitiateLoginUseCase (Story 1.4b AC1)', () => {
     );
   });
 
-  it('sanitizes whitelisted next (https://customer.tukio.one/foo)', async () => {
+  it('propagates whitelisted next (https://seller.tukio.one/foo)', async () => {
+    // P8: customer.tukio.one is retired (ADR-016); use an active *.tukio.one subdomain.
+    const { useCase } = buildUseCase();
+    const out = await useCase.execute({
+      next: 'https://seller.tukio.one/seller/dashboard',
+      clientId: 'tukio-web',
+      locale: 'fr',
+    });
+    expect(out.redirectUrl).toContain('state=');
+    expect(out.pkceCookie).toContain('tukio-pkce-state=');
+    expect(out.pkceCookie).toContain('HttpOnly');
+    expect(out.pkceCookie).toContain('SameSite=Lax');
+  });
+
+  it('sanitizes retired subdomain next (customer.tukio.one — ADR-016)', async () => {
     const { useCase } = buildUseCase();
     const out = await useCase.execute({
       next: 'https://customer.tukio.one/account/dashboard',
       clientId: 'tukio-web',
       locale: 'fr',
     });
+    // sanitizeNextUrl returns null for retired subdomains — state carries null next
     expect(out.redirectUrl).toContain('state=');
-    // PKCE cookie should be present
     expect(out.pkceCookie).toContain('tukio-pkce-state=');
-    expect(out.pkceCookie).toContain('HttpOnly');
-    expect(out.pkceCookie).toContain('SameSite=Lax');
   });
 
   it('drops non-whitelisted next (open redirect)', async () => {

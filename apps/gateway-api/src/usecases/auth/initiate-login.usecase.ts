@@ -55,7 +55,7 @@ export class InitiateLoginUseCase {
     );
 
     const pkceCookie = await buildPkceStateCookie(
-      { verifier, originalState: state },
+      { verifier, originalState: state, clientId: input.clientId },
       this.deps.pkceCookieSecret,
       this.deps.cookieDeployment,
     );

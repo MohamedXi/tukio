@@ -41,7 +41,11 @@ import {
   type WhoamiUseCaseProxy,
 } from '../../usecases-proxy/usecases-proxy.module.js';
 import { CsrfGuard } from '../guards/csrf.guard.js';
-import { COOKIE_NAMES } from '../utils/cookie-helpers.js';
+import {
+  COOKIE_NAMES,
+  buildClearCookies,
+  resolveCookieDeployment,
+} from '../utils/cookie-helpers.js';
 
 const ALLOWED_CLIENT_IDS = new Set(['tukio-web', 'tukio-admin']);
 const REFRESH_COOKIE = COOKIE_NAMES.REFRESH_TOKEN;
@@ -104,6 +108,7 @@ export class AuthLoginController {
   async callback(
     @Query('code') code: string | undefined,
     @Query('state') state: string | undefined,
+    @Query('error') oauthError: string | undefined,
     @Query('locale') localeRaw: string | undefined,
     @Cookies(PKCE_COOKIE) pkceCookie: string | undefined,
     @Ip() ip: string,
@@ -111,22 +116,30 @@ export class AuthLoginController {
     @Res({ passthrough: false }) reply: ReplyLike,
   ): Promise<void> {
     const locale: Locale = localeRaw === 'en' ? 'en' : 'fr';
+    const publicBase = this.config.getZoneBaseUrls().public;
+
+    // P3: Keycloak sends ?error= when user cancels or auth fails (RFC 6749 §4.1.2.1).
+    // Clear the stale pkce-state cookie so the next login attempt starts fresh.
     if (!code || !state) {
-      const fallback = `${this.config.getZoneBaseUrls().public}/${locale}/auth/login?error=invalid_request`;
+      const errorParam = oauthError ?? 'invalid_request';
+      const fallback = `${publicBase}/${locale}/auth/login?error=${encodeURIComponent(errorParam)}`;
+      reply.header('Set-Cookie', [this.buildClearPkce()]);
       reply.redirect(fallback, 302);
       return;
     }
-    const clientId = this.config.getKeycloakOAuthClients().web;
+
     const ipHash = sha256Hex(ip);
     const userAgentHash = sha256Hex(userAgent ?? '');
 
+    // P1: clientId is now carried in the pkce-state JWE — the use case reads it
+    // from the decrypted cookie so the admin flow (tukio-admin) uses the correct
+    // client_id for the Keycloak token exchange instead of hardcoding tukio-web.
     const { redirectUrl, sessionCookies, clearPkceCookie } =
       await this.callbackProxy.getInstance().execute({
         code,
         state,
         locale,
         pkceCookie,
-        clientId,
         ipHash,
         userAgentHash,
       });
@@ -152,14 +165,21 @@ export class AuthLoginController {
       throw new AuthCsrfMismatchException('Refresh cookie missing');
     }
     const clientId = this.config.getKeycloakOAuthClients().web;
-    const { sessionCookies, expiresIn, refreshExpiresIn } =
-      await this.refreshProxy.getInstance().execute({
-        refreshToken,
-        csrfToken,
-        clientId,
-      });
-    reply.header('Set-Cookie', sessionCookies);
-    return { expiresIn, refreshExpiresIn };
+    try {
+      const { sessionCookies, expiresIn, refreshExpiresIn } =
+        await this.refreshProxy.getInstance().execute({
+          refreshToken,
+          csrfToken,
+          clientId,
+        });
+      reply.header('Set-Cookie', sessionCookies);
+      return { expiresIn, refreshExpiresIn };
+    } catch (err) {
+      // P2: always clear session cookies on token errors (expired/reused/unreachable)
+      // so the browser doesn't keep retrying with a permanently invalid refresh token.
+      reply.header('Set-Cookie', this.buildSessionClearCookies());
+      throw err;
+    }
   }
 
   @Public()
@@ -181,6 +201,43 @@ export class AuthLoginController {
   @Get('whoami')
   whoami(@CurrentActor() actor: BackendActor): WhoamiResponseDto {
     return this.whoamiProxy.getInstance().execute({ actor });
+  }
+
+  /** P2: derive deployment then return `buildClearCookies` headers. */
+  private buildSessionClearCookies(): string[] {
+    const nodeEnv = this.config.getNodeEnv();
+    const domain = nodeEnv === 'production' ? '.tukio.one' : null;
+    const deployment = resolveCookieDeployment({
+      nodeEnv,
+      domain,
+      devInsecureFlag: this.config.isDevInsecureCookiesEnabled()
+        ? '1'
+        : undefined,
+    });
+    return buildClearCookies(deployment);
+  }
+
+  /** P3: derive deployment then return a clear directive for the pkce-state cookie. */
+  private buildClearPkce(): string {
+    const nodeEnv = this.config.getNodeEnv();
+    const domain = nodeEnv === 'production' ? '.tukio.one' : null;
+    const deployment = resolveCookieDeployment({
+      nodeEnv,
+      domain,
+      devInsecureFlag: this.config.isDevInsecureCookiesEnabled()
+        ? '1'
+        : undefined,
+    });
+    const parts: string[] = [
+      `${COOKIE_NAMES.PKCE_STATE}=`,
+      'Path=/',
+      'Max-Age=0',
+      'SameSite=Lax',
+      'HttpOnly',
+    ];
+    if (deployment.secure) parts.push('Secure');
+    if (deployment.domain) parts.push(`Domain=${deployment.domain}`);
+    return parts.join('; ');
   }
 }
 
