@@ -102,6 +102,16 @@ jobs:
           ssh -i ~/.ssh/id_ed25519 tukio@"${DO_HOST_APPS}" bash -se <<EOF
             set -euo pipefail
             cd ~/tukio-apps
+            # Guard — fail loudly before any docker operation if required secret
+            # files are absent. `export VAR=$(cat ...)` masks cat exit codes
+            # under set -e (bash gotcha), so we check existence first.
+            for secret_file in state_jwt_hmac_secret pkce_cookie_hmac_secret; do
+              [ -f "/home/tukio/tukio/secrets/\${secret_file}" ] || {
+                echo "::error::Missing secret file: /home/tukio/tukio/secrets/\${secret_file}"
+                echo "Run: openssl rand -base64 32 | sudo tee /home/tukio/tukio/secrets/\${secret_file}"
+                exit 1
+              }
+            done
             # Persist the deployed tag to .env.staging (not .env.production).
             sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_TAG}|" .env.staging || \\
               echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.staging
@@ -115,8 +125,11 @@ jobs:
             export KEYCLOAK_CLIENT_SECRET_TUKIO_API=\$(cat /home/tukio/tukio/secrets/keycloak_client_secret_tukio_api)
             export PUBLIC_BASE_URL=\$(cat /home/tukio/tukio/secrets/public_base_url 2>/dev/null || echo "https://tukio.one")
             # Story 1.4a — Login flow PKCE secrets (required by gateway-api at boot).
-            export STATE_JWT_HMAC_SECRET=\$(cat /home/tukio/tukio/secrets/state_jwt_hmac_secret)
-            export PKCE_COOKIE_HMAC_SECRET=\$(cat /home/tukio/tukio/secrets/pkce_cookie_hmac_secret)
+            # Use two-step assign+export to propagate cat exit code under set -e.
+            STATE_JWT_HMAC_SECRET=\$(cat /home/tukio/tukio/secrets/state_jwt_hmac_secret)
+            export STATE_JWT_HMAC_SECRET
+            PKCE_COOKIE_HMAC_SECRET=\$(cat /home/tukio/tukio/secrets/pkce_cookie_hmac_secret)
+            export PKCE_COOKIE_HMAC_SECRET
             export IMAGE_TAG="${IMAGE_TAG}"
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
