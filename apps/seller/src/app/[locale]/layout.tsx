@@ -2,20 +2,8 @@ import type { Metadata } from 'next';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
-import { AuthProvider } from '@tukio/auth-client/provider';
 import './globals.css';
-
-function getKeycloakConfig() {
-  const url = process.env['NEXT_PUBLIC_KEYCLOAK_URL'];
-  if (!url && process.env.NODE_ENV === 'production') {
-    throw new Error('NEXT_PUBLIC_KEYCLOAK_URL is required in production builds.');
-  }
-  return {
-    url: url ?? 'http://localhost:9010',
-    realm: process.env['NEXT_PUBLIC_KEYCLOAK_REALM'] ?? 'tukio',
-    clientId: process.env['NEXT_PUBLIC_KEYCLOAK_CLIENT_ID'] ?? 'tukio-web',
-  };
-}
+// AuthProvider (Keycloak.js) removed — Story 1.4d provides the cookie-based provider.
 
 const fraunces = Fraunces({
   subsets: ['latin', 'latin-ext'],
@@ -61,9 +49,7 @@ export default async function RootLayout({
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>
-        <NextIntlClientProvider messages={messages}>
-          <AuthProvider config={getKeycloakConfig()}>{children}</AuthProvider>
-        </NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>
     </html>
   );
