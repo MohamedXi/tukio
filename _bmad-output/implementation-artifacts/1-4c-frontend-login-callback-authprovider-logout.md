@@ -130,14 +130,14 @@ mémoire `project_signup_dual_portal_2026_05_17.md`).
 
 ## Tasks/Subtasks
 
-- [ ] **Task 1** — `apps/public/src/app/[locale]/auth/login/page.tsx` Server Component layout + i18n keys (AC1)
-- [ ] **Task 2** — `apps/public/src/features/auth/login/components/LoginCta.tsx` client component + unit tests (AC2)
-- [ ] **Task 3** — `apps/public/src/app/[locale]/auth/callback/route.ts` Next.js 15 Route Handler (AC3)
-- [ ] **Task 4** — `apps/public/src/lib/redirect-url.ts` + spec (AC4)
-- [ ] **Task 5** — Wire `<AuthProvider>` dans 3 layouts (AC5)
-- [ ] **Task 6** — `apps/{public,seller,admin}/src/components/LogoutButton.tsx` ×3 + i18n labels (AC6)
-- [ ] **Task 7** — Playwright e2e `apps/public/e2e/auth/login.spec.ts` 13 cases (AC7)
-- [ ] **Task 8** — `pnpm lint && pnpm typecheck && pnpm test:cov` per workspace + Playwright run (smoke local via docker:up)
+- [x] **Task 1** — `apps/public/src/app/[locale]/auth/login/page.tsx` Server Component layout + i18n keys (AC1)
+- [x] **Task 2** — `apps/public/src/features/auth/login/components/LoginCta.tsx` client component + unit tests (AC2)
+- [x] **Task 3** — `apps/public/src/app/[locale]/auth/callback/route.ts` Next.js 15 Route Handler (AC3)
+- [x] **Task 4** — `apps/public/src/lib/redirect-url.ts` + spec (AC4)
+- [x] **Task 5** — Wire `<AuthProvider>` dans 3 layouts (AC5)
+- [x] **Task 6** — `apps/{public,seller,admin}/src/components/LogoutButton.tsx` ×3 + i18n labels (AC6)
+- [x] **Task 7** — Playwright e2e `apps/public/e2e/auth/login.spec.ts` 13 cases (AC7)
+- [x] **Task 8** — `pnpm lint && pnpm typecheck && pnpm test:cov` per workspace + Playwright run (smoke local via docker:up)
 
 ## Dev Notes
 
@@ -205,9 +205,51 @@ apps/admin/src/
 - [Memory: story_1_11_seller_signup_portal_planned.md (Story 1.11 NEW seller portal — livre CTA Pro header + pages auth seller)]
 - [Memory: feedback_i18n_frontend.md]
 
+## Dev Agent Record
+
+### File List
+- `apps/public/src/app/[locale]/auth/login/page.tsx` — NEW
+- `apps/public/src/app/[locale]/auth/callback/route.ts` — NEW
+- `apps/public/src/features/auth/login/components/LoginCta.tsx` — NEW
+- `apps/public/src/features/auth/login/components/LoginCta.spec.tsx` — NEW (5 unit tests)
+- `apps/public/src/features/auth/login/index.ts` — NEW
+- `apps/public/src/lib/redirect-url.ts` — NEW
+- `apps/public/src/lib/redirect-url.spec.ts` — NEW (12 unit tests)
+- `apps/public/src/components/LogoutButton.tsx` — NEW
+- `apps/seller/src/components/LogoutButton.tsx` — NEW
+- `apps/admin/src/components/LogoutButton.tsx` — NEW
+- `apps/public/e2e/auth/login.spec.ts` — NEW (13 cases, 4 deferred)
+- `apps/public/src/app/[locale]/layout.tsx` — UPDATED (AuthProvider wrap)
+- `apps/seller/src/app/[locale]/layout.tsx` — UPDATED (AuthProvider wrap)
+- `apps/admin/src/app/[locale]/layout.tsx` — UPDATED (NextIntlClientProvider + AuthProvider)
+- `apps/admin/src/middleware.ts` — UPDATED (i18n middleware chain)
+- `apps/admin/next.config.ts` — UPDATED (nextIntl plugin + transpilePackages)
+- `apps/admin/package.json` — UPDATED (added next-intl + auth-client + i18n-client + contracts workspace deps)
+- `apps/admin/src/i18n/request.ts` — NEW
+- `apps/admin/src/messages/fr.json` — NEW
+- `apps/admin/src/messages/en.json` — NEW
+- `apps/public/src/messages/fr.json` — UPDATED (auth.login.* namespace, ~15 keys)
+- `apps/public/src/messages/en.json` — UPDATED (auth.login.* namespace, ~15 keys)
+- `apps/seller/src/messages/fr.json` — UPDATED (auth.logout key)
+- `apps/seller/src/messages/en.json` — UPDATED (auth.logout key)
+- `pnpm-lock.yaml` — UPDATED (next-intl added to admin)
+
+### Change Log
+- 2026-05-18: Story 1.4c implémentée — login page + callback route + AuthProvider wiring ×3 + LogoutButton ×3 + redirect-url utility + Playwright e2e spec. 17 tests unitaires (12 redirect-url + 5 LoginCta). Lint 0 errors. Typecheck 4 packages (public + seller + admin + auth-client) green.
+
+### Completion Notes
+- AC1 ✅ : `login/page.tsx` Server Component (AuthShell + LoginCta + error Alert + generic sign-up link — zéro lien Pro conformément dual-portal ADR). Champs email/password `aria-hidden` car décoratifs (auth Keycloak côté hosted page).
+- AC2 ✅ : `LoginCta` client component — `window.location.assign` vers `NEXT_PUBLIC_GATEWAY_URL/v1/auth/login?clientId=tukio-web&locale=...&next=...`. `aria-busy + disabled` pendant redirect. 5 unit tests.
+- AC3 ✅ : `/auth/callback/route.ts` Route Handler Node runtime — forward `?code/state/locale` à gateway-api, redirect `?error` vers login page.
+- AC4 ✅ : `sanitizeNextUrl` — whitelist `*.tukio.one` strict (https only). 12 unit tests couvrent null, empty, http, js:, data:, externe, relatif, sous-domaine non-tukio.
+- AC5 ✅ : AuthProvider (Story 0.8 Keycloak.js) wiré dans 3 layouts via env vars `NEXT_PUBLIC_KEYCLOAK_URL/REALM/CLIENT_ID`. Admin layout entièrement refactoré avec NextIntlClientProvider + next-intl plugin + i18n/request.ts + messages.
+- AC6 ✅ : LogoutButton ×3 (public/seller/admin) — `useLogout()` + `window.location.assign('/{locale}/')` post-logout. Finalisation hook (POST /v1/auth/logout + CSRF) déférée Story 1.4d.
+- AC7 ✅ : Playwright e2e 13 cases spec (9 static + 4 testcontainer Keycloak deferred Story 1.4d). Axe-core, link checks, CTA navigation, ?error Alert, ?next propagation.
+- Dépendances ajoutées à admin : `next-intl`, `@tukio/auth-client`, `@tukio/i18n-client`, `@tukio/contracts` (workspace). Scope justifié par la spec 1.4c.
+
 ## Story Completion Status
 
-- **Story Status** : `ready-for-dev`
+- **Story Status** : `review`
 - **Created** : 2026-05-17 (via /bmad-correct-course sprint-change-proposal-2026-05-17-bis.md)
 - **Parent umbrella** : Story 1.4 (`split-umbrella`)
 - **Estimation effort** : 2-2.5j

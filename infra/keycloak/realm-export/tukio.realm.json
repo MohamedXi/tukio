@@ -18,10 +18,6 @@
     "cibaBackchannelTokenDeliveryMode": "poll",
     "cibaExpiresIn": "120",
     "cibaInterval": "5",
-    "clientOfflineSessionIdleTimeout": "0",
-    "clientOfflineSessionMaxLifespan": "0",
-    "clientSessionIdleTimeout": "0",
-    "clientSessionMaxLifespan": "0",
     "oauth2DeviceCodeLifespan": "600",
     "oauth2DevicePollingInterval": "5",
     "parRequestUriLifespan": "60",
@@ -35,8 +31,7 @@
     "strictTransportSecurity": "max-age=31536000; includeSubDomains",
     "xContentTypeOptions": "nosniff",
     "xFrameOptions": "SAMEORIGIN",
-    "xRobotsTag": "none",
-    "xXSSProtection": "1; mode=block"
+    "xRobotsTag": "none"
   },
   "bruteForceProtected": true,
   "bruteForceStrategy": "MULTIPLE",
@@ -55,9 +50,9 @@
   "defaultRole": {
     "clientRole": false,
     "composite": true,
-    "containerId": "2a3f56e4-68ee-4909-ade2-f076dff8b48b",
+    "containerId": "6ae57dcd-e6bb-42fb-ac50-e4ad6b95e18d",
     "description": "${role_default-roles}",
-    "id": "b0f1124f-26f2-4177-87e9-2b890723dad3",
+    "id": "f4f148b3-aec1-4258-9247-530eee7b810d",
     "name": "default-roles-tukio"
   },
   "defaultSignatureAlgorithm": "RS256",
@@ -143,11 +138,11 @@
   "webAuthnPolicyPasswordlessRequireResidentKey": "not specified",
   "webAuthnPolicyPasswordlessRpEntityName": "keycloak",
   "webAuthnPolicyPasswordlessRpId": "",
-  "webAuthnPolicyPasswordlessSignatureAlgorithms": ["ES256"],
+  "webAuthnPolicyPasswordlessSignatureAlgorithms": ["ES256", "RS256"],
   "webAuthnPolicyPasswordlessUserVerificationRequirement": "not specified",
   "webAuthnPolicyRequireResidentKey": "not specified",
   "webAuthnPolicyRpEntityName": "keycloak",
   "webAuthnPolicyRpId": "",
-  "webAuthnPolicySignatureAlgorithms": ["ES256"],
+  "webAuthnPolicySignatureAlgorithms": ["ES256", "RS256"],
   "webAuthnPolicyUserVerificationRequirement": "not specified"
 }

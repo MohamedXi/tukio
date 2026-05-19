@@ -1,7 +1,28 @@
 {
+  "header": {
+    "search": "Search for services…",
+    "categories": "Categories",
+    "becomePro": "Become a pro",
+    "help": "Help",
+    "login": "Log in",
+    "signup": "Sign up"
+  },
   "Home": {
-    "title": "Tukio Design System",
-    "subtitle": "Sprint 0 — atomic components live.",
+    "kicker": "Pays de la Loire · 142 verified pros",
+    "title": "Your events,",
+    "titleEmphasis": "booked",
+    "titleSuffix": "with the best local pros near you.",
+    "subtitle": "Find marquees, furniture, caterers — book online, pay securely. No calls, no endless quotes.",
+    "ctaSearch": "Search",
+    "ctaSignup": "Sign up for free",
+    "ctaLogin": "Already have an account? Log in",
+    "searchWhat": "What",
+    "searchWhere": "Where",
+    "searchWhen": "When",
+    "searchWhatPlaceholder": "Marquees & tents…",
+    "searchWherePlaceholder": "Nantes, 44",
+    "searchWhenPlaceholder": "Event date",
+    "trust": "Secure payment · Stripe",
     "becomePro": "Become a pro",
     "proSpace": "My pro space"
   },
@@ -74,6 +95,39 @@
       "editorial": {
         "kicker": "Pays de la Loire · 2026 pilot",
         "quote": "“Our first booking came in three days after sign-up. The customer was 12 km away.”",
+        "author": {
+          "name": "Léa Martineau",
+          "role": "Atelier Tente Loire — pro since March 2026"
+        }
+      }
+    },
+    "login": {
+      "kicker": "Sign in · customer",
+      "title": "Welcome back to Tukio",
+      "subtitle": "Access your bookings and favourite pros.",
+      "fields": {
+        "email": { "label": "Email" },
+        "password": { "label": "Password" }
+      },
+      "forgotPassword": "Forgot password?",
+      "cta": "Sign in",
+      "loading": "Signing in…",
+      "noAccount": "No account?",
+      "noAccountLink": "Sign up",
+      "retry": "Try again",
+      "logout": "Sign out",
+      "errors": {
+        "invalidCredentials": "Invalid email or password.",
+        "serviceUnavailable": "Service temporarily unavailable. Please try again shortly."
+      },
+      "footer": {
+        "terms": "Terms of service",
+        "privacy": "Privacy policy",
+        "copyright": "© tukio.one · 2026"
+      },
+      "editorial": {
+        "kicker": "Pays de la Loire · 2026 pilot",
+        "quote": "“Our first booking came in three days after sign-up. The customer was 12 km away.”",
         "author": {
           "name": "Léa Martineau",
           "role": "Atelier Tente Loire — pro since March 2026"

@@ -5,6 +5,9 @@ import { notFound } from 'next/navigation';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { LOCALES } from '@tukio/i18n-client/config';
 import './globals.css';
+// AuthProvider (Keycloak.js) intentionnellement retiré — Story 1.4d le remplace
+// par un provider cookie-based (tukio-session-active + /v1/auth/whoami).
+// Le Keycloak.js check-sso créait des AUTH_SESSION corrompues qui bloquaient le login.
 
 const fraunces = Fraunces({
   subsets: ['latin', 'latin-ext'],

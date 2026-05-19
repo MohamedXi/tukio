@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 import './globals.css';
+// AuthProvider (Keycloak.js) removed — Story 1.4d provides the cookie-based provider.
 
 const fraunces = Fraunces({
   subsets: ['latin', 'latin-ext'],
@@ -28,7 +31,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'Tukio — Admin',
-  description: 'Tukio admin console (Sprint 0 placeholder).',
+  description: 'Tukio admin console (Story 0.1 placeholder).',
 };
 
 export default async function RootLayout({
@@ -39,12 +42,15 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
+  const messages = await getMessages();
   return (
     <html
       lang={locale}
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+      </body>
     </html>
   );
 }

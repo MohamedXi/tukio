@@ -1,14 +1,18 @@
 import type { NextRequest } from 'next/server';
+import { createTukioI18nMiddleware } from '@tukio/i18n-client/middleware';
 import { acquisitionCookieMiddleware } from './middleware/acquisition-cookie';
 
-// Story 0.13 — acquisition cookie runs on admin requests (admin users can also be tracked).
-// Story 0.8 placeholder — replace with Keycloak auth middleware in Story Epic 1+:
-//   import { createKeycloakAuthMiddleware } from '@tukio/auth-client/middleware';
-//   export default createKeycloakAuthMiddleware({
-//     protectedPaths: ['/'],
-//     loginRedirectUri: 'https://auth.tukio.one/realms/tukio/protocol/openid-connect/auth',
-//   });
-export default function middleware(request: NextRequest) {
+const i18nMiddleware = createTukioI18nMiddleware();
+
+// Middleware chain:
+// 1. i18n middleware — locale routing/redirect (Story 1.4c).
+// 2. acquisitionCookieMiddleware — sets tukio-acquisition cookie (Story 0.13).
+export default async function middleware(request: NextRequest) {
+  const i18nResponse = await i18nMiddleware(
+    request as unknown as Parameters<typeof i18nMiddleware>[0],
+  );
+  if (i18nResponse) return i18nResponse;
+
   return acquisitionCookieMiddleware(request);
 }
 

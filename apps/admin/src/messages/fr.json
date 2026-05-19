@@ -1,0 +1,9 @@
+{
+  "auth": {
+    "logout": "Se déconnecter"
+  },
+  "admin": {
+    "title": "Console admin — Tukio",
+    "description": "Modération et gestion Tukio."
+  }
+}
