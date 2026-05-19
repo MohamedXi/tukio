@@ -99,6 +99,17 @@ services:
       # Compose DNS — resolves to the identity-svc container on the
       # tukio-apps bridge network (Story 1.2c BFF forwarder).
       IDENTITY_SVC_URL: http://identity-svc:4001
+      # Story 1.4a — Login flow PKCE secrets (required at boot in production).
+      # Generated via `openssl rand -base64 32`. Stored in droplet secrets dir;
+      # exported by deploy script before `docker compose up`.
+      STATE_JWT_HMAC_SECRET: ${STATE_JWT_HMAC_SECRET}
+      PKCE_COOKIE_HMAC_SECRET: ${PKCE_COOKIE_HMAC_SECRET}
+      # Post-login redirect targets (validated against *.tukio.one in prod).
+      ZONE_BASE_URL_PUBLIC: ${ZONE_BASE_URL_PUBLIC:-https://tukio.one}
+      ZONE_BASE_URL_SELLER: ${ZONE_BASE_URL_SELLER:-https://seller.tukio.one}
+      ZONE_BASE_URL_ADMIN: ${ZONE_BASE_URL_ADMIN:-https://admin.tukio.one}
+      KEYCLOAK_OAUTH_CLIENT_WEB_ID: ${KEYCLOAK_OAUTH_CLIENT_WEB_ID:-tukio-web}
+      KEYCLOAK_OAUTH_CLIENT_ADMIN_ID: ${KEYCLOAK_OAUTH_CLIENT_ADMIN_ID:-tukio-admin}
     secrets: *backend-secrets
     networks: [tukio-apps]
 
@@ -211,6 +222,9 @@ services:
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: https://api.tukio.one
+      # Story 1.4c — PublicHeader + callback route use this for server-side
+      # gateway calls (auth/callback) and client-side login redirect.
+      NEXT_PUBLIC_GATEWAY_URL: https://api.tukio.one
       NEXT_PUBLIC_KEYCLOAK_URL: https://auth.tukio.one
       NEXT_PUBLIC_KEYCLOAK_REALM: tukio
       PORT: '3000'
@@ -222,6 +236,7 @@ services:
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: https://api.tukio.one
+      NEXT_PUBLIC_GATEWAY_URL: https://api.tukio.one
       NEXT_PUBLIC_KEYCLOAK_URL: https://auth.tukio.one
       NEXT_PUBLIC_KEYCLOAK_REALM: tukio
       PORT: '3002'
