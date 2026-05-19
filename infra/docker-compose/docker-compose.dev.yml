@@ -50,9 +50,11 @@ services:
       - tukio_dev_network
 
   keycloak:
-    # Story 1.1: Phasetwo open-source bundle (Keycloak 26 + Orgs + Webhooks + Magic Links extensions)
-    # Verify bundled KC version: docker inspect quay.io/phasetwo/phasetwo-keycloak:latest | jq '.[].Config.Labels'
-    image: quay.io/phasetwo/phasetwo-keycloak:latest
+    # Story 1.4c fix: switched from Phasetwo to standard Keycloak 26.
+    # Phasetwo's keycloak-orgs SPI overrides the Cookie authenticator and blocks
+    # PKCE authorize requests with AuthenticationFlowException even for fresh requests.
+    # Standard Keycloak 26 fixes the login flow for Stories 1.4c/d.
+    image: quay.io/keycloak/keycloak:26.2
     container_name: tukio_keycloak
     command:
       - 'start-dev'

@@ -1,7 +1,28 @@
 {
+  "header": {
+    "search": "Rechercher des services…",
+    "categories": "Catégories",
+    "becomePro": "Devenir pro",
+    "help": "Aide",
+    "login": "Connexion",
+    "signup": "S'inscrire"
+  },
   "Home": {
-    "title": "Tukio Design System",
-    "subtitle": "Sprint 0 — composants atomiques actifs.",
+    "kicker": "Pays de la Loire · 142 pros vérifiés",
+    "title": "Vos événements,",
+    "titleEmphasis": "réservés",
+    "titleSuffix": "avec les meilleurs pros près de chez vous.",
+    "subtitle": "Trouvez tentes, mobilier, traiteur — réservez en ligne, payez en sécurité. Pas d'appels, pas de devis qui traînent.",
+    "ctaSearch": "Rechercher",
+    "ctaSignup": "S'inscrire gratuitement",
+    "ctaLogin": "Déjà un compte ? Connexion",
+    "searchWhat": "Quoi",
+    "searchWhere": "Où",
+    "searchWhen": "Quand",
+    "searchWhatPlaceholder": "Tentes & chapiteaux…",
+    "searchWherePlaceholder": "Nantes, 44",
+    "searchWhenPlaceholder": "Date de l'événement",
+    "trust": "Paiement sécurisé · Stripe",
     "becomePro": "Devenir pro",
     "proSpace": "Mon espace pro"
   },
@@ -93,6 +114,7 @@
       "loading": "Connexion…",
       "noAccount": "Pas de compte ?",
       "noAccountLink": "S'inscrire",
+      "retry": "Réessayer",
       "logout": "Se déconnecter",
       "errors": {
         "invalidCredentials": "Email ou mot de passe incorrect.",

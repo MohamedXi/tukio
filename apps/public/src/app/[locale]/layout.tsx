@@ -4,20 +4,10 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { LOCALES } from '@tukio/i18n-client/config';
-import { AuthProvider } from '@tukio/auth-client/provider';
 import './globals.css';
-
-function getKeycloakConfig() {
-  const url = process.env['NEXT_PUBLIC_KEYCLOAK_URL'];
-  if (!url && process.env.NODE_ENV === 'production') {
-    throw new Error('NEXT_PUBLIC_KEYCLOAK_URL is required in production builds.');
-  }
-  return {
-    url: url ?? 'http://localhost:9010',
-    realm: process.env['NEXT_PUBLIC_KEYCLOAK_REALM'] ?? 'tukio',
-    clientId: process.env['NEXT_PUBLIC_KEYCLOAK_CLIENT_ID'] ?? 'tukio-web',
-  };
-}
+// AuthProvider (Keycloak.js) intentionnellement retiré — Story 1.4d le remplace
+// par un provider cookie-based (tukio-session-active + /v1/auth/whoami).
+// Le Keycloak.js check-sso créait des AUTH_SESSION corrompues qui bloquaient le login.
 
 const fraunces = Fraunces({
   subsets: ['latin', 'latin-ext'],
@@ -69,7 +59,7 @@ export default async function RootLayout({
     >
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <AuthProvider config={getKeycloakConfig()}>{children}</AuthProvider>
+          {children}
         </NextIntlClientProvider>
       </body>
     </html>
