@@ -6,6 +6,9 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const nextConfig: NextConfig = {
   output: 'standalone',
   transpilePackages: ['@tukio/auth-client', '@tukio/contracts', '@tukio/i18n-client', '@tukio/ui'],
+  turbopack: {
+    root: '../../',
+  },
   webpack: (config) => {
     config.resolve = config.resolve ?? {};
     config.resolve.extensionAlias = {

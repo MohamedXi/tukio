@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Logo } from '@tukio/ui/logo';
@@ -19,12 +19,11 @@ function readCookie(name: string): string | undefined {
 export function PublicHeader({ transparent = false }: PublicHeaderProps) {
   const locale = useLocale();
   const t = useTranslations('header');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Lazy initializer runs only on the client (component is 'use client').
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => readCookie('tukio-session-active') === '1',
+  );
   const [loggingOut, setLoggingOut] = useState(false);
-
-  useEffect(() => {
-    setIsAuthenticated(readCookie('tukio-session-active') === '1');
-  }, []);
 
   function handleLogin() {
     const gatewayUrl = process.env['NEXT_PUBLIC_GATEWAY_URL'] ?? 'http://localhost:4000';
