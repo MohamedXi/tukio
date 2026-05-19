@@ -11,6 +11,15 @@
 #   auth.tukio.one   → keycloak (cross-droplet via VPC)
 # Legacy `app.tukio.one` 301-redirects to the apex for ~6 months; legacy
 # `customer.tukio.one` is dropped (post-merge).
+#
+# Staging access control — Caddy basic_auth + IP whitelist.
+# Whitelisted IPs bypass auth entirely; all other clients must present
+# valid credentials before Caddy proxies the request upstream.
+# api.tukio.one and auth.tukio.one are intentionally excluded:
+#   - api.tukio.one  : protected by Keycloak JWT; basic_auth would break XHR
+#   - auth.tukio.one : Keycloak must be publicly reachable for OIDC flows
+# To add an IP: append to the `remote_ip` list and redeploy.
+# To rotate credentials: `caddy hash-password` → update hash below → redeploy.
 
 {
 	email tech-lead@tukio.one
@@ -18,10 +27,25 @@
 }
 
 # ───────────────────────────────────────────────────────────────────
+# Staging auth helpers (shared across protected frontends)
+# ───────────────────────────────────────────────────────────────────
+
+(staging_auth) {
+	# Requests coming from whitelisted IPs bypass the login prompt.
+	@whitelisted remote_ip 82.120.52.19
+	# Everyone else must authenticate.
+	@needs_auth not remote_ip 82.120.52.19
+	basic_auth @needs_auth "Tukio Staging" {
+		ismael.mohamed@tukio.one $2b$14$flrR01cOYX8eFmn6R6NDBeCUPwu3yl3XTjTFeBORoQpFa.ZbobU8G
+	}
+}
+
+# ───────────────────────────────────────────────────────────────────
 # Apex — visitors + authenticated B2C customers (unified tunnel)
 # ───────────────────────────────────────────────────────────────────
 
 tukio.one {
+	import staging_auth
 	reverse_proxy public:3000 {
 		# Preserve the public Host header so Next.js / next-intl build
 		# correct absolute URLs.
@@ -57,6 +81,7 @@ app.tukio.one {
 # ───────────────────────────────────────────────────────────────────
 
 seller.tukio.one {
+	import staging_auth
 	reverse_proxy seller:3002 {
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
@@ -72,6 +97,7 @@ seller.tukio.one {
 }
 
 admin.tukio.one {
+	import staging_auth
 	reverse_proxy admin:3003 {
 		header_up Host {host}
 		header_up X-Forwarded-Proto https
@@ -90,7 +116,7 @@ admin.tukio.one {
 }
 
 # ───────────────────────────────────────────────────────────────────
-# API gateway
+# API gateway — NOT protected by basic_auth (Keycloak JWT + XHR calls)
 # ───────────────────────────────────────────────────────────────────
 
 api.tukio.one {
@@ -105,7 +131,7 @@ api.tukio.one {
 }
 
 # ───────────────────────────────────────────────────────────────────
-# Keycloak (cross-droplet via VPC private IP)
+# Keycloak (cross-droplet via VPC private IP) — NOT protected (OIDC flows)
 # ───────────────────────────────────────────────────────────────────
 
 auth.tukio.one {
