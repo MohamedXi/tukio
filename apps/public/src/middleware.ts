@@ -2,14 +2,24 @@ import { createTukioI18nMiddleware } from '@tukio/i18n-client/middleware';
 import type { NextRequest } from 'next/server';
 import { acquisitionCookieMiddleware } from './middleware/acquisition-cookie';
 import { authGateMiddleware } from './middleware/auth-gate';
+import { comingSoonGateMiddleware } from './middleware/coming-soon-gate';
 
 const i18nMiddleware = createTukioI18nMiddleware();
 
 // Middleware chain (left = first executed):
+// 0. comingSoonGateMiddleware — rewrites non-whitelisted routes to
+//    /${locale}/coming-soon when NEXT_PUBLIC_COMING_SOON_MODE=true (Story 0.15).
+//    When the flag is off, this is a no-op and the chain runs unchanged.
+//    The rewrite carries `x-next-intl-locale` on the downstream request so
+//    next-intl's `requestLocale` (used by getMessages) resolves correctly
+//    on the rewritten target (without this, App Router 404s the rewrite).
 // 1. acquisitionCookieMiddleware — sets tukio-acquisition cookie from UTM params (Story 0.13)
 // 2. authGateMiddleware — redirects unauthenticated requests on /(authenticated)/* (Story 0.14, ADR-016)
 // 3. i18n middleware — locale routing/redirect
 export default async function middleware(request: NextRequest) {
+  const comingSoonResponse = comingSoonGateMiddleware(request);
+  if (comingSoonResponse) return comingSoonResponse;
+
   const acqResponse = acquisitionCookieMiddleware(request);
 
   const authResponse = authGateMiddleware(request);

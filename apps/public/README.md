@@ -29,6 +29,25 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Pre-launch mode (Story 0.15)
+
+The `NEXT_PUBLIC_COMING_SOON_MODE` env var gates the entire app behind a
+coming-soon landing while the platform is in pre-launch.
+
+- **`true`** → the `coming-soon-gate` middleware rewrites every non-whitelisted
+  route to `/${locale}/coming-soon`. The whitelist (apex) covers
+  `coming-soon`, `devenir-pro`, `a-propos`, `confidentialite`,
+  `mentions-legales`, `contact`. Tech routes (`_next/*`, `api/*`,
+  `robots.txt`, `sitemap.xml`, `og/*`) bypass the gate.
+- **`false`** (or any value other than the literal string `'true'`) → the gate
+  is a no-op; Epic 1+ routes (auth, account, cart) work as before.
+
+`.env.local` ships with `NEXT_PUBLIC_COMING_SOON_MODE=false` so devs working
+on Epic 1+ are not impacted. `.env.example` ships with `=true` to document
+the pre-launch intent. Toggling in prod = update
+`/home/tukio/tukio/secrets/public.env` on the Droplet + redeploy
+(`docker compose up -d public`). See `docs/runbook/pre-launch-toggle.md`.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
