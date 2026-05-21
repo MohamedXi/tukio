@@ -8,11 +8,13 @@ describe('animation tokens', () => {
       typing: 'tk-typing',
       modalEnter: 'tk-modal-enter',
       shimmer: 'tk-shimmer',
+      pulse: 'tk-pulse',
     });
   });
 
   it('exposes ready-to-use animation shorthands', () => {
     expect(animations.typing).toBe('tk-typing 1.4s ease-in-out infinite');
+    expect(animations.pulse).toBe('tk-pulse 2s ease-in-out infinite');
   });
 
   it('keyframe identifiers all start with the tk- namespace prefix', () => {

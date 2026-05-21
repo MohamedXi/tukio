@@ -1066,7 +1066,239 @@ Epic 0 (Sprint 0 Foundation)
 - **Given** un Visitor arrive sur `tukio.one/fr/?utm_source=google_ads&utm_campaign=spring2026`, **When** il s'inscrit en tant que customer, **Then** son user record en DB a `acquisition_source = 'google_ads'`, `acquisition_campaign = 'spring2026'` (NFR64 — impossible à rétro-fitter sans perte).
 - **Given** la story est complétée, **When** je vérifie l'état Sprint 0, **Then** : 14 ADRs documentés ✅, Vercel multi-zones configuré ✅, schema acquisition_* migré ✅, et le projet est **prêt à recevoir les stories user-facing Epic 1+**.
 
-**Epic 0 — Total stories : 13**
+**Epic 0 — Total stories Sprint 0 foundation : 14** (0.1-0.14)
+
+---
+
+### Epic 0 — Phase Pré-Lancement (Stories 0.15 → 0.20)
+
+> 🚀 **Ajouté 2026-05-20** suite au constat que tukio.one doit être en ligne avant le lancement officiel (~6 mois de dev restants). Objectif : ne pas laisser le domaine vide, capter les emails des pros intéressés, et présenter le projet de manière crédible. **Toggle manuel via env var `NEXT_PUBLIC_COMING_SOON_MODE=true`** — pas de back-office, suppression du flag = un PR au moment du lancement. Source design : `tukio-design/project/screens/{coming-soon.jsx,public-pages.jsx}` (extraction tar du bundle Claude Design, 6 écrans complets avec texte FR verbatim).
+
+**Phase** : Pre-MVP (intercalée entre Sprint 0 close-out et Epic 1 close-out)
+**Outcome utilisateur** : un Visitor (curieux grand public ou pro de l'événementiel) qui tape `tukio.one` voit une landing "Coming Soon" éditoriale + un formulaire de capture d'email RGPD-conforme. Un pro qui veut comprendre comment la plateforme va fonctionner trouve une page "Devenir pro" très détaillée (parcours d'inscription, modèle commission 10 %, paiements Stripe Connect, métiers acceptés). Privacy / Mentions légales / Contact existent pour la conformité dès J0 de la collecte d'email.
+
+**FRs covered (anticipation)** : FR112 (acceptMarketing — partiel pre-lancement)
+**NFRs covered** : NFR1 (RGPD), NFR21 (LCEN — site vitrine), NFR50/54 (a11y RGAA AA), NFR58 (i18n FR+EN), NFR67 (env-driven config)
+**ADRs touchés** : ADR-012 (i18n bilingue), ADR-016 (apex unified — Story 0.14 baseline)
+**Intégrations externes** : Resend Audiences API (capture email RGPD EU)
+
+**Réversibilité (critère acceptance global)** : à la date du lancement officiel, désactiver le mode coming soon doit se résumer à :
+1. `NEXT_PUBLIC_COMING_SOON_MODE=false` dans `.env.production`
+2. Redeploy production (`git tag v…` → CI)
+3. Suppression du middleware `coming-soon-gate.ts` et du flag dans une PR de nettoyage post-lancement (optionnelle, l'app fonctionne avec le flag à `false`).
+Aucune migration DB, aucun backoffice, aucun feature flag tiers.
+
+**Stories** : 0.15 (toggle infra + middleware) · 0.16 (design system atoms manquants) · 0.17 (landing Coming Soon apex) · 0.18 (landing Devenir Pro seller) · 0.19 (4 pages publiques : About + Privacy + Legal + Contact) · 0.20 (Resend Audiences integration + form handlers)
+
+#### Story 0.15: Toggle infra `NEXT_PUBLIC_COMING_SOON_MODE` + middleware `coming-soon-gate` apex/seller
+
+**As a** tech lead,
+**I want** un flag build-time `NEXT_PUBLIC_COMING_SOON_MODE` (`true` | `false`) lu par un middleware `coming-soon-gate.ts` qui réécrit toutes les routes hors whitelist vers les landings Coming Soon (Story 0.17 pour apex, Story 0.18 pour seller),
+**So that** je peux mettre tukio.one + seller.tukio.one en mode "vitrine pré-lancement" sans toucher au reste du code Epic 1+ déjà en cours, et désactiver en un redeploy au moment du lancement.
+
+**Acceptance Criteria :**
+
+- **Given** `apps/public/.env.example` + `apps/seller/.env.example`, **When** je les ouvre, **Then** je trouve la variable `NEXT_PUBLIC_COMING_SOON_MODE=true` avec un commentaire `# Pre-launch mode. Set to 'false' to expose the real app (Epic 1+).` Lecture via `process.env.NEXT_PUBLIC_COMING_SOON_MODE === 'true'` strict (toute autre valeur → mode OFF).
+- **Given** `apps/public/src/middleware.ts`, **When** la chaîne middleware exécute, **Then** un nouveau wrapper `comingSoonGateMiddleware` est inséré **AVANT** `acquisitionCookieMiddleware` et `i18nMiddleware`. Le wrapper : (1) si flag OFF → `NextResponse.next()`, (2) si flag ON → vérifie la pathname contre une whitelist + redirige tout le reste vers `/${locale}/coming-soon` (rewrite, pas redirect — préserve l'URL d'origine en SSR pour analytics).
+- **Given** la whitelist routes (flag ON), **When** une request arrive, **Then** sont autorisées sans rewrite : `/_next/*`, `/api/*`, `/${locale}/coming-soon`, `/${locale}/coming-soon/success`, `/${locale}/devenir-pro` (apex uniquement — la landing pro vit sur apex), `/${locale}/a-propos`, `/${locale}/confidentialite`, `/${locale}/mentions-legales`, `/${locale}/contact`, `/robots.txt`, `/sitemap.xml`, `/favicon.ico`, `/og-image.*`, `/.well-known/*`, `/assets/*`. Toute autre route hors whitelist → rewrite vers `/${locale}/coming-soon`.
+- **Given** `apps/seller/src/middleware.ts`, **When** la chaîne exécute, **Then** `comingSoonGateMiddleware` est inséré avant `pendingAdminReviewRedirect`. Si flag ON sur seller, **toute** route `/seller/*` est rewrite vers `/${locale}/seller-coming-soon` (landing pro Story 0.18), sauf `/api/*` et `/_next/*`. Whitelist seller : `/${locale}/seller-coming-soon`, `/${locale}/seller-coming-soon/success`, et idem assets.
+- **Given** un test Playwright `coming-soon-gate.e2e-spec.ts` (apex et seller), **When** je set `NEXT_PUBLIC_COMING_SOON_MODE=true` au build, **Then** : (a) `GET /fr/` → 200 mais rend la landing Coming Soon, (b) `GET /fr/auth/sign-up` → idem rewrite landing (l'URL reste `/fr/auth/sign-up` côté browser mais le contenu est la landing), (c) `GET /fr/a-propos` → 200 page About réelle, (d) `GET /robots.txt` → 200 (whitelist).
+- **Given** flag OFF (`NEXT_PUBLIC_COMING_SOON_MODE=false`), **When** je rerun les Playwright, **Then** toutes les routes Epic 1+ fonctionnent normalement (Story 1.2d sign-up etc.) — preuve de réversibilité.
+- **Given** unit tests `coming-soon-gate.spec.ts` (vitest), **When** ils tournent, **Then** ≥ 90% coverage sur la logique pure de matching whitelist (apex + seller) — pattern Story 1.3d `pending-admin-review-decision.spec.ts` réutilisé.
+- **Given** le robots.txt en mode coming soon (Story 0.20 sub-task), **When** Googlebot crawle, **Then** la directive `Allow: /` reste active mais avec un sitemap pointant uniquement vers les pages publiques (pas vers `/auth/sign-up` etc.) — éviter d'indexer des pages 404-équivalentes.
+- **Given** la NFR67 (env-driven config), **When** un dev clone le repo, **Then** par défaut le flag est OFF en dev local (`.env.local` shipped avec `false`) pour que le dev Epic 1+ continue normalement — seul `.env.production` (committed `.env.example` mais override via DO Droplet secrets) a le flag à ON.
+
+#### Story 0.16: Design system atoms `@tukio/ui` requis par Coming Soon + Pages publiques
+
+**As a** frontend dev,
+**I want** les composants atoms et patterns manquants ajoutés à `@tukio/ui` (`Kicker`, `SiteHeader`, `LogoMark`, `IconSet` étendu, `PublicFooter`, `EditorialPageShell`, `Block`, `Pill` animé),
+**So that** les stories 0.17/0.18/0.19 consomment les atoms via subpath imports sans dupliquer le code dans chaque app.
+
+**Acceptance Criteria :**
+
+- **Given** `packages/ui/src/components/`, **When** je l'ouvre, **Then** je trouve les NEW atoms : `Kicker/Kicker.tsx` (label uppercase mono, prop `color`, letter-spacing 0.04em, font-size 11-12px), `LogoMark/LogoMark.tsx` (logo Tukio SVG avec prop `size` number, default 22), `Pill/Pill.tsx` (rounded full pill avec optional `pulseDot` animation `tk-pulse 2s infinite`), `IconSet` étendu avec 14 icons utilisés dans le design : `arrow`, `shield`, `bolt`, `check`, `card`, `message`, `calendar`, `chart`, `doc`, `user`, `tent`, `package`, `flame`, `sparkle` (lucide-react underlying).
+- **Given** `packages/ui/src/patterns/`, **When** je l'ouvre, **Then** je trouve les NEW patterns : `SiteHeader/SiteHeader.tsx` (props `active?: 'pros' | 'about' | 'contact'`, slots logo + nav links avec hover state — version "site publique" différente du Story 1.4d header authentifié), `PublicFooter/PublicFooter.tsx` (footer "© tukio.one · 2026 · Made in Loire-Atlantique" + 3 slots links + style cream-200 border-top), `EditorialPageShell/EditorialPageShell.tsx` (props `kicker`, `title` (React node pour italic accent), `intro?`, `maxWidth` default 880 ; layout cream-50 + padding 72-96px desktop + responsive), `Block/Block.tsx` (titre h2 Fraunces 24px + slot children).
+- **Given** chaque NEW atom/pattern, **When** je l'inspecte, **Then** : (1) zero hardcoded color — tokens `var(--brand-*)`, `var(--cream-*)`, `var(--charcoal-*)` via Tailwind v4 `@theme` Story 0.3, (2) zero hardcoded text (props pour tout texte user-facing — i18n FR/EN consumer-side), (3) spec `.spec.tsx` Vitest + Testing Library couvre ≥ 80% (atoms) / ≥ 70% (patterns), (4) Storybook MDX ou JSDoc avec example minimal — Sprint 0 pattern.
+- **Given** la règle de barrel imports (AGENTS.md), **When** un consumer importe, **Then** il utilise subpath strict `import { Kicker } from '@tukio/ui/components/Kicker'` — la règle `tukio/no-barrel-import-ui` doit passer.
+- **Given** l'animation `tk-pulse`, **When** elle est définie, **Then** elle vit dans `packages/ui/src/styles/animations.css` (ou tokens TS si pattern Story 0.3) + respect `prefers-reduced-motion` (animation disabled si user opt-out).
+- **Given** axe-core a11y test sur chaque pattern, **When** il tourne, **Then** 0 violations — `SiteHeader` a `role="banner"`, `PublicFooter` a `role="contentinfo"`, `Pill` (decorative pulse) `aria-hidden="true"` sur le dot.
+- **Given** le SVG Logo Tukio, **When** il est rendu, **Then** il est inline SVG (pas `<img>`), couleurs paramétrables via `currentColor`, `aria-label="Tukio"` si standalone, `aria-hidden="true"` si à côté d'un title.
+- **Given** la NFR58 i18n, **When** un atom expose du texte (ex: alt logo), **Then** la prop est typée `string` injectable — pas de `'Tukio'` hardcodé en interne.
+
+#### Story 0.17: Landing Coming Soon apex tukio.one (`/${locale}/coming-soon` + success state)
+
+**As a** Visitor (grand public curieux ou pro événementiel),
+**I want** atterrir sur une landing éditoriale chaleureuse avec un formulaire de capture d'email (prénom, nom, email, profil organisateur/pro, RGPD opt-in),
+**So that** je peux laisser mes coordonnées pour être prévenu·e à l'ouverture, et avoir une idée claire de ce qu'est tukio.one.
+
+**Acceptance Criteria :**
+
+- **Given** `apps/public/src/app/[locale]/coming-soon/page.tsx`, **When** je l'ouvre, **Then** la page rend la landing 2-colonnes (split desktop, stacked mobile) **strictement conforme** au design `tukio-design/project/screens/coming-soon.jsx:5-183` :
+  - **Header** : `<LogoMark size={22}>` + badge mono uppercase "Bientôt en Pays de la Loire"
+  - **Colonne gauche éditoriale** (background cream-50) : `<Pill pulseDot>En construction</Pill>` brand-50/brand-700 + H1 Fraunces 64px "Vos événements, *réservés.*" (italic brand-600) + pitch + sub-pitch + **trust strip 3 stats** ("140+ Pros déjà inscrits" / "44 · 49 Lancement pilote" / "0 € Inscription")
+  - **Colonne droite formulaire** (background cream-100, border-left cream-200) : `<Kicker>Rester informé·e</Kicker>` + H2 32px "Soyez parmi les *premiers*." + form 5 fields (Prénom + Nom 2-col, Email, Role radio cards Organisateur/Professionnel, RGPD opt-in checkbox + lien Privacy) + CTA primary "Me prévenir à l'ouverture" + reassurance icon shield "Vos données restent en France, jamais revendues"
+  - **Footer** `<PublicFooter>` : "© tukio.one · 2026 · Made in Loire-Atlantique" + links "Devenir pro pilote" → `/${locale}/devenir-pro` + "Mentions légales" → `/${locale}/mentions-legales` + "contact@tukio.one" → `mailto:`
+- **Given** le form, **When** soumis avec données invalides, **Then** validation inline RHF + zodResolver (pattern Story 1.2d) : email required + format RFC 5322, prénom + nom required (1-80 chars trim), role required (default `organisateur`), RGPD opt-in **required** (literal true). Erreurs in-line `<FormField>` Story 0.4 atom.
+- **Given** le form soumis valide, **When** il POST, **Then** appel `useSubmitPreLaunchSignup()` hook `@tukio/api-client/hooks/pre-launch` (Story 0.20) → en cas de success `router.push('/${locale}/coming-soon/success')` avec `firstName` + `position` (e.g., 247ᵉ) en query params (ou via state via session storage si on veut éviter l'exposition URL).
+- **Given** `apps/public/src/app/[locale]/coming-soon/success/page.tsx`, **When** je l'ouvre, **Then** rend l'écran success `coming-soon.jsx:186-241` : cercle success 80px + check icon + Kicker "C'est noté" + H1 "À très bientôt, *{firstName}.*" + "Vous êtes la **{position}ᵉ personne** sur la liste. On vous écrit dès l'ouverture, pas avant." + bloc "En attendant…" parrainage (CTA "Parrainez-le →" → mailto: ou modal Story V1+).
+- **Given** i18n FR+EN (ADR-012), **When** je switch locale via `?lang=en` ou `/en/coming-soon`, **Then** **tous les textes** sont traduits FR/EN via next-intl namespace `coming_soon` (~25 keys × 2 locales). Stratégie de traduction EN : traduction professionnelle ou GPT-4 review humaine pour ne pas avoir d'EN "robotisé" — le ton chaleureux/italic de la version FR doit ressortir.
+- **Given** le SEO, **When** Googlebot crawle `/fr/coming-soon` ou `/en/coming-soon`, **Then** : (1) `<title>` = "tukio.one — Bientôt en Pays de la Loire" (FR) / "tukio.one — Coming Soon in Pays de la Loire" (EN), (2) `<meta description>` ≤ 160 chars, (3) Open Graph `og:title`, `og:description`, `og:image` (1200×630 SVG/PNG brand+pitch), (4) `<link rel="canonical">` correct, (5) hreflang FR/EN propre.
+- **Given** la NFR50/54 a11y RGAA AA, **When** axe-core run sur les 2 pages, **Then** 0 violations. Skip-link "Aller au formulaire" focusable. Le pulse `tk-pulse` désactivé `prefers-reduced-motion`. Tous les inputs ont label associé `htmlFor`. Le H1 italic est lisible par lecteur d'écran (pas de span décoratif aria-hidden qui casse le sens).
+- **Given** Lighthouse desktop, **When** je lance audit, **Then** ≥ 95 perf, ≥ 95 a11y, ≥ 100 SEO, ≥ 100 best practices (image WebP + fonts preload + zero JS bloquant sur la landing → 99 % SSG/SSR).
+- **Given** Playwright e2e `coming-soon.e2e-spec.ts`, **When** je lance, **Then** 8 cases verts : (1) load page FR + check H1 visible + form rendered, (2) load page EN + check H1 traduit, (3) submit avec form vide → 5 erreurs inline visibles, (4) submit avec email invalide → erreur inline, (5) submit valide → redirect /coming-soon/success + firstName visible, (6) toggle role radio Organisateur ↔ Professionnel → visuel change, (7) click "politique de confidentialité" → navigate `/confidentialite`, (8) axe-core sur les 2 pages → 0 violations.
+
+#### Story 0.18: Landing "Devenir pro" sur seller.tukio.one (`/${locale}/seller-coming-soon`)
+
+**As a** professionnel de l'événementiel,
+**I want** atterrir sur une page détaillée qui explique précisément comment tukio.one va fonctionner pour moi (parcours d'inscription, commission 10 %, paiement Stripe Connect, métiers acceptés, documents requis),
+**So that** je comprends le modèle, je peux décider si je m'inscris à la liste d'attente, et la plateforme me semble crédible et professionnelle.
+
+**Acceptance Criteria :**
+
+- **Given** `apps/seller/src/app/[locale]/seller-coming-soon/page.tsx`, **When** je l'ouvre, **Then** la page rend la landing détaillée **strictement conforme** au design `tukio-design/project/screens/public-pages.jsx:114-397` (fonction `BecomeProScreen`) :
+  - **Hero 2-col** (split desktop) : Kicker "Pour les professionnels" + H1 60px "Comment fonctionne tukio.one *pour les pros*." + pitch + **banner brand-50** "tukio.one n'est pas encore ouverte" avec icône bolt + CTA "Soyez prévenu·e en priorité" → lien vers Story 0.17 landing apex `/coming-soon` cross-zone (`window.location.href`)
+  - **Section "Pour qui"** : 6 cards métiers (Tentes/Mobilier/Traiteur/Décoration/Son&lumière/Animation) — grille 3-col desktop, 2-col tablet, 1-col mobile
+  - **Section "Le parcours pro"** (background cream-100) : 5-step horizontal cards numérotés (Inscription / Demande pro / Validation 24-48h / Compte Stripe / Mise en ligne)
+  - **Section "Ce qu'il faut prévoir"** : 2 cards (docs demande pro + docs compte de paiement)
+  - **Section sombre "Paiements et reversements"** (background charcoal-800, text cream-50) : pipeline 4-step (paiement → fonds sécurisés Stripe → prestation → reversement J+1 à J+3) + 2 cards modes (cartes/Apple Pay/SEPA/échelonné + virement bancaire/délai/tracking/justifs) + bloc Stripe Connect partner ("Stripe gère les paiements, pas tukio")
+  - **Section "Tarification"** : 3 cards "0 € Inscription / 10 % Commission / J+1 Reversement" + paragraphe formules d'abonnement V1+
+  - **Section "Pourquoi nous rejoindre"** (background cream-100) : 6 cards (paiement / confiance / communication / calendrier / stats / administratif)
+  - **CTA final** : Kicker "En préparation" + H2 "La plateforme ouvre bientôt." + 2 CTAs ("Être prévenu·e à l'ouverture" primary cross-zone vers apex + "Une question ? Nous écrire" tertiary vers `/${locale}/contact`)
+- **Given** le CTA primary "Être prévenu·e à l'ouverture", **When** un pro clique, **Then** redirect cross-zone `window.location.assign('https://tukio.one/${locale}/coming-soon?role=pro')` — le query `?role=pro` pré-coche le role "Professionnel" sur la landing apex Story 0.17 (Story 0.17 lit ce query au mount).
+- **Given** la NFR58 i18n FR+EN, **When** je switch locale, **Then** **tous les textes** (~90 strings : 6 cards métiers + 5 steps + 8 docs lines + 8 paiement lines + 6 pourquoi cards + textes statiques) sont traduits via namespace `seller_coming_soon` (~90 keys × 2 locales).
+- **Given** SEO, **When** Googlebot crawle, **Then** title "tukio.one pour les pros — Pays de la Loire" + meta description + Open Graph + canonical + hreflang. **Indexabilité** : `<meta name="robots" content="index, follow">` (cette page sert aussi à présenter le modèle pour SEO acquisition pro).
+- **Given** axe-core a11y RGAA AA, **When** il tourne, **Then** 0 violations. Section sombre charcoal-800 → ratio contraste vérifié sur tous les textes cream-50 / cream-200 (AAA si possible).
+- **Given** Lighthouse, **When** je lance audit, **Then** ≥ 90 perf (longue page, donc tolérance), ≥ 95 a11y, ≥ 100 SEO, ≥ 95 best practices.
+- **Given** Playwright `seller-coming-soon.e2e-spec.ts`, **When** je lance, **Then** 6 cases : load FR/EN + scroll-to-section anchors + CTA cross-zone (intercept `window.location`) + content sections présentes + axe-core + Lighthouse perf.
+
+#### Story 0.19: 4 pages publiques (À propos / Confidentialité / Mentions légales / Contact)
+
+**As a** Visitor (curieux, journaliste, autorité de contrôle),
+**I want** accéder aux pages institutionnelles minimales dès la phase pré-lancement (À propos, Confidentialité, Mentions légales, Contact),
+**So that** le projet est crédible et conforme RGPD/LCEN dès la première capture d'email.
+
+**Acceptance Criteria :**
+
+- **Given** `apps/public/src/app/[locale]/a-propos/page.tsx`, **When** je l'ouvre, **Then** rend `AboutScreen` (`tukio-design/project/screens/public-pages.jsx:31-110`) : `<EditorialPageShell>` Story 0.16 + Kicker "À propos" + H1 "Une plateforme, *un événement*" + intro + **5 blocks** (Pourquoi tukio.one / Ce que la plateforme propose 4 cards / Comparaison "Sans tukio.one" vs "Avec tukio.one" 2-col / Ancré en Pays de la Loire / Notre engagement 4 commitments).
+- **Given** `apps/public/src/app/[locale]/confidentialite/page.tsx`, **When** je l'ouvre, **Then** rend `PrivacyPolicyScreen` (`public-pages.jsx:400-456`) : Kicker "Politique de confidentialité" + H1 "Vos données, *en clair*." + intro + date "Dernière mise à jour : 20 mai 2026" + banner brand-50 "En phase de pré-lancement" + **8 blocks** strict spec design (qui collecte / ce qu'on collecte / pourquoi / rétention 12 mois / après lancement / vos droits / hébergement Vercel+Resend / réclamation CNIL).
+- **Given** `apps/public/src/app/[locale]/mentions-legales/page.tsx`, **When** je l'ouvre, **Then** rend `LegalScreen` (`public-pages.jsx:459-518`) : Kicker "Mentions légales" + H1 "Un projet *en préparation*." + intro + date + banner brand-50 "Statut du projet" + **6 blocks** (responsable / société en cours SAS RCS Nantes / hébergement Vercel / nature actuelle LCEN / propriété intellectuelle / contact).
+- **Given** `apps/public/src/app/[locale]/contact/page.tsx`, **When** je l'ouvre, **Then** rend `ContactScreen` (`public-pages.jsx:521-619`) : Kicker "Contact" + H1 "On *vous écoute*." + intro + **form 2-col** :
+  - **Form left** (`<Card>` padding 32) : 7 fields (Prénom + Nom 2-col, Email, Vous êtes select 5 options [Organisateur / Pro événementiel / Journaliste presse / Partenaire potentiel / Autre], Sujet select 5 options [Question générale / Devenir pro / Problème technique / Partenariat / Presse], Message textarea rows=6, CTA "Envoyer") + note "Vos données traitées conformément… Réponse sous 48h ouvrées."
+  - **Aside right** : 4 cards canaux directs (contact@tukio.one support 48h / dpo@tukio.one RGPD / signalement@tukio.one urgences / presse@tukio.one) + card "En phase de préparation" (cream-100)
+- **Given** le form Contact submission, **When** un visiteur submit, **Then** appel `useSubmitPreLaunchContact()` hook (Story 0.20) → POST vers Resend ou direct mailto: fallback (décision Story 0.20). En cas de success → toast "Message envoyé, réponse sous 48h" + reset form. En cas d'erreur → toast erreur.
+- **Given** **chaque page** publique, **When** elle render, **Then** elle utilise `<EditorialPageShell>` + `<Block>` Story 0.16 (pas de duplication HTML cross-pages), `<SiteHeader>` + `<PublicFooter>` partagés. Spec design : font Fraunces 52px titres + Inter 17px intro + 15px body + line-height 1.6-1.7.
+- **Given** i18n FR+EN, **When** je switch, **Then** **les 4 pages** sont traduites — namespaces `about` / `privacy` / `legal` / `contact` (~140 keys × 2 locales totale ~ 280 keys). **Note importante** : les pages Confidentialité et Mentions légales sont des **textes juridiques** — la traduction EN doit être validée juridiquement (ou bien afficher un badge "Available in French only" UX-DR16 si pas traduit, mais préférer la traduction pour crédibilité).
+- **Given** SEO, **When** Googlebot crawle, **Then** chaque page a son title + meta description spécifique + canonical + hreflang FR/EN + Open Graph propre. **Indexabilité** : `index, follow` sur les 4 pages.
+- **Given** axe-core a11y RGAA AA, **When** je teste les 4 pages, **Then** 0 violations. Form Contact : tous les `select` ont label associé, `textarea` accessible name, CTA `aria-label` complet, validation errors `aria-live="polite"`.
+- **Given** Playwright `public-pages.e2e-spec.ts`, **When** je lance, **Then** ≥ 12 cases : 4 pages × (load FR + load EN + navigation depuis Footer + axe-core).
+
+#### Story 0.20: Resend Audiences integration + form handlers (`POST /api/pre-launch/{signup,contact}`)
+
+**As a** founder (Ismael),
+**I want** les emails capturés via les formulaires des Stories 0.17 et 0.19 stockés dans une Resend Audience EU (RGPD-compliant, jamais transitant par notre DB),
+**So that** au moment du lancement je peux exporter la liste vers Brevo (Epic 16.2) et envoyer un email de notification one-shot, sans avoir à déployer un service backend dédié maintenant.
+
+**Acceptance Criteria :**
+
+- **Given** un compte Resend setup (free tier 3 000 emails/mois suffit MVP), **When** je vais sur dashboard Resend, **Then** je crée 2 audiences EU : `tukio-pre-launch-waitlist` (depuis Story 0.17 form) avec custom fields `firstName`, `lastName`, `role` (`organisateur` | `professionnel`), `locale` (`fr` | `en`), `acquisitionSource`, `acquisitionCampaign` ; et **optionnellement** `tukio-pre-launch-contacts` (depuis Story 0.19 contact form si Resend Audiences supporte les contacts sans opt-in marketing — sinon stocker dans Linear/Notion/Slack via webhook). API key dédiée stockée dans secret Doppler/DO `RESEND_AUDIENCES_API_KEY`.
+- **Given** `apps/public/src/app/api/pre-launch/signup/route.ts` (Next.js 16 Route Handler), **When** un POST arrive avec `{ firstName, lastName, email, role, locale, marketingOptIn: true }`, **Then** : (1) parse Zod schema (`PreLaunchSignupSchema`), (2) lit cookie `tukio-acq-first` (Story 0.13) pour `acquisitionSource` + `acquisitionCampaign`, (3) call `resend.contacts.create({ audienceId, email, firstName, lastName, unsubscribed: false, ...customFields })`, (4) compute position (= Resend Audience count post-insertion via `resend.contacts.list()` ou estimation + cache 5min Redis), (5) répond JSON `{ ok: true, position: 247 }` envelope simplifiée (pas Story 1.2c forwarder — c'est un edge case acceptable hors gateway-api, NE PAS ouvrir un endpoint identity-svc juste pour ça).
+- **Given** Resend renvoie une erreur (conflict email déjà inscrit), **When** le handler catch, **Then** retourne `{ ok: true, position: <existing position>, alreadySubscribed: true }` — message UI "Vous êtes déjà inscrit, on vous écrit dès l'ouverture" (pas une erreur destructrice).
+- **Given** Resend renvoie une erreur 5xx ou timeout, **When** le handler catch, **Then** retourne 502 + log Pino structuré + ne PAS crash la page user (UI affiche toast erreur "Service momentanément indisponible, réessayez dans quelques minutes"). Pas de retry automatique côté server (Resend SDK retry interne suffit).
+- **Given** rate limiting anti-spam, **When** une IP fait > 5 submissions/min, **Then** retourne 429 avec `Retry-After` header (utilise edge `@upstash/ratelimit` OR Upstash Redis Story 0.x — alignement Story 1.2c throttler).
+- **Given** `apps/public/src/app/api/pre-launch/contact/route.ts`, **When** un POST arrive depuis form Contact Story 0.19, **Then** : option A (recommandée) — envoie un email via Resend transactional API vers `contact@tukio.one` avec le contenu du form (Resend `from: "Tukio Form <noreply@tukio.one>"`, `to: ["contact@tukio.one"]`, `subject: "[Contact tukio.one] {sujet}"`, body templated). Option B (fallback) — store dans une Resend Audience `tukio-contacts` sans envoi auto, traiter manuellement.
+- **Given** `packages/api-client/src/hooks/pre-launch/`, **When** je l'ouvre, **Then** 2 NEW hooks TanStack Query : `useSubmitPreLaunchSignup()` (POST `/api/pre-launch/signup`, retourne `{ data, error, isPending }`) + `useSubmitPreLaunchContact()` (idem `/api/pre-launch/contact`). Pattern réutilise Story 1.2c hooks pattern (mapZodError, ApiError class).
+- **Given** la NFR1 (RGPD), **When** un user submit, **Then** : (1) double opt-in NON requis (consent unique via checkbox + texte "J'accepte de recevoir un email lors du lancement" — Resend gère son propre footer unsubscribe), (2) la déclaration CNIL n'est PAS nécessaire pour < 5 000 contacts B2B (CNIL note "registre obligatoire" mais pas déclaration), (3) la mention "Vos données restent en France" suppose que Resend Audience EU est conforme — VÉRIFIER dans le Resend dashboard que la région audience = `eu-west` ou `eu-central`.
+- **Given** un test Playwright `pre-launch-handlers.e2e-spec.ts`, **When** je lance, **Then** 6 cases : (1) signup happy POST → mock Resend SDK retourne `{ id: 'cnt_xxx' }` → response `{ ok: true, position: N }`, (2) signup duplicate email → mock 409 → response `{ ok: true, alreadySubscribed: true }`, (3) signup invalid Zod → 422 + issues, (4) signup rate limit 6e essai en 60s → 429 + Retry-After, (5) contact handler success → resend.emails.send called avec bons params, (6) contact handler error → 502 graceful.
+- **Given** la NFR82 audit, **When** un signup arrive, **Then** log Pino structuré `{ event: 'pre_launch_signup', email: '[REDACTED]', emailHash: sha256(email).slice(0,8), role, locale, acquisitionSource, correlationId, timestamp }` — **email pas en clair dans les logs**.
+- **Given** un dev en local, **When** il submit le form en dev, **Then** Resend SDK passe par `RESEND_API_KEY=re_test_xxx` (test mode) qui n'envoie pas vraiment + dashboard Resend "Test Mode" visible — pas de pollution audience prod.
+- **Given** robots.txt + sitemap au mode coming soon, **When** je vais sur `/robots.txt` apex, **Then** le fichier permet d'indexer `/`, `/coming-soon`, `/devenir-pro` (cross-zone : référence depuis apex vers seller via host `seller.tukio.one`), `/a-propos`, `/confidentialite`, `/mentions-legales`, `/contact`, et **bloque** explicitement `/api/*`, `/_next/*`. Sitemap dynamic Next.js 16 `app/sitemap.ts` génère les ~10 URLs principales × 2 locales avec `<lastmod>` + `<changefreq>weekly</changefreq>`.
+
+#### Story 0.21: SEO foundation + Analytics pré-lancement (`robots.txt` + `sitemap.xml` + Open Graph + structured data JSON-LD + Plausible)
+
+**As a** founder qui veut que la phase pré-lancement génère du trafic organique et de la confiance dès J0,
+**I want** le SEO technique complet dès le pré-lancement (robots.txt strict, sitemap.xml dynamique multi-locale, Open Graph + Twitter Cards, structured data JSON-LD schema.org Organization, Plausible Analytics cookie-less RGPD) sur les 7 pages publiques (Stories 0.17-0.19),
+**So that** Google/Bing peuvent indexer correctement les pages publiques dès J0, les partages réseaux sociaux ont un visuel propre, je peux mesurer le funnel "visite → submit waitlist" sans cookie banner, et les autorités (CNIL, France Num) trouvent le site crédible et conforme.
+
+**Acceptance Criteria :**
+
+- **Given** `apps/public/src/app/robots.ts` (Next.js 16 `MetadataRoute.Robots`), **When** Googlebot/Bingbot fetch `/robots.txt`, **Then** il reçoit :
+  ```
+  User-agent: *
+  Allow: /
+  Disallow: /api/
+  Disallow: /_next/
+  Disallow: /auth/
+  Disallow: /(authenticated)/
+  Disallow: /seller/onboarding/
+
+  Sitemap: https://tukio.one/sitemap.xml
+  ```
+  Avec un commentaire de fichier disant "Pre-launch mode 2026 — most routes rewrite to /coming-soon. Sitemap reflects publicly indexable pages only." **MIRROR** côté `apps/seller/src/app/robots.ts` (sitemap pointe vers `https://seller.tukio.one/sitemap.xml`).
+- **Given** `apps/public/src/app/sitemap.ts` (Next.js 16 `MetadataRoute.Sitemap`), **When** Googlebot fetch `/sitemap.xml`, **Then** le sitemap liste **10 URLs × 2 locales = 20 entrées** :
+  - `https://tukio.one/fr/` + `https://tukio.one/en/` (priority 1.0, changefreq weekly — rewrite vers `/coming-soon` mais l'URL canonique reste `/`)
+  - `https://tukio.one/{fr,en}/coming-soon` (priority 0.9)
+  - `https://tukio.one/{fr,en}/devenir-pro` (priority 0.8 — landing apex marketing pro)
+  - `https://tukio.one/{fr,en}/a-propos` (priority 0.7)
+  - `https://tukio.one/{fr,en}/confidentialite` (priority 0.4)
+  - `https://tukio.one/{fr,en}/mentions-legales` (priority 0.4)
+  - `https://tukio.one/{fr,en}/contact` (priority 0.6)
+  - Chaque entrée avec `<lastmod>` = date de génération + `<changefreq>weekly</changefreq>` + balises `<xhtml:link rel="alternate" hreflang="{fr,en,x-default}">` pour le multilingue Google. **MIRROR** sitemap seller avec `https://seller.tukio.one/{fr,en}/seller-coming-soon` (priority 0.9, 1 URL × 2 locales).
+- **Given** `apps/public/src/app/[locale]/layout.tsx` + chaque `page.tsx` des Stories 0.17/0.19, **When** je lis le head, **Then** la `generateMetadata()` Next.js 16 retourne :
+  - `title` : page-specific (Story 0.17 : "tukio.one — Bientôt en Pays de la Loire" / Story 0.19 about : "À propos — tukio.one" / etc.)
+  - `description` : page-specific, ≤ 160 chars FR + EN, contient le keyword principal ("événementiel Pays de la Loire" pour Home/Coming Soon)
+  - `keywords` : optionnel (Google ignore mais Bing utilise — modestes 5-8 keywords pertinents)
+  - `openGraph` : `{ title, description, type: 'website', locale: 'fr_FR' | 'en_US', siteName: 'tukio.one', images: [{ url: '/og/{slug}.png', width: 1200, height: 630, alt }], url: canonical }`
+  - `twitter` : `{ card: 'summary_large_image', title, description, images: ['/og/{slug}.png'] }`
+  - `alternates.canonical` : URL canonique sans query string
+  - `alternates.languages` : `{ fr: 'https://tukio.one/fr/path', en: 'https://tukio.one/en/path', 'x-default': 'https://tukio.one/fr/path' }`
+- **Given** les images Open Graph, **When** je vais sur `https://tukio.one/og/{slug}.png`, **Then** je trouve 7 visuels brand 1200×630 PNG (cohérents avec design tokens — cream-50 background + Fraunces title + brand-500 accent + logo Tukio top-left) :
+  - `og/home.png` : "tukio.one — Bientôt en Pays de la Loire"
+  - `og/coming-soon.png` : idem (alias)
+  - `og/devenir-pro.png` : "Pour les pros de l'événementiel"
+  - `og/a-propos.png` : "Une plateforme, un événement."
+  - `og/confidentialite.png` : "Vos données, en clair."
+  - `og/mentions-legales.png` : "Un projet en préparation."
+  - `og/contact.png` : "On vous écoute."
+  **Implementation option** : Next.js 16 `app/og/[slug]/route.ts` Image Response (Edge runtime) qui génère ces visuels à la volée — pas de PNG statiques à maintenir. Pattern : `import { ImageResponse } from 'next/og'`. Fonts Fraunces + Inter loaded via `@next/font` ou fetch. ImageResponse cache 24h (`cache-control: public, max-age=86400`).
+- **Given** `apps/public/src/app/[locale]/layout.tsx` head, **When** la page rend, **Then** un `<script type="application/ld+json">` injecte le structured data **schema.org Organization** :
+  ```json
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "tukio.one",
+    "url": "https://tukio.one",
+    "logo": "https://tukio.one/logo.png",
+    "description": "Marketplace des professionnels de l'événementiel en Pays de la Loire — tentes, mobilier, traiteur, décoration.",
+    "foundingDate": "2026",
+    "foundingLocation": { "@type": "Place", "address": { "@type": "PostalAddress", "addressRegion": "Pays de la Loire", "addressCountry": "FR" } },
+    "sameAs": [/* LinkedIn URL si dispo, vide sinon */],
+    "contactPoint": { "@type": "ContactPoint", "email": "contact@tukio.one", "contactType": "Customer Service", "availableLanguage": ["French", "English"] }
+  }
+  ```
+  Validation : Google Rich Results Test sur les 7 pages → 0 erreur, 0 warning.
+- **Given** Plausible Analytics setup, **When** je crée un compte Plausible (~€9/mois ou auto-hosted gratuit), **Then** : (1) j'ajoute `tukio.one` + `seller.tukio.one` comme 2 sites Plausible, (2) je copie le snippet `<script defer data-domain="tukio.one" src="https://plausible.io/js/script.outbound-links.tagged-events.js"></script>` dans `apps/public/src/app/[locale]/layout.tsx` head (conditional render `if (process.env.NEXT_PUBLIC_PLAUSIBLE_ENABLED === 'true')`), mirror sur `apps/seller`. **RGPD-friendly** : pas de cookies, pas d'IP stockée, pas de cookie banner nécessaire — confirmer dans la Privacy policy Story 0.19 section 7 "Hébergement et sous-traitants en pré-lancement" l'ajout de Plausible.
+- **Given** les custom events Plausible, **When** un user interagit, **Then** ces events sont tracked via `plausible.q.push(['event', '<name>', { props }])` ou `window.plausible('<name>', { props })` :
+  - `Coming Soon Form Submit` (props : `role`, `locale`, `acquisitionSource`)
+  - `Coming Soon Form Submit Success`
+  - `Contact Form Submit`
+  - `Devenir Pro CTA Click` (depuis seller-coming-soon vers apex coming-soon)
+  - `Outbound Click — Privacy` / `Outbound Click — Legal`
+  Dashboard Plausible affiche le funnel : Pageviews `/coming-soon` → `Coming Soon Form Submit` → `Coming Soon Form Submit Success` (conversion %).
+- **Given** la NFR58 i18n SEO, **When** un crawler Google FR visite `tukio.one`, **Then** il découvre via Accept-Language ou hreflang la version FR et l'indexe en `fr_FR` ; un crawler Google EN découvre `en_US` ; un crawler Bing idem. **Test concret** : `curl -H "Accept-Language: en" https://tukio.one/` → redirect 301 ou render direct `/en/coming-soon` (selon stratégie middleware i18n Story 0.15).
+- **Given** une checklist SEO pré-publication, **When** Ismael lance le check manuel avant le go-live, **Then** ces outils passent au vert :
+  - Google Rich Results Test (https://search.google.com/test/rich-results) sur les 7 pages → 0 erreur
+  - Lighthouse SEO score ≥ 95 sur les 7 pages (`pnpm lighthouse:ci` pattern Story 0.11)
+  - Mobile-Friendly Test Google
+  - Schema Markup Validator (validator.schema.org)
+  - Twitter Card Validator (cards-dev.twitter.com/validator)
+  - Facebook Sharing Debugger (developers.facebook.com/tools/debug/)
+  - axe-core a11y 0 violations sur 7 pages (= zero impact négatif SEO)
+- **Given** Search Console + Bing Webmaster Tools, **When** Ismael soumet le domaine post-go-live, **Then** : (1) `tukio.one` + `seller.tukio.one` ajoutés Search Console + Bing Webmaster, (2) sitemap soumis, (3) URL Inspection sur `/fr/coming-soon` → "URL is on Google" sous 7 jours, (4) **note de doc dans runbook** : un dev/Ismael peut suivre la procédure sans connaissance Search Console préalable.
+- **Given** un test Playwright `seo.e2e-spec.ts`, **When** je lance, **Then** ≥ 10 cases : 7 pages × { `<title>` non-vide ET unique cross-pages, `<meta name="description">` présent ET ≤ 160 chars, `<link rel="canonical">` correct, `<meta property="og:image">` 200 OK, `<script type="application/ld+json">` parsable JSON valide schema.org } + sitemap.xml content-type `application/xml` + robots.txt content-type `text/plain` + outbound liens externes ouvrent `target="_blank" rel="noopener noreferrer"`.
+- **Given** un audit Plausible 30 jours post-go-live (= jalon de succès), **When** Ismael ouvre le dashboard, **Then** il voit : nombre visiteurs uniques + funnel `Coming Soon Pageview → Form Submit → Submit Success` avec %conversion + sources de trafic (organic/direct/referral) + breakdown par locale. **Objectif minimum** : conversion ≥ 3 % (3 inscriptions waitlist / 100 visiteurs landing) — KPI à mesurer.
+- **Given** un runbook NEW `docs/runbooks/seo-prelaunch-checklist.md`, **When** je l'ouvre, **Then** je trouve : (1) procédure d'enregistrement Search Console + Bing Webmaster pas à pas, (2) liste outils de validation (avec URLs), (3) procédure update OG image (modifier `app/og/[slug]/route.ts` + redeploy), (4) procédure ajout/désactivation Plausible, (5) procédure remove SEO foundation post-MVP-launch (en réalité on garde tout — seul le robots.txt évolue selon les routes indexables Epic 1+).
+
+**Epic 0 — Total stories Sprint 0 + Pre-launch : 21** (0.1-0.14 foundation + 0.15-0.21 pre-launch landing + SEO + analytics)
 
 ---
 

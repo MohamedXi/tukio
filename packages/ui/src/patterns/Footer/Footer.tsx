@@ -3,15 +3,53 @@ import { Logo } from '../Logo/Logo';
 import { cn } from '../../utils/cn';
 import type { FooterProps } from './Footer.types';
 
-export function Footer({
-  columns,
-  brandTagline,
-  // P9 fix: dynamic year — defaults rebuild on each render
-  legal = `© ${new Date().getFullYear()} tukio.one`,
-  // P10 fix: EN default per i18n-agnostic convention; apps override via prop
-  legalRight = 'LCEN host · Stripe trusted third party',
-  className,
-}: FooterProps) {
+export function Footer(props: FooterProps) {
+  // Story 0.16 — minimal variant for editorial / landing pages. Inline
+  // logo (optional) + copyright + inline links, single row, no grid.
+  if (props.variant === 'minimal') {
+    const { logo, inlineLinks = [], legal, className } = props;
+    const year = new Date().getFullYear();
+    return (
+      <footer
+        aria-label="Site footer"
+        className={cn(
+          'flex items-center justify-between px-10 py-6 bg-cream-50 border-t border-cream-200',
+          'text-xs text-charcoal-500',
+          'max-md:flex-col max-md:gap-3 max-md:px-4 max-md:items-start',
+          className,
+        )}
+      >
+        <div className="flex items-center gap-3">
+          {logo}
+          <span>{legal ?? `© tukio.one · ${year} · Made in Loire-Atlantique`}</span>
+        </div>
+        {inlineLinks.length > 0 && (
+          <nav aria-label="Footer links" className="flex items-center gap-5 flex-wrap">
+            {inlineLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-charcoal-500 hover:text-charcoal-700 transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        )}
+      </footer>
+    );
+  }
+
+  // Default 'full' variant — original Story 0.5 grid layout.
+  const {
+    columns,
+    brandTagline,
+    // P9 fix: dynamic year — defaults rebuild on each render
+    legal = `© ${new Date().getFullYear()} tukio.one`,
+    // P10 fix: EN default per i18n-agnostic convention; apps override via prop
+    legalRight = 'LCEN host · Stripe trusted third party',
+    className,
+  } = props;
   // P8 fix: pass cols count as CSS variable so Tailwind responsive classes win
   const gridStyle = { '--cols': String(columns.length) } as React.CSSProperties;
   const gridTemplate = `1.5fr repeat(var(--cols), 1fr)`;

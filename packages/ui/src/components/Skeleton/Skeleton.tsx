@@ -23,7 +23,8 @@ export function Skeleton({
       className={cn(
         roundedMap[rounded],
         // P12 fix: bg-cream-200 only for pulse; shimmer uses gradient which replaces background
-        variant === 'pulse' && 'bg-cream-200 animate-pulse',
+        // Story 0.16 overrides --animate-pulse → use Tailwind's built-in 'pulse' keyframe directly
+        variant === 'pulse' && 'bg-cream-200 animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]',
         variant === 'shimmer' &&
           'animate-[tk-shimmer_1.5s_ease-in-out_infinite] bg-gradient-to-r from-cream-100 via-cream-200 to-cream-100 bg-[length:1000px_100%]',
         className,

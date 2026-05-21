@@ -48,10 +48,11 @@ describe('packages/ui/src/styles/theme.css', () => {
     expect(THEME_CSS).toMatch(/--font-mono:\s*var\(--font-jetbrains-mono,\s*'JetBrains Mono'\)/);
   });
 
-  it('declares the 3 keyframes outside @theme', () => {
+  it('declares the 4 keyframes outside @theme', () => {
     expect(THEME_CSS).toMatch(/@keyframes tk-typing/);
     expect(THEME_CSS).toMatch(/@keyframes tk-modal-enter/);
     expect(THEME_CSS).toMatch(/@keyframes tk-shimmer/);
+    expect(THEME_CSS).toMatch(/@keyframes tk-pulse/);
   });
 
   it('enforces prefers-reduced-motion non-negotiable (RGAA AA)', () => {
