@@ -131,4 +131,7 @@ when the sub-folder genuinely needs different rules (e.g. a Next.js app's
   shared branches without explicit user authorization.
 - ❌ Never push to `main` — `main` carries the README only. PRs target
   `develop`.
+- ✅ Pre-launch mode (Story 0.15): `NEXT_PUBLIC_COMING_SOON_MODE` rewrites
+  every non-whitelisted route to `/${locale}/{coming-soon,seller-coming-soon}`.
+  Build-time toggle (`'true'` strict). See `docs/runbook/pre-launch-toggle.md`.
 - ✅ Validate every change with `/check` before declaring it done.

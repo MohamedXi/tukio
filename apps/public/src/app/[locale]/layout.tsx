@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { LOCALES } from '@tukio/i18n-client/config';
@@ -51,6 +51,11 @@ export default async function RootLayout({
   if (!hasLocale(LOCALES, locale)) {
     notFound();
   }
+  // Explicitly seed next-intl's request scope from the URL segment so
+  // requests rewritten by middleware (e.g. Story 0.15 coming-soon gate)
+  // resolve their locale without depending on a pass through next-intl's
+  // own middleware. Idempotent with the normal middleware-driven flow.
+  setRequestLocale(locale);
   const messages = await getMessages();
   return (
     <html
