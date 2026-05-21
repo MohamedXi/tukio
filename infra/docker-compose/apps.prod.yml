@@ -227,6 +227,11 @@ services:
       NEXT_PUBLIC_GATEWAY_URL: https://api.tukio.one
       NEXT_PUBLIC_KEYCLOAK_URL: https://auth.tukio.one
       NEXT_PUBLIC_KEYCLOAK_REALM: tukio
+      # Story 0.15 — pre-launch toggle. Defaults to `true` during launch
+      # preparation; flip to `false` + redeploy to expose Epic 1+ at launch.
+      # An operator can override at deploy-time without editing this YAML
+      # via `export COMING_SOON_MODE=false; docker compose up -d public`.
+      NEXT_PUBLIC_COMING_SOON_MODE: ${COMING_SOON_MODE:-true}
       PORT: '3000'
     networks: [tukio-apps]
 
@@ -239,6 +244,8 @@ services:
       NEXT_PUBLIC_GATEWAY_URL: https://api.tukio.one
       NEXT_PUBLIC_KEYCLOAK_URL: https://auth.tukio.one
       NEXT_PUBLIC_KEYCLOAK_REALM: tukio
+      # Story 0.15 — pre-launch toggle (see `public` service above).
+      NEXT_PUBLIC_COMING_SOON_MODE: ${COMING_SOON_MODE:-true}
       PORT: '3002'
     networks: [tukio-apps]
 

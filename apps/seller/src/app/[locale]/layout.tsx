@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, setRequestLocale } from 'next-intl/server';
 import './globals.css';
 // AuthProvider (Keycloak.js) removed — Story 1.4d provides the cookie-based provider.
 
@@ -42,6 +42,9 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
+  // Seed next-intl's request scope from the URL segment so middleware
+  // rewrites (Story 0.15 coming-soon gate) resolve their locale.
+  setRequestLocale(locale);
   const messages = await getMessages();
   return (
     <html
