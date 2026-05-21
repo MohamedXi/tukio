@@ -1,16 +1,85 @@
-// Placeholder Story 0.15. Final design + success state delivered in Story 0.17.
 import type { Metadata } from 'next';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { SiteHeader } from '@tukio/ui/patterns/SiteHeader';
+import { Footer } from '@tukio/ui/patterns/Footer';
+import { ComingSoonSuccessHero } from '../../../../features/pre-launch/components/ComingSoonSuccessHero.js';
 
-export default function ComingSoonSuccessPlaceholderPage() {
+interface PageProps {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ firstName?: string; position?: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'coming_soon.meta' });
+  return {
+    title: t('successTitle'),
+    description: t('successDescription'),
+    robots: { index: false, follow: false },
+  };
+}
+
+export default async function ComingSoonSuccessPage({ params, searchParams }: PageProps) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const { firstName: rawFirst, position: rawPos } = await searchParams;
+
+  const tSuccess = await getTranslations({ locale, namespace: 'coming_soon.success' });
+  const tFooter = await getTranslations({ locale, namespace: 'coming_soon.footer' });
+  const tHeader = await getTranslations({ locale, namespace: 'coming_soon.header' });
+
+  const firstName = sanitizeFirstName(rawFirst, locale);
+  const position = sanitizePosition(rawPos);
+  const year = new Date().getFullYear();
+
   return (
-    <main style={{ padding: 48, fontFamily: 'system-ui, sans-serif', maxWidth: 720 }}>
-      <h1>Merci !</h1>
-      <p>Placeholder success state — Story 0.17 will deliver the full design.</p>
-    </main>
+    <div className="min-h-screen flex flex-col bg-cream-50">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:outline-none"
+      >
+        {tHeader('skipToForm')}
+      </a>
+      <SiteHeader
+        navItems={[
+          { label: tSuccess('headerNavAbout'), href: `/${locale}/a-propos` },
+          { label: tSuccess('headerNavBecomePro'), href: `/${locale}/devenir-pro` },
+          { label: tSuccess('headerNavContact'), href: `/${locale}/contact` },
+        ]}
+      />
+
+      <ComingSoonSuccessHero locale={locale} firstName={firstName} position={position} />
+
+      <Footer
+        variant="minimal"
+        legal={tFooter('legal', { year })}
+        inlineLinks={[
+          { label: tFooter('linkBecomePro'), href: `/${locale}/devenir-pro` },
+          { label: tFooter('linkLegalNotice'), href: `/${locale}/mentions-legales` },
+          { label: tFooter('linkContactEmail'), href: 'mailto:contact@tukio.one' },
+        ]}
+      />
+    </div>
   );
 }
 
-export const metadata: Metadata = {
-  title: 'tukio.one — Merci',
-  robots: { index: false, follow: false },
-};
+function sanitizeFirstName(raw: string | undefined, locale: string): string {
+  if (!raw) return locale === 'fr' ? 'vous' : 'you';
+  // Next.js App Router already URL-decodes searchParams. No second decode required.
+  return (
+    raw
+      .replace(/[<>'"&]/g, '')
+      .trim()
+      .slice(0, 80) || (locale === 'fr' ? 'vous' : 'you')
+  );
+}
+
+function sanitizePosition(raw: string | undefined): number {
+  const n = parseInt(raw ?? '', 10);
+  if (isNaN(n) || n < 1 || n > 999_999) return 1;
+  return n;
+}

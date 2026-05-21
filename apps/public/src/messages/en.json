@@ -170,6 +170,100 @@
       }
     }
   },
+  "coming_soon": {
+    "header": {
+      "badge": "Coming soon to Pays de la Loire",
+      "navAbout": "About",
+      "navBecomePro": "Become a pro",
+      "navContact": "Contact",
+      "skipToForm": "Skip to form"
+    },
+    "hero": {
+      "pillLabel": "Under construction",
+      "titleLine1": "Your events,",
+      "titleLine2Emphasis": "booked.",
+      "pitch": "tukio.one is the marketplace for event service professionals in Pays de la Loire. Tents, furniture, catering, decoration: one event, one platform, close to home.",
+      "subPitch": "We're putting the finishing touches before launch. Leave your email and we'll let you know as soon as tukio.one goes live.",
+      "stat1Value": "140+",
+      "stat1Label": "Pros already registered",
+      "stat2Value": "44 · 49",
+      "stat2Label": "Pilot launch",
+      "stat3Value": "€0",
+      "stat3Label": "Registration"
+    },
+    "form": {
+      "kicker": "Stay informed",
+      "titleLine1": "Be among the",
+      "titleEmphasis": "first",
+      "subtitle": "We'll email you once — on launch day. No spam, we promise.",
+      "fields": {
+        "firstName": {
+          "label": "First name",
+          "placeholder": "Camille",
+          "errors": { "required": "First name required", "tooLong": "Maximum 80 characters" }
+        },
+        "lastName": {
+          "label": "Last name",
+          "placeholder": "Renaud",
+          "errors": { "required": "Last name required", "tooLong": "Maximum 80 characters" }
+        },
+        "email": {
+          "label": "Email address",
+          "placeholder": "you@example.com",
+          "errors": {
+            "required": "Email required",
+            "invalid": "Invalid email",
+            "tooLong": "Email too long"
+          }
+        },
+        "role": {
+          "label": "You are…",
+          "organizer": { "title": "Organizer", "sub": "I'm looking for pros" },
+          "professional": { "title": "Professional", "sub": "I offer services" }
+        },
+        "rgpd": {
+          "label": "I agree to receive one email when tukio.one launches. GDPR compliant — ",
+          "linkLabel": "privacy policy",
+          "errors": { "required": "You must accept to submit" }
+        }
+      },
+      "submit": "Notify me at launch",
+      "submitting": "Sending…",
+      "reassurance": "Your data stays in France, never resold",
+      "errors": {
+        "generic": "Something went wrong. Please try again shortly.",
+        "network": "Service temporarily unavailable. Please try again in a few minutes.",
+        "rateLimited": "Too many attempts. Please retry in {seconds} seconds.",
+        "alreadySubscribed": "You're already on the list! We'll email you at launch."
+      }
+    },
+    "success": {
+      "headerNavAbout": "About",
+      "headerNavBecomePro": "Become a pro",
+      "headerNavContact": "Contact",
+      "kicker": "Noted",
+      "titleLine1": "See you soon,",
+      "titleEmphasisSuffix": ".",
+      "positionMessage": "You are <strong>{position, selectordinal, one {the #st person} two {the #nd person} few {the #rd person} other {the #th person}}</strong> on the list. We'll email you when we open, not before.",
+      "meanwhileTitle": "Meanwhile…",
+      "meanwhileLead": "Know an event professional in Pays de la Loire?",
+      "meanwhileCta": "Refer them →",
+      "meanwhileMailSubject": "tukio.one pro referral"
+    },
+    "footer": {
+      "legal": "© tukio.one · {year} · Made in Loire-Atlantique",
+      "linkBecomePro": "Become a pilot pro",
+      "linkLegalNotice": "Legal notice",
+      "linkContactEmail": "contact@tukio.one"
+    },
+    "meta": {
+      "title": "tukio.one — Coming Soon to Pays de la Loire",
+      "description": "The marketplace for event professionals in Pays de la Loire. Tents, furniture, catering, decoration. Be notified at launch.",
+      "successTitle": "Registration confirmed — tukio.one",
+      "successDescription": "You're on the tukio.one waitlist. We'll email you when we open, not before."
+    },
+    "_NEEDS_HUMAN_REVIEW": "true"
+  },
   "errors": {
     "auth": {
       "invalidState": "Session expired. Please try again.",

@@ -170,6 +170,99 @@
       }
     }
   },
+  "coming_soon": {
+    "header": {
+      "badge": "Bientôt en Pays de la Loire",
+      "navAbout": "À propos",
+      "navBecomePro": "Devenir pro",
+      "navContact": "Contact",
+      "skipToForm": "Aller au formulaire"
+    },
+    "hero": {
+      "pillLabel": "En construction",
+      "titleLine1": "Vos événements,",
+      "titleLine2Emphasis": "réservés.",
+      "pitch": "tukio.one est la marketplace des professionnels de l'événementiel en Pays de la Loire. Tentes, mobilier, traiteur, décoration : un événement, une plateforme, près de chez vous.",
+      "subPitch": "On finalise les derniers détails avant l'ouverture. Laissez-nous votre email pour être prévenu·e dès que tukio.one est en ligne.",
+      "stat1Value": "140+",
+      "stat1Label": "Pros déjà inscrits",
+      "stat2Value": "44 · 49",
+      "stat2Label": "Lancement pilote",
+      "stat3Value": "0 €",
+      "stat3Label": "Inscription"
+    },
+    "form": {
+      "kicker": "Rester informé·e",
+      "titleLine1": "Soyez parmi les",
+      "titleEmphasis": "premiers",
+      "subtitle": "On vous écrit une seule fois, le jour de l'ouverture. Pas de spam, promis.",
+      "fields": {
+        "firstName": {
+          "label": "Prénom",
+          "placeholder": "Camille",
+          "errors": { "required": "Prénom requis", "tooLong": "Maximum 80 caractères" }
+        },
+        "lastName": {
+          "label": "Nom",
+          "placeholder": "Renaud",
+          "errors": { "required": "Nom requis", "tooLong": "Maximum 80 caractères" }
+        },
+        "email": {
+          "label": "Adresse email",
+          "placeholder": "vous@exemple.fr",
+          "errors": {
+            "required": "Email requis",
+            "invalid": "Email invalide",
+            "tooLong": "Email trop long"
+          }
+        },
+        "role": {
+          "label": "Vous êtes…",
+          "organizer": { "title": "Organisateur", "sub": "Je cherche des pros" },
+          "professional": { "title": "Professionnel", "sub": "Je propose des services" }
+        },
+        "rgpd": {
+          "label": "J'accepte de recevoir un email lors du lancement de tukio.one. Conforme RGPD — ",
+          "linkLabel": "politique de confidentialité",
+          "errors": { "required": "Vous devez accepter pour soumettre" }
+        }
+      },
+      "submit": "Me prévenir à l'ouverture",
+      "submitting": "Envoi en cours…",
+      "reassurance": "Vos données restent en France, jamais revendues",
+      "errors": {
+        "generic": "Une erreur est survenue. Réessayez dans quelques instants.",
+        "network": "Service momentanément indisponible. Réessayez dans quelques minutes.",
+        "rateLimited": "Trop de tentatives. Réessayez dans {seconds} secondes.",
+        "alreadySubscribed": "Vous êtes déjà inscrit·e ! On vous écrit dès l'ouverture."
+      }
+    },
+    "success": {
+      "headerNavAbout": "À propos",
+      "headerNavBecomePro": "Devenir pro",
+      "headerNavContact": "Contact",
+      "kicker": "C'est noté",
+      "titleLine1": "À très bientôt,",
+      "titleEmphasisSuffix": ".",
+      "positionMessage": "Vous êtes <strong>{position, selectordinal, one {la 1ʳᵉ personne} other {la #ᵉ personne}}</strong> sur la liste. On vous écrit dès l'ouverture, pas avant.",
+      "meanwhileTitle": "En attendant…",
+      "meanwhileLead": "Vous connaissez un pro de l'événementiel en Pays de la Loire ?",
+      "meanwhileCta": "Parrainez-le →",
+      "meanwhileMailSubject": "Parrainage pro tukio.one"
+    },
+    "footer": {
+      "legal": "© tukio.one · {year} · Made in Loire-Atlantique",
+      "linkBecomePro": "Devenir pro pilote",
+      "linkLegalNotice": "Mentions légales",
+      "linkContactEmail": "contact@tukio.one"
+    },
+    "meta": {
+      "title": "tukio.one — Bientôt en Pays de la Loire",
+      "description": "La marketplace des professionnels de l'événementiel en Pays de la Loire. Tentes, mobilier, traiteur, décoration. Soyez prévenu·e dès l'ouverture.",
+      "successTitle": "Inscription confirmée — tukio.one",
+      "successDescription": "Vous êtes sur la liste d'attente tukio.one. On vous écrit dès l'ouverture, pas avant."
+    }
+  },
   "errors": {
     "auth": {
       "invalidState": "Session expirée. Veuillez réessayer.",

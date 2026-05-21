@@ -127,7 +127,7 @@ development_status:
   # PRIORITÉ : à exécuter AVANT de poursuivre Epic 1 close-out (Story 1.4c+ en attente).
   0-15-coming-soon-toggle-infra-middleware: done
   0-16-design-system-atoms-pre-launch: done
-  0-17-landing-coming-soon-apex: ready-for-dev
+  0-17-landing-coming-soon-apex: done
   0-18-landing-devenir-pro-seller: ready-for-dev
   0-19-public-pages-about-privacy-legal-contact: ready-for-dev
   0-20-resend-audiences-integration-form-handlers: ready-for-dev
