@@ -3,10 +3,12 @@ export const keyframes = {
   typing: 'tk-typing',
   modalEnter: 'tk-modal-enter',
   shimmer: 'tk-shimmer',
+  pulse: 'tk-pulse',
 } as const;
 
 export const animations = {
   typing: 'tk-typing 1.4s ease-in-out infinite',
+  pulse: 'tk-pulse 2s ease-in-out infinite',
 } as const;
 
 export type KeyframeKey = keyof typeof keyframes;
