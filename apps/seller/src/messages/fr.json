@@ -219,5 +219,229 @@
         "copyright": "© tukio.one · 2026"
       }
     }
+  },
+  "seller_coming_soon": {
+    "meta": {
+      "title": "Devenir pro sur tukio.one — Pays de la Loire",
+      "description": "Marketplace événementiel pour pros : commission 10 %, paiements Stripe Connect J+1, KYC géré. Inscription pro à l'ouverture."
+    },
+    "skipToContent": "Aller au contenu",
+    "hero": {
+      "kicker": "Pour les professionnels",
+      "titleLine1": "Comment fonctionne tukio.one",
+      "titleLine2Emphasis": "pour les pros",
+      "pitch": "Vous louez des chapiteaux, du mobilier, vous êtes traiteur ou décorateur en Pays de la Loire ? Voici comment la plateforme est pensée pour vous, en toute transparence.",
+      "bannerTitle": "tukio.one n'est pas encore ouverte",
+      "bannerBody": "Cette page décrit comment la plateforme fonctionnera. Vous pourrez créer votre compte pro à l'ouverture.",
+      "bannerCta": "Soyez prévenu·e en priorité",
+      "visualAlt": "Visuel décoratif marketplace événementielle"
+    },
+    "professions": {
+      "kicker": "Pour qui",
+      "title": "Les métiers concernés.",
+      "intro": "tukio.one s'adresse aux professionnels de l'événementiel disposant d'une activité déclarée (SAS, SARL, EURL, auto-entrepreneur, association). Au lancement, ces métiers seront accueillis en priorité.",
+      "cards": {
+        "tents": {
+          "title": "Tentes et chapiteaux",
+          "description": "Location, montage, démontage."
+        },
+        "furniture": {
+          "title": "Mobilier événementiel",
+          "description": "Tables, chaises, mange-debout, lounge."
+        },
+        "catering": {
+          "title": "Traiteur et boissons",
+          "description": "Plateaux, food-trucks, bars éphémères."
+        },
+        "decoration": {
+          "title": "Décoration et fleurs",
+          "description": "Scénographie, fleuristes, créateurs."
+        },
+        "soundLight": { "title": "Son et lumière", "description": "Sono, DJ, éclairage scénique." },
+        "animation": {
+          "title": "Animation et services",
+          "description": "Photographes, animateurs, intervenants."
+        }
+      }
+    },
+    "journey": {
+      "kicker": "Le parcours pro",
+      "title": "De l'inscription à la première réservation.",
+      "steps": {
+        "signup": {
+          "n": "01",
+          "title": "Inscription",
+          "description": "Email, mot de passe, vérification de l'adresse. Quelques minutes."
+        },
+        "proRequest": {
+          "n": "02",
+          "title": "Demande pro",
+          "description": "Identité, activité (SIRET, forme juridique), zone d'intervention, documents."
+        },
+        "validation": {
+          "n": "03",
+          "title": "Validation",
+          "description": "Examen du dossier par l'équipe tukio. Sous 24 à 48 heures ouvrées."
+        },
+        "stripe": {
+          "n": "04",
+          "title": "Compte Stripe",
+          "description": "Configuration séparée du compte de paiement. KYC géré par Stripe."
+        },
+        "publish": {
+          "n": "05",
+          "title": "Mise en ligne",
+          "description": "Création de vos fiches services, photos, prix, disponibilités."
+        }
+      }
+    },
+    "requirements": {
+      "kicker": "Ce qu'il faut prévoir",
+      "title": "Les documents et conditions requis.",
+      "proAppTitle": "Pour votre demande pro",
+      "proAppItems": {
+        "siret": "Une activité déclarée en France (SIRET valide)",
+        "id": "Une pièce d'identité (CNI, passeport ou titre de séjour)",
+        "activity": "Un justificatif d'activité (Kbis, attestation INSEE, statuts)",
+        "insurance": "Une assurance responsabilité civile professionnelle",
+        "contact": "Une adresse email et un téléphone joignables"
+      },
+      "paymentTitle": "Pour votre compte de paiement",
+      "paymentItems": {
+        "bankAccount": "Un compte bancaire professionnel au nom de votre activité",
+        "iban": "Un IBAN français ou européen (SEPA)",
+        "stripeKyc": "Les justificatifs demandés par Stripe pour le KYC",
+        "kbis": "Pour les SAS, SARL, EURL : Kbis de moins de 3 mois"
+      }
+    },
+    "payments": {
+      "kicker": "Paiements et reversements",
+      "title": "Comment vous êtes payé, en détail.",
+      "intro": "La transparence sur l'argent, c'est essentiel. Voici exactement comment ça marche, du moment où le client paie jusqu'au virement sur votre compte.",
+      "pipeline": {
+        "clientPays": {
+          "n": "01",
+          "title": "Le client paie",
+          "description": "Au moment de la réservation, le client règle 100 % par carte bancaire ou Apple/Google Pay via Stripe."
+        },
+        "escrow": {
+          "n": "02",
+          "title": "Fonds sécurisés",
+          "description": "L'argent est conservé par Stripe sur un compte séquestre. Vous voyez la réservation, mais l'argent n'est pas encore à vous."
+        },
+        "delivery": {
+          "n": "03",
+          "title": "Prestation réalisée",
+          "description": "Le jour J, vous délivrez votre service. Le client confirme (explicitement ou automatiquement après J+1)."
+        },
+        "payout": {
+          "n": "04",
+          "title": "Reversement",
+          "description": "Stripe vire le montant net sur votre IBAN en J+1 à J+3 ouvrés. Vous recevez un email de confirmation."
+        }
+      },
+      "clientPaysTitle": "Ce que vos clients peuvent utiliser",
+      "clientPaysItems": {
+        "card": {
+          "title": "Carte bancaire",
+          "description": "Visa, Mastercard, American Express, Carte Bleue"
+        },
+        "wallet": { "title": "Apple Pay et Google Pay", "description": "Sur mobile et tablette" },
+        "sepa": {
+          "title": "Virement SEPA (réservations B2B)",
+          "description": "Pour les commandes importantes des entreprises"
+        },
+        "installments": {
+          "title": "Paiement en plusieurs fois",
+          "description": "Acomptes échelonnés selon vos conditions"
+        }
+      },
+      "youGetPaidTitle": "Comment vous êtes payé",
+      "youGetPaidItems": {
+        "sepa": {
+          "title": "Virement bancaire SEPA",
+          "description": "Sur votre IBAN pro, automatique après chaque prestation"
+        },
+        "delay": {
+          "title": "Délai de reversement",
+          "description": "J+1 à J+3 ouvrés après confirmation de la prestation"
+        },
+        "tracking": {
+          "title": "Suivi en temps réel",
+          "description": "Tableau de bord avec l'état de chaque paiement"
+        },
+        "invoices": {
+          "title": "Justificatifs téléchargeables",
+          "description": "Factures, attestations, exports comptables"
+        }
+      },
+      "stripeTitle": "Stripe gère les paiements, pas tukio",
+      "stripeBody": "Nous avons choisi Stripe Connect, leader mondial du paiement marketplace. Cela signifie que vos coordonnées bancaires ne transitent jamais par tukio.one. Le KYC, la conformité PSD2, la lutte anti-fraude, tout est géré par Stripe directement. Vos clients voient un paiement sécurisé, vous voyez vos virements arriver."
+    },
+    "pricing": {
+      "kicker": "Tarification",
+      "title": "Vous ne payez que quand vous gagnez.",
+      "intro": "Pas d'abonnement obligatoire au démarrage. Pas de frais cachés. Une commission claire, prélevée automatiquement sur chaque réservation. Vous voyez le montant exact qui vous revient avant même d'accepter la mission.",
+      "cards": {
+        "registration": {
+          "value": "0 €",
+          "title": "Inscription, fiches, mise en ligne",
+          "description": "Aucun frais pour rejoindre la plateforme et publier vos services."
+        },
+        "commission": {
+          "value": "10 %",
+          "title": "Commission par réservation",
+          "description": "Prélevée automatiquement sur le montant client. Tout inclus, pas de surcouche."
+        },
+        "payout": {
+          "value": "J+1",
+          "title": "Délai de reversement",
+          "description": "Stripe envoie le virement après confirmation de la prestation."
+        }
+      },
+      "disclaimer": "Des formules d'abonnement avec commission réduite (Business, Enterprise) sont prévues pour les pros à fort volume. Elles seront proposées en option, jamais imposées. Les détails seront communiqués au moment du lancement."
+    },
+    "benefits": {
+      "kicker": "Pourquoi nous rejoindre",
+      "title": "Ce qu'on prend en charge pour vous.",
+      "cards": {
+        "payment": {
+          "title": "Le paiement",
+          "description": "Stripe Connect, KYC géré, factures automatiques, reversements rapides. Vous touchez votre argent sans relancer personne."
+        },
+        "trust": {
+          "title": "La confiance",
+          "description": "Profils vérifiés, avis modérés, médiation tukio en cas de litige. Vos clients arrivent rassurés."
+        },
+        "communication": {
+          "title": "La communication",
+          "description": "Messagerie intégrée, notifications, rappels. Tout l'historique de chaque dossier au même endroit."
+        },
+        "calendar": {
+          "title": "Le calendrier",
+          "description": "Disponibilités, blocage de créneaux, conflits évités automatiquement."
+        },
+        "stats": {
+          "title": "Les stats",
+          "description": "Taux de conversion, panier moyen, délai de réponse. De quoi piloter votre activité."
+        },
+        "admin": {
+          "title": "L'administratif",
+          "description": "Mandat de facturation, gestion TVA, exports comptables. Votre comptable nous remerciera."
+        }
+      }
+    },
+    "finalCta": {
+      "kicker": "En préparation",
+      "title": "La plateforme ouvre bientôt.",
+      "body": "Les inscriptions pro ne sont pas encore ouvertes. Laissez-nous vos coordonnées pour être prévenu·e dès l'ouverture, et bénéficier d'un accès prioritaire pour publier vos premières fiches services.",
+      "ctaPrimary": "Être prévenu·e à l'ouverture",
+      "ctaContact": "Une question ? Nous écrire"
+    },
+    "footer": {
+      "legal": "© tukio.one · {year} · Made in Loire-Atlantique",
+      "linkLegalNotice": "Mentions légales",
+      "linkContactEmail": "contact@tukio.one"
+    }
   }
 }

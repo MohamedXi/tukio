@@ -219,5 +219,227 @@
         "copyright": "© tukio.one · 2026"
       }
     }
+  },
+  "seller_coming_soon": {
+    "meta": {
+      "title": "Become a pro on tukio.one — Pays de la Loire",
+      "description": "Event marketplace for pros: 10% commission, Stripe Connect payouts D+1, managed KYC. Pro signup at launch."
+    },
+    "skipToContent": "Skip to content",
+    "hero": {
+      "kicker": "For professionals",
+      "titleLine1": "How tukio.one works",
+      "titleLine2Emphasis": "for pros",
+      "pitch": "You rent tents, furniture, you're a caterer or decorator in Pays de la Loire? Here's how the platform is designed for you, in full transparency.",
+      "bannerTitle": "tukio.one is not open yet",
+      "bannerBody": "This page describes how the platform will work. You'll be able to create your pro account at launch.",
+      "bannerCta": "Be notified in priority",
+      "visualAlt": "Decorative event marketplace visual"
+    },
+    "professions": {
+      "kicker": "For whom",
+      "title": "The professions concerned.",
+      "intro": "tukio.one is for event professionals with a registered business (SAS, SARL, EURL, sole trader, association). At launch, these professions will be welcomed first.",
+      "cards": {
+        "tents": { "title": "Tents and marquees", "description": "Rental, setup, takedown." },
+        "furniture": {
+          "title": "Event furniture",
+          "description": "Tables, chairs, standing tables, lounge."
+        },
+        "catering": {
+          "title": "Catering and drinks",
+          "description": "Platters, food trucks, pop-up bars."
+        },
+        "decoration": {
+          "title": "Decoration and flowers",
+          "description": "Scenography, florists, designers."
+        },
+        "soundLight": { "title": "Sound and light", "description": "PA, DJ, stage lighting." },
+        "animation": {
+          "title": "Entertainment and services",
+          "description": "Photographers, hosts, speakers."
+        }
+      }
+    },
+    "journey": {
+      "kicker": "The pro journey",
+      "title": "From signup to first booking.",
+      "steps": {
+        "signup": {
+          "n": "01",
+          "title": "Signup",
+          "description": "Email, password, address verification. A few minutes."
+        },
+        "proRequest": {
+          "n": "02",
+          "title": "Pro application",
+          "description": "Identity, business (SIRET, legal form), service area, documents."
+        },
+        "validation": {
+          "n": "03",
+          "title": "Validation",
+          "description": "Review of your application by the tukio team. Within 24 to 48 working hours."
+        },
+        "stripe": {
+          "n": "04",
+          "title": "Stripe account",
+          "description": "Separate payment account setup. KYC managed by Stripe."
+        },
+        "publish": {
+          "n": "05",
+          "title": "Go live",
+          "description": "Create your service listings, photos, prices, availability."
+        }
+      }
+    },
+    "requirements": {
+      "kicker": "What to prepare",
+      "title": "Required documents and conditions.",
+      "proAppTitle": "For your pro application",
+      "proAppItems": {
+        "siret": "A registered business in France (valid SIRET)",
+        "id": "Valid ID (CNI, passport or residence permit)",
+        "activity": "Proof of business activity (Kbis, INSEE certificate, articles)",
+        "insurance": "Professional civil liability insurance",
+        "contact": "A reachable email and phone number"
+      },
+      "paymentTitle": "For your payment account",
+      "paymentItems": {
+        "bankAccount": "A professional bank account in your business name",
+        "iban": "A French or European IBAN (SEPA)",
+        "stripeKyc": "The documents required by Stripe for KYC",
+        "kbis": "For SAS, SARL, EURL: Kbis less than 3 months old"
+      }
+    },
+    "payments": {
+      "kicker": "Payments and payouts",
+      "title": "How you get paid, in detail.",
+      "intro": "Transparency about money is essential. Here's exactly how it works, from the moment the client pays to the transfer to your account.",
+      "pipeline": {
+        "clientPays": {
+          "n": "01",
+          "title": "The client pays",
+          "description": "At booking time, the client pays 100% by card or Apple/Google Pay via Stripe."
+        },
+        "escrow": {
+          "n": "02",
+          "title": "Funds secured",
+          "description": "Money is held by Stripe in an escrow account. You see the booking, but the money isn't yours yet."
+        },
+        "delivery": {
+          "n": "03",
+          "title": "Service delivered",
+          "description": "On the day, you deliver your service. The client confirms (explicitly or automatically after D+1)."
+        },
+        "payout": {
+          "n": "04",
+          "title": "Payout",
+          "description": "Stripe transfers the net amount to your IBAN in D+1 to D+3 working days. You receive a confirmation email."
+        }
+      },
+      "clientPaysTitle": "What your clients can use",
+      "clientPaysItems": {
+        "card": {
+          "title": "Credit card",
+          "description": "Visa, Mastercard, American Express, Carte Bleue"
+        },
+        "wallet": { "title": "Apple Pay and Google Pay", "description": "On mobile and tablet" },
+        "sepa": {
+          "title": "SEPA transfer (B2B bookings)",
+          "description": "For large company orders"
+        },
+        "installments": {
+          "title": "Payment in installments",
+          "description": "Scheduled deposits per your terms"
+        }
+      },
+      "youGetPaidTitle": "How you get paid",
+      "youGetPaidItems": {
+        "sepa": {
+          "title": "SEPA bank transfer",
+          "description": "To your pro IBAN, automatic after each service"
+        },
+        "delay": {
+          "title": "Payout delay",
+          "description": "D+1 to D+3 working days after service confirmation"
+        },
+        "tracking": {
+          "title": "Real-time tracking",
+          "description": "Dashboard with the status of each payment"
+        },
+        "invoices": {
+          "title": "Downloadable documents",
+          "description": "Invoices, certificates, accounting exports"
+        }
+      },
+      "stripeTitle": "Stripe handles payments, not tukio",
+      "stripeBody": "We chose Stripe Connect, world leader in marketplace payments. This means your banking details never transit through tukio.one. KYC, PSD2 compliance, anti-fraud, everything is handled by Stripe directly. Your clients see a secure payment, you see your transfers arrive."
+    },
+    "pricing": {
+      "kicker": "Pricing",
+      "title": "You only pay when you earn.",
+      "intro": "No mandatory subscription at start. No hidden fees. A clear commission, automatically deducted from each booking. You see the exact amount you receive before even accepting the mission.",
+      "cards": {
+        "registration": {
+          "value": "€0",
+          "title": "Registration, listings, go live",
+          "description": "No fees to join the platform and publish your services."
+        },
+        "commission": {
+          "value": "10%",
+          "title": "Commission per booking",
+          "description": "Automatically deducted from the client amount. All included, no overlay."
+        },
+        "payout": {
+          "value": "D+1",
+          "title": "Payout delay",
+          "description": "Stripe sends the transfer after service confirmation."
+        }
+      },
+      "disclaimer": "Subscription plans with reduced commission (Business, Enterprise) are planned for high-volume pros. They will be offered as options, never imposed. Details will be communicated at launch."
+    },
+    "benefits": {
+      "kicker": "Why join us",
+      "title": "What we take care of for you.",
+      "cards": {
+        "payment": {
+          "title": "Payment",
+          "description": "Stripe Connect, managed KYC, automatic invoices, fast payouts. You get your money without chasing anyone."
+        },
+        "trust": {
+          "title": "Trust",
+          "description": "Verified profiles, moderated reviews, tukio mediation in case of dispute. Your clients arrive reassured."
+        },
+        "communication": {
+          "title": "Communication",
+          "description": "Built-in messaging, notifications, reminders. The entire history of each case in one place."
+        },
+        "calendar": {
+          "title": "Calendar",
+          "description": "Availability, slot blocking, conflicts avoided automatically."
+        },
+        "stats": {
+          "title": "Stats",
+          "description": "Conversion rate, average basket, response time. Enough to pilot your business."
+        },
+        "admin": {
+          "title": "Administration",
+          "description": "Billing mandate, VAT management, accounting exports. Your accountant will thank us."
+        }
+      }
+    },
+    "finalCta": {
+      "kicker": "In preparation",
+      "title": "The platform opens soon.",
+      "body": "Pro signups are not open yet. Leave us your details to be notified at launch, and benefit from priority access to publish your first service listings.",
+      "ctaPrimary": "Be notified at launch",
+      "ctaContact": "Got a question? Write to us"
+    },
+    "footer": {
+      "legal": "© tukio.one · {year} · Made in Loire-Atlantique",
+      "linkLegalNotice": "Legal notice",
+      "linkContactEmail": "contact@tukio.one"
+    },
+    "_NEEDS_HUMAN_REVIEW": "true"
   }
 }

@@ -22,7 +22,7 @@ export function SiteHeader({
     <header
       role="banner"
       className={cn(
-        'flex items-center justify-between px-10 py-6 bg-cream-50 border-b border-cream-200',
+        'flex items-center justify-between px-10 py-5 bg-white border-b border-cream-200',
         'max-md:px-4 max-md:py-4',
         className,
       )}

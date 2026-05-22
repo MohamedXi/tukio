@@ -84,7 +84,7 @@ describe('SiteHeader', () => {
   it('merges custom className with the default header chrome', () => {
     render(<SiteHeader className="custom-extra" />);
     expect(screen.getByRole('banner').className).toContain('custom-extra');
-    expect(screen.getByRole('banner').className).toContain('bg-cream-50');
+    expect(screen.getByRole('banner').className).toContain('bg-white');
   });
 
   it('passes axe a11y check (no nav)', async () => {

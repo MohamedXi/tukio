@@ -10,7 +10,7 @@ export async function ComingSoonHero({ locale }: ComingSoonHeroProps) {
 
   return (
     <section className="flex flex-col justify-center pt-16 pb-20 px-20 max-md:px-6 max-md:pt-10 max-md:pb-12">
-      <Pill pulseDot variant="brand">
+      <Pill pulseDot variant="brand" className="w-fit">
         {t('hero.pillLabel')}
       </Pill>
 
