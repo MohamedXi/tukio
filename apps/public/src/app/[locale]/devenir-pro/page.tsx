@@ -1,12 +1,14 @@
-// Placeholder Story 0.15 — final content delivered in Story 0.18 (seller app)
-// + apex CTA. The apex `/devenir-pro` route stays whitelisted so a visitor in
-// pre-launch mode can reach a French-canonical landing without going through
-// seller.tukio.one.
-export default function DevenirProPlaceholderPage() {
-  return (
-    <main style={{ padding: 48, fontFamily: 'system-ui, sans-serif', maxWidth: 720 }}>
-      <h1>Devenir pro sur tukio.one</h1>
-      <p>Story 0.18 placeholder — final landing on seller.tukio.one/devenir-pro.</p>
-    </main>
-  );
+import { redirect } from 'next/navigation';
+
+interface PageProps {
+  params: Promise<{ locale: string }>;
+}
+
+// Permanent cross-zone redirect: apex /devenir-pro → seller.tukio.one/seller-coming-soon
+// The pro landing lives exclusively on seller.tukio.one (Story 0.18).
+// Route stays whitelisted in coming-soon-gate-decision.ts so the redirect works in pre-launch mode.
+export default async function DevenirProRedirectPage({ params }: PageProps) {
+  const { locale } = await params;
+  const sellerBaseUrl = process.env['NEXT_PUBLIC_SELLER_BASE_URL'] ?? 'https://seller.tukio.one';
+  redirect(`${sellerBaseUrl}/${locale}/seller-coming-soon`);
 }

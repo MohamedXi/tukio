@@ -56,6 +56,7 @@ export default async function ComingSoonPage({ params, searchParams }: PageProps
   const tFooter = await getTranslations({ locale, namespace: 'coming_soon.footer' });
   const tHeader = await getTranslations({ locale, namespace: 'coming_soon.header' });
   const year = new Date().getFullYear();
+  const sellerBaseUrl = process.env['NEXT_PUBLIC_SELLER_BASE_URL'] ?? 'https://seller.tukio.one';
 
   const initialRole: 'organisateur' | 'professionnel' =
     role === 'pro' ? 'professionnel' : 'organisateur';
@@ -86,7 +87,10 @@ export default async function ComingSoonPage({ params, searchParams }: PageProps
         variant="minimal"
         legal={tFooter('legal', { year })}
         inlineLinks={[
-          { label: tFooter('linkBecomePro'), href: `/${locale}/devenir-pro` },
+          {
+            label: tFooter('linkBecomePro'),
+            href: `${sellerBaseUrl}/${locale}/seller-coming-soon`,
+          },
           { label: tFooter('linkLegalNotice'), href: `/${locale}/mentions-legales` },
           { label: tFooter('linkContactEmail'), href: 'mailto:contact@tukio.one' },
         ]}
