@@ -320,3 +320,18 @@
 - **W33-review (0.16) — `children: ReactNode` dans h1/h2 (EditorialPageShell + Block)** — Block-level JSX dans h1/h2 est invalid HTML. Spec permet ReactNode pour composition `<em>`. Consumer responsibility de n'utiliser que des inline elements.
 - **W34-review (0.16) — `animations.ts` token `pulse` string duplique la valeur CSS var** — Deux sources de vérité: `animations.ts` + `theme.css`. Pattern existant (typing/shimmer pareil). Le test `tokens-css-sync.spec.ts` pourrait être étendu pour assertions d'animations.
 - **W35-review (0.16) — `mainClassName` absent sur EditorialPageShell** — Pas de prop override pour le padding du `<main>`. Stories 0.17-0.19 n'ont pas ce besoin. Si Story 0.19 Contact page nécessite full-bleed, ajouter `mainClassName`.
+
+## Deferred from: code review of 0-17-landing-coming-soon-apex (2026-05-21)
+
+- **W36-review (0.17) — PII firstName + position en query string `/coming-soon/success?firstName=...&position=...`** — Pattern post-signup standard (équivalent verify-email-required Story 1.6 spec). Plausible Analytics et access logs à configurer pour scrub ces params pre-launch.
+- **W37-review (0.17) — `rgpdOptIn` defaultValue `undefined` au lieu de `true` (spec AC3)** — Implementation GDPR-conforme (opt-in affirmatif requis par CNIL). Spec à corriger pour ce point précis : pre-checked viole guidance CNIL post-2017.
+- **W38-review (0.17) — Position max validation 999_999** — Story 0.20 livrera positions réelles depuis Resend Audience count. Clamp à 9999 max possible si Story 0.20 confirme range.
+- **W39-review (0.17) — `Math.random()` non-déterministe dans mock hook** — Mock only, Story 0.20 remplace par real fetch retournant position from Resend.
+- **W40-review (0.17) — setState après unmount dans mock hook** — React 19 gère gracieusement (warn, pas error). Story 0.20 real hook utilise TanStack Query qui gère natively l'unmount.
+- **W41-review (0.17) — Sanitizer firstName denylist `[<>'"&]` vs allowlist Unicode names** — Hardening V1+ post-MVP. Denylist suffit pour XSS standard ; allowlist plus strict requis si firstName passe dans email templates non-React (Resend handler Story 0.20 → JSON-LD Story 0.21).
+- **W42-review (0.17) — FR `selectordinal` `two`/`few` branches dead code** — CLDR fr ordinal n'a que `one` + `other`. Branches `two`/`few` jamais sélectionnées par Intl.PluralRules mais output accidentellement correct via `other` fallback. Cosmetic clean-up V1+.
+- **W43-review (0.17) — `handleSubmit` ne `await` pas la Promise `mutate`** — Pattern Story 1.2d strict. `isSubmitting` RHF drop avant fin mutate, mais `isPending` du hook reste correct → UI safe. Si Story 0.20 hook utilise `useMutation` TanStack, await sera nécessaire.
+- **W44-review (0.17) — `?role=professional` whitelist strict (seulement `?role=pro`)** — UX enhancement V1+ : accepter `professional` + `pro` + `org` + `organizer` comme alias. Si Marketing emails utilisent format différent, casser silencieusement.
+- **W45-review (0.17) — Bundle size landing ~30 KB gzip (RHF + Zod core + Radix Checkbox + lucide icons)** — Sous le seuil ≤ 50 KB AC10. Story 0.21 ajoutera Plausible (~1 KB). Monitorer Lighthouse perf.
+- **W46-review (0.17) — `validation` kind manquant dans `classifyPreLaunchError`** — Spec AC3 inclut `validation` avec `fieldErrors?`. Story 0.20 ajoutera quand le real handler retournera 422 + Zod issues. Pour le moment classifier minimal suffit.
+- **W47-review (0.17) — Mock hook pas de path `onError` simulé** — Story 0.20 fournira real `onError` paths (rate_limited, network, validation, generic). Mock minimal aujourd'hui ne permet pas de tester les branches error en dev sans manual injection.
