@@ -4,6 +4,7 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { LOCALES } from '@tukio/i18n-client/config';
+import { QueryProvider } from '@tukio/api-client/providers';
 import './globals.css';
 // AuthProvider (Keycloak.js) intentionnellement retiré — Story 1.4d le remplace
 // par un provider cookie-based (tukio-session-active + /v1/auth/whoami).
@@ -64,7 +65,7 @@ export default async function RootLayout({
     >
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
+          <QueryProvider>{children}</QueryProvider>
         </NextIntlClientProvider>
       </body>
     </html>

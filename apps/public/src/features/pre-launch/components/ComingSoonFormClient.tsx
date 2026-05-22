@@ -14,7 +14,7 @@ import {
   type PreLaunchSignupInput,
 } from '../schemas/pre-launch-signup.schema.js';
 import { classifyPreLaunchError } from '../services/classify-pre-launch-error.js';
-import { useSubmitPreLaunchSignup } from '../hooks/use-submit-pre-launch-signup-mock.js';
+import { useSubmitPreLaunchSignup } from '@tukio/api-client/hooks/pre-launch';
 
 type FormValues = Omit<PreLaunchSignupInput, 'locale'>;
 

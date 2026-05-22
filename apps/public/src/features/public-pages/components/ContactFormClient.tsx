@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@tukio/ui/components/Button';
 import { ContactFormSchema, type ContactFormValues } from '../schemas/contact-form.schema.js';
 import { classifyContactError } from '../services/classify-contact-error.js';
-import { useSubmitContactForm } from '../hooks/use-submit-contact-form-mock.js';
+import { useSubmitPreLaunchContact } from '@tukio/api-client/hooks/pre-launch';
 
 type ContactError =
   | { kind: 'generic' }
@@ -41,7 +41,7 @@ export function ContactFormClient({ locale }: ContactFormClientProps) {
   const [formError, setFormError] = useState<ContactError | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const bannerRef = useRef<HTMLDivElement | null>(null);
-  const { mutate, isPending } = useSubmitContactForm();
+  const { mutate, isPending } = useSubmitPreLaunchContact();
 
   const {
     register,

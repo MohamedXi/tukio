@@ -47,8 +47,8 @@ vi.mock('next-intl', () => ({
   },
 }));
 
-vi.mock('../../hooks/use-submit-contact-form-mock.js', () => ({
-  useSubmitContactForm: () => ({
+vi.mock('@tukio/api-client/hooks/pre-launch', () => ({
+  useSubmitPreLaunchContact: () => ({
     mutate: vi.fn((_data: unknown, cb: { onSuccess: () => void }) => cb.onSuccess()),
     isPending: false,
   }),
