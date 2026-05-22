@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 vi.mock('@/features/pre-launch/services/resend-client', () => ({
   resendClient: {
     emails: {
-      send: vi.fn().mockResolvedValue({ data: { id: 'email-id' } }),
+      send: vi.fn().mockResolvedValue({ data: { id: 'email-id' }, error: null }),
     },
   },
 }));
@@ -30,14 +30,22 @@ import { POST } from '../contact/route.js';
 import { resendClient } from '@/features/pre-launch/services/resend-client';
 import { contactRatelimit } from '@/features/pre-launch/services/rate-limit-client';
 
-function makeRequest(body: unknown): NextRequest {
-  return new NextRequest('http://localhost:3000/api/pre-launch/contact', {
+const ORIGIN = 'http://localhost:3000';
+
+function makeRequest(body: unknown, opts: { origin?: string | null } = {}): NextRequest {
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    'sec-fetch-site': 'same-origin',
+    'x-forwarded-for': '127.0.0.1',
+  };
+  if (opts.origin === undefined) headers['origin'] = ORIGIN;
+  else if (opts.origin !== null) headers['origin'] = opts.origin;
+  const json = JSON.stringify(body);
+  headers['content-length'] = String(Buffer.byteLength(json, 'utf-8'));
+  return new NextRequest(`${ORIGIN}/api/pre-launch/contact`, {
     method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-forwarded-for': '127.0.0.1',
-    },
-    body: JSON.stringify(body),
+    headers,
+    body: json,
   });
 }
 
@@ -54,7 +62,14 @@ const VALID_BODY = {
 describe('POST /api/pre-launch/contact', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(resendClient.emails.send).mockResolvedValue({ data: { id: 'email-id' } } as never);
+    process.env['RESEND_API_KEY'] = 're_test_key';
+    process.env['RESEND_FROM_ADDRESS'] = 'Tukio <noreply@tukio.one>';
+    process.env['CONTACT_INBOX'] = 'contact@tukio.one';
+    process.env['NEXT_PUBLIC_BASE_URL'] = ORIGIN;
+    vi.mocked(resendClient.emails.send).mockResolvedValue({
+      data: { id: 'email-id' },
+      error: null,
+    } as never);
     vi.mocked(contactRatelimit.limit).mockResolvedValue({
       success: true,
       reset: Date.now() + 60_000,
@@ -97,16 +112,51 @@ describe('POST /api/pre-launch/contact', () => {
     expect(res.headers.get('retry-after')).toBeTruthy();
   });
 
-  it('returns 502 when Resend email.send throws', async () => {
-    vi.mocked(resendClient.emails.send).mockRejectedValueOnce(new Error('Service Unavailable'));
+  it('returns 502 when Resend email.send returns error (new shape)', async () => {
+    vi.mocked(resendClient.emails.send).mockResolvedValueOnce({
+      data: null,
+      error: { name: 'service_unavailable', message: 'Service Unavailable' },
+    } as never);
     const res = await POST(makeRequest(VALID_BODY));
     const body = (await res.json()) as { ok: boolean; error: { tukioCode: string } };
     expect(res.status).toBe(502);
     expect(body.error.tukioCode).toBe('PRE-LAUNCH-EXTERNAL-001');
   });
 
+  it('returns 502 when Resend email.send throws', async () => {
+    vi.mocked(resendClient.emails.send).mockRejectedValueOnce(new Error('Boom'));
+    const res = await POST(makeRequest(VALID_BODY));
+    expect(res.status).toBe(502);
+  });
+
+  it('returns 403 when cross-origin', async () => {
+    const res = await POST(makeRequest(VALID_BODY, { origin: 'https://evil.com' }));
+    // Default sec-fetch-site: 'same-origin' overrides origin check, so we need a fresh request
+    const evilReq = new NextRequest(`${ORIGIN}/api/pre-launch/contact`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        origin: 'https://evil.com',
+        'sec-fetch-site': 'cross-site',
+        'content-length': String(JSON.stringify(VALID_BODY).length),
+      },
+      body: JSON.stringify(VALID_BODY),
+    });
+    const res2 = await POST(evilReq);
+    expect(res2.status).toBe(403);
+    // First call (with same-origin header) succeeded, so res.status would be 200.
+    expect(res.status).toBe(200);
+  });
+
   it('returns 422 on invalid email in body', async () => {
     const res = await POST(makeRequest({ ...VALID_BODY, email: 'not-valid' }));
+    expect(res.status).toBe(422);
+  });
+
+  it('returns 422 on email with CRLF (header injection guard)', async () => {
+    const res = await POST(
+      makeRequest({ ...VALID_BODY, email: 'attacker@evil.com\r\nBcc: victim@target.com' }),
+    );
     expect(res.status).toBe(422);
   });
 });

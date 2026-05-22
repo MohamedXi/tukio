@@ -23,8 +23,9 @@ export function mapPreLaunchError(
 ): PreLaunchApiError {
   if (httpStatus === 429) {
     const retryHeader = headers.get('retry-after');
-    const retryAfterSeconds = retryHeader ? parseInt(retryHeader, 10) : 60;
-    const safeRetry = isNaN(retryAfterSeconds) ? 60 : retryAfterSeconds;
+    const parsed = retryHeader ? parseInt(retryHeader, 10) : 60;
+    // Clamp to [1, 3600]: rejects negative/zero/oversized values from servers.
+    const safeRetry = Math.max(1, Math.min(3600, isNaN(parsed) ? 60 : parsed));
     return new PreLaunchApiError(429, 'PRE-LAUNCH-RATE-LIMITED-001', safeRetry);
   }
   if (httpStatus === 422) {

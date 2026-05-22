@@ -12,14 +12,21 @@ const logger = pino({
       '*.firstName',
       '*.lastName',
       '*.message',
+      'errorMessage',
     ],
     censor: '[REDACTED]',
   },
 });
 
+const EMAIL_REGEX = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+function scrubEmails(text: string | undefined): string | undefined {
+  if (!text) return text;
+  return text.replace(EMAIL_REGEX, '[REDACTED]');
+}
+
 interface ContactLogData {
   email: string;
-  outcome: 'sent' | 'failed';
+  outcome: 'sent' | 'failed' | 'dev_fallback';
   category?: string;
   subject?: string;
   locale?: string;
@@ -27,6 +34,7 @@ interface ContactLogData {
 }
 
 export function logContact(data: ContactLogData): void {
+  if (typeof data.email !== 'string') return;
   const emailHash = crypto
     .createHash('sha256')
     .update(data.email.toLowerCase())
@@ -40,7 +48,7 @@ export function logContact(data: ContactLogData): void {
     category: data.category,
     subject: data.subject,
     locale: data.locale,
-    errorMessage: data.errorMessage,
+    errorMessage: scrubEmails(data.errorMessage),
     timestamp: new Date().toISOString(),
     correlationId: crypto.randomUUID(),
   });

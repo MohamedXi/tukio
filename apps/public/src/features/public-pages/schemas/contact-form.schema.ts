@@ -13,7 +13,8 @@ export const ContactFormSchema = z.object({
     .toLowerCase()
     .min(1, 'errors.email.invalid')
     .email('errors.email.invalid')
-    .max(254, 'errors.email.tooLong'),
+    .max(254, 'errors.email.tooLong')
+    .refine((v) => !/[\r\n]/.test(v), { message: 'errors.email.invalid' }),
   category: z.enum(['organisateur', 'professionnel', 'journaliste', 'partenaire', 'autre'], {
     error: () => ({ message: 'errors.category.invalid' }),
   }),

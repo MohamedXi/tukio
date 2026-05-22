@@ -3,6 +3,8 @@
 import { useMutation, type UseMutationResult } from '@tanstack/react-query';
 import { mapPreLaunchError, type PreLaunchApiError } from './map-pre-launch-error.js';
 
+const FETCH_TIMEOUT_MS = 15_000;
+
 export interface PreLaunchSignupInput {
   firstName: string;
   lastName: string;
@@ -29,8 +31,10 @@ export function useSubmitPreLaunchSignup(): UseMutationResult<
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(input),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
-      const body = await response.json();
+      // P14 — guard against non-JSON server responses (e.g. Cloudflare error HTML)
+      const body = await response.json().catch(() => ({}));
       if (!response.ok || (body as { ok?: boolean }).ok === false) {
         throw mapPreLaunchError(response.status, body, response.headers);
       }

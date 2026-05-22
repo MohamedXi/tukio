@@ -56,6 +56,16 @@ curl -H "Authorization: Bearer $RESEND_API_KEY" \
 
 ## Section 4 — Cleanup PR (supprimer Route Handlers + hooks)
 
+**⚠️ Avant de supprimer un fichier ci-dessous, exécuter :**
+
+```bash
+# Vérifier qu'AUCUN autre module ne consomme le fichier en dehors de la stack pre-launch
+grep -r "parseAcquisitionCookie\|createResendContact\|computePosition\|logSignup\|logContact" \
+  apps/ packages/ --include="*.ts" --include="*.tsx" | grep -v "features/pre-launch/"
+```
+
+Si la commande retourne des matches en dehors de `features/pre-launch/`, **ne pas supprimer** ce fichier (autre code en dépend). Le cookie `tk_acq` lui-même reste géré par Story 0.13 (`apps/public/src/middleware/acquisition-cookie.ts`) — ne pas toucher.
+
 Créer une PR `chore/cleanup-pre-launch-resend-0.20` qui supprime :
 
 ```
