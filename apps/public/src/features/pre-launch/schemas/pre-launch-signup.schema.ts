@@ -5,10 +5,10 @@ export const PreLaunchSignupSchema = z.object({
   lastName: z.string().trim().min(1, 'lastName.required').max(80, 'lastName.tooLong'),
   email: z.string().trim().toLowerCase().email('email.invalid').max(254, 'email.tooLong'),
   role: z.enum(['organisateur', 'professionnel'], {
-    errorMap: () => ({ message: 'role.invalid' }),
+    error: () => ({ message: 'role.invalid' }),
   }),
   rgpdOptIn: z.literal(true, {
-    errorMap: () => ({ message: 'rgpdOptIn.required' }),
+    error: () => ({ message: 'rgpdOptIn.required' }),
   }),
   locale: z.enum(['fr', 'en']),
 });

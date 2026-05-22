@@ -17,9 +17,10 @@ import { classifyPreLaunchError } from '../services/classify-pre-launch-error.js
 import { useSubmitPreLaunchSignup } from '../hooks/use-submit-pre-launch-signup-mock.js';
 
 type FormValues = Omit<PreLaunchSignupInput, 'locale'>;
-type FieldKey = keyof FormValues;
 
-function zodIssueToI18nKey(path: FieldKey | string, code: string): string {
+// Path is coerced to string at the caller boundary (zodV4Resolver). Zod v4's
+// inferred keyof can include symbol keys, so we accept plain string here.
+function zodIssueToI18nKey(path: string, code: string): string {
   const map: Record<string, string> = {
     'firstName.required': 'fields.firstName.errors.required',
     'firstName.tooLong': 'fields.firstName.errors.tooLong',
