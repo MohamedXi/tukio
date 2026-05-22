@@ -13,7 +13,7 @@ import AxeBuilder from '@axe-core/playwright';
  * agent. Ismael runs it manually after deployment.
  */
 
-test.describe('seller-coming-soon /fr/seller-coming-soon', () => {
+test.describe('seller-coming-soon FR — /fr/seller-coming-soon', () => {
   test('GET /fr/seller-coming-soon → H1 + banner pre-launch visible', async ({ page }) => {
     await page.goto('/fr/seller-coming-soon');
     await expect(page).toHaveTitle(/tukio\.one/i);
@@ -21,12 +21,6 @@ test.describe('seller-coming-soon /fr/seller-coming-soon', () => {
       'Comment fonctionne tukio.one',
     );
     await expect(page.getByText("tukio.one n'est pas encore ouverte")).toBeVisible();
-  });
-
-  test('GET /en/seller-coming-soon → H1 EN visible', async ({ page }) => {
-    await page.goto('/en/seller-coming-soon');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('How tukio.one works');
-    await expect(page.getByText('tukio.one is not open yet')).toBeVisible();
   });
 
   test('scrolls to dark Payments section and shows Stripe partner', async ({ page }) => {
@@ -45,7 +39,7 @@ test.describe('seller-coming-soon /fr/seller-coming-soon', () => {
     expect(href).toMatch(/tukio\.one\/fr\/coming-soon\?role=pro/);
   });
 
-  test('all 8 sections render (kickers visible)', async ({ page }) => {
+  test('all 8 sections render (kickers visible) — FR', async ({ page }) => {
     await page.goto('/fr/seller-coming-soon');
     await expect(page.getByText('Pour les professionnels')).toBeVisible();
     await expect(page.getByText('Pour qui')).toBeVisible();
@@ -57,9 +51,60 @@ test.describe('seller-coming-soon /fr/seller-coming-soon', () => {
     await expect(page.getByText('En préparation')).toBeVisible();
   });
 
-  test('axe a11y — 0 violations on full landing page', async ({ page }) => {
+  test('axe a11y — 0 violations on full landing page — FR', async ({ page }) => {
     await page.goto('/fr/seller-coming-soon');
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations).toHaveLength(0);
+  });
+
+  test.skip('Lighthouse perf ≥ 90 — /fr/seller-coming-soon', async () => {
+    // Run via: pnpm dlx @lhci/cli autorun
+    // Story 0.21 will wire LHCI into CI — tracked in sprint-status deferred work.
+  });
+});
+
+test.describe('seller-coming-soon EN — /en/seller-coming-soon', () => {
+  test('GET /en/seller-coming-soon → H1 EN + banner visible', async ({ page }) => {
+    await page.goto('/en/seller-coming-soon');
+    await expect(page).toHaveTitle(/tukio\.one/i);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('How tukio.one works');
+    await expect(page.getByText('tukio.one is not open yet')).toBeVisible();
+  });
+
+  test('scrolls to dark Payments section — EN', async ({ page }) => {
+    await page.goto('/en/seller-coming-soon');
+    const stripe = page.getByText('Stripe handles payments, not tukio');
+    await stripe.scrollIntoViewIfNeeded();
+    await expect(stripe).toBeVisible();
+  });
+
+  test('CTA primary links cross-zone with ?role=pro — EN', async ({ page }) => {
+    await page.goto('/en/seller-coming-soon');
+    const cta = page.getByRole('link', { name: /Be notified at launch/i }).last();
+    const href = await cta.getAttribute('href');
+    expect(href).toMatch(/tukio\.one\/en\/coming-soon\?role=pro/);
+  });
+
+  test('all 8 sections render (kickers visible) — EN', async ({ page }) => {
+    await page.goto('/en/seller-coming-soon');
+    await expect(page.getByText('For professionals')).toBeVisible();
+    await expect(page.getByText('For whom')).toBeVisible();
+    await expect(page.getByText('The pro journey')).toBeVisible();
+    await expect(page.getByText('What to prepare')).toBeVisible();
+    await expect(page.getByText('Payments and payouts')).toBeVisible();
+    await expect(page.getByText('Pricing')).toBeVisible();
+    await expect(page.getByText('Why join us')).toBeVisible();
+    await expect(page.getByText('In preparation')).toBeVisible();
+  });
+
+  test('axe a11y — 0 violations on full landing page — EN', async ({ page }) => {
+    await page.goto('/en/seller-coming-soon');
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toHaveLength(0);
+  });
+
+  test.skip('Lighthouse perf ≥ 90 — /en/seller-coming-soon', async () => {
+    // Run via: pnpm dlx @lhci/cli autorun
+    // Story 0.21 will wire LHCI into CI — tracked in sprint-status deferred work.
   });
 });

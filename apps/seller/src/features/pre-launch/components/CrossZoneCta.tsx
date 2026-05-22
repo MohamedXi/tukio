@@ -28,6 +28,7 @@ export function CrossZoneCta({
     return (
       <a
         href={href}
+        rel="noopener noreferrer"
         className={cn(
           'font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 transition-colors',
           className,
@@ -52,6 +53,7 @@ export function CrossZoneCta({
   return (
     <a
       href={href}
+      rel="noopener noreferrer"
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-colors focus-visible:outline-none',
         sizeMap[size],

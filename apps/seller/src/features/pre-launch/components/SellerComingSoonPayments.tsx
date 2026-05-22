@@ -23,7 +23,7 @@ export async function SellerComingSoonPayments({ locale }: SellerComingSoonPayme
         <h2 className="text-[36px] font-display font-normal mt-2 mb-3.5 text-cream-50 max-md:text-[28px]">
           {t('title')}
         </h2>
-        <p className="text-[15px] text-cream-100 max-w-[620px] leading-[1.6] mb-9">{t('intro')}</p>
+        <p className="text-[15px] text-cream-200 max-w-[620px] leading-[1.6] mb-9">{t('intro')}</p>
 
         {/* Pipeline 4-col */}
         <div className="grid grid-cols-4 gap-4 mb-10 max-md:grid-cols-2 max-sm:grid-cols-1">
@@ -66,7 +66,7 @@ export async function SellerComingSoonPayments({ locale }: SellerComingSoonPayme
         </div>
 
         {/* Stripe Connect partner bloc */}
-        <div className="mt-10 p-6 rounded-xl bg-cream-50/[0.06] flex gap-5 items-start max-md:flex-col">
+        <div className="mt-10 p-6 rounded-xl bg-cream-50/[0.06] flex gap-5 items-center max-md:flex-col max-md:items-start">
           <span
             aria-hidden="true"
             className="w-12 h-12 rounded-lg bg-[#635BFF] text-white inline-flex items-center justify-center text-2xl font-bold flex-shrink-0"
@@ -75,7 +75,7 @@ export async function SellerComingSoonPayments({ locale }: SellerComingSoonPayme
           </span>
           <div>
             <h3 className="text-[16px] font-semibold text-cream-50">{t('stripeTitle')}</h3>
-            <p className="text-[13px] text-cream-100 mt-1.5 leading-[1.6]">{t('stripeBody')}</p>
+            <p className="text-[13px] text-cream-200 mt-1.5 leading-[1.6]">{t('stripeBody')}</p>
           </div>
         </div>
       </div>

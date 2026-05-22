@@ -18,16 +18,16 @@ export async function SellerComingSoonJourney({ locale }: SellerComingSoonJourne
           {t('title')}
         </h2>
 
-        <div className="grid grid-cols-5 gap-4 max-lg:grid-cols-3 max-md:grid-cols-2 max-sm:grid-cols-1">
+        <div className="grid grid-cols-5 gap-3 max-lg:grid-cols-3 max-md:grid-cols-2 max-sm:grid-cols-1">
           {STEPS.map((slug) => (
             <div key={slug} className="p-[18px] rounded-xl bg-cream-50 border border-cream-200">
               <div className="font-display font-normal italic text-[30px] text-brand-500 tracking-tight leading-none">
                 {t(`steps.${slug}.n`)}
               </div>
-              <h3 className="text-[15px] font-semibold mt-4 text-charcoal-800">
+              <h3 className="text-[14px] font-semibold mt-4 text-charcoal-800">
                 {t(`steps.${slug}.title`)}
               </h3>
-              <p className="text-[13px] text-charcoal-600 mt-2 leading-[1.6]">
+              <p className="text-[12px] text-charcoal-600 mt-2 leading-[1.6]">
                 {t(`steps.${slug}.description`)}
               </p>
             </div>

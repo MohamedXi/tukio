@@ -17,11 +17,11 @@ export async function SellerComingSoonHero({ locale }: SellerComingSoonHeroProps
         <div>
           <Kicker>{t('kicker')}</Kicker>
 
-          <h1 className="font-display font-normal text-[60px] tracking-tight leading-[1.02] text-charcoal-800 mt-5 max-w-[520px] max-md:text-[44px]">
+          <h1 className="font-display font-normal text-[60px] tracking-tight leading-[1.02] text-charcoal-800 mt-3.5 max-w-[520px] max-md:text-[44px]">
             {t('titleLine1')} <em className="italic text-brand-600">{t('titleLine2Emphasis')}</em>.
           </h1>
 
-          <p className="text-[17px] text-charcoal-600 mt-6 leading-[1.6] max-w-[520px]">
+          <p className="text-[17px] text-charcoal-600 mt-4 leading-[1.6] max-w-[520px]">
             {t('pitch')}
           </p>
 
