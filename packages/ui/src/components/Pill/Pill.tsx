@@ -4,7 +4,7 @@ import { cn } from '../../utils/cn';
 import type { PillProps } from './Pill.types';
 
 export const pillVariants = cva(
-  'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase border font-mono',
+  'inline-flex self-start items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase border font-mono',
   {
     variants: {
       variant: {
