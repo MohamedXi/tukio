@@ -35,6 +35,7 @@ export default async function ComingSoonSuccessPage({ params, searchParams }: Pa
   const firstName = sanitizeFirstName(rawFirst, locale);
   const position = sanitizePosition(rawPos);
   const year = new Date().getFullYear();
+  const sellerBaseUrl = process.env['NEXT_PUBLIC_SELLER_BASE_URL'] ?? 'https://seller.tukio.one';
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-50">
@@ -47,7 +48,10 @@ export default async function ComingSoonSuccessPage({ params, searchParams }: Pa
       <SiteHeader
         navItems={[
           { label: tSuccess('headerNavAbout'), href: `/${locale}/a-propos` },
-          { label: tSuccess('headerNavBecomePro'), href: `/${locale}/devenir-pro` },
+          {
+            label: tSuccess('headerNavBecomePro'),
+            href: `${sellerBaseUrl}/${locale}/seller-coming-soon`,
+          },
           { label: tSuccess('headerNavContact'), href: `/${locale}/contact` },
         ]}
       />
@@ -58,7 +62,10 @@ export default async function ComingSoonSuccessPage({ params, searchParams }: Pa
         variant="minimal"
         legal={tFooter('legal', { year })}
         inlineLinks={[
-          { label: tFooter('linkBecomePro'), href: `/${locale}/devenir-pro` },
+          {
+            label: tFooter('linkBecomePro'),
+            href: `${sellerBaseUrl}/${locale}/seller-coming-soon`,
+          },
           { label: tFooter('linkLegalNotice'), href: `/${locale}/mentions-legales` },
           { label: tFooter('linkContactEmail'), href: 'mailto:contact@tukio.one' },
         ]}
