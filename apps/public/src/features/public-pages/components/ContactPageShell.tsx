@@ -27,12 +27,12 @@ export async function ContactPageShell({ locale }: ContactPageShellProps) {
 
       <div className="grid grid-cols-[1.2fr_1fr] gap-12 mt-14 max-md:grid-cols-1">
         {/* Form */}
-        <div id="main-content">
+        <div>
           <ContactFormClient locale={locale} />
         </div>
 
         {/* Channels aside */}
-        <aside className="flex flex-col gap-4" aria-label="Canaux de contact">
+        <aside className="flex flex-col gap-4" aria-label={t('channelsAriaLabel')}>
           {(['support', 'dpo', 'report', 'press'] as const).map((channel) => {
             const Icon = CHANNEL_ICONS[channel];
             return (
@@ -65,7 +65,7 @@ export async function ContactPageShell({ locale }: ContactPageShellProps) {
 
           {/* Preparation note card */}
           <div className="p-5 rounded-xl bg-cream-100 border border-cream-200">
-            <h3 className="text-[14px] font-semibold text-charcoal-800">En phase de préparation</h3>
+            <h3 className="text-[14px] font-semibold text-charcoal-800">{t('preparationTitle')}</h3>
             <p className="text-[13px] text-charcoal-600 mt-2 leading-[1.55]">
               {t('preparationNote')}
             </p>

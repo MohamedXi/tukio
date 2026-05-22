@@ -80,7 +80,7 @@ export default async function AProposPage({ params }: PageProps) {
         />
       }
     >
-      <div id="main-content">
+      <div id="main-content" tabIndex={-1}>
         <AboutContent locale={locale} />
       </div>
     </EditorialPageShell>

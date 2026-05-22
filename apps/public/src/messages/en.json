@@ -276,7 +276,6 @@
     }
   },
   "about": {
-    "_NEEDS_HUMAN_REVIEW": "true",
     "meta": {
       "title": "About — tukio.one",
       "description": "tukio.one brings together event professionals and people who have something to celebrate. A French marketplace dedicated to local event services."
@@ -368,7 +367,7 @@
     "titleLine1": "Your data,",
     "titleEmphasis": "plain and simple",
     "intro": "tukio.one is currently a presentation website. This page describes what we do with the only data collected in the pre-launch phase, and anticipates what will apply once the platform opens.",
-    "lastUpdated": "Last updated: May 20, 2026",
+    "lastUpdated": "Last updated: {date}",
     "preLaunchBanner": {
       "title": "In pre-launch phase",
       "body": "Today, tukio.one only collects information voluntarily provided via the waitlist registration form: first name, last name, email, profile. No analytics cookies, no advertising pixel, no reselling."
@@ -437,7 +436,7 @@
     "titleLine1": "A project",
     "titleEmphasis": "in preparation",
     "intro": "tukio.one is a project under development. This page will be updated with full legal details (legal form, registration number, registered address, VAT, final hosting) upon official launch.",
-    "lastUpdated": "Last updated: May 20, 2026",
+    "lastUpdated": "Last updated: {date}",
     "statusBanner": {
       "title": "Project status",
       "body": "As of today, tukio.one is a project in the preparation phase. The legal structure (SAS) is being registered. No commercial transaction is yet possible on the site, and no personal data is collected outside of the waitlist registration form."
@@ -574,6 +573,8 @@
       }
     },
     "preparationNote": "The tukio company is being created. The postal address and definitive contact details will be published at the time of the official launch.",
+    "preparationTitle": "In preparation",
+    "channelsAriaLabel": "Contact channels",
     "footer": {
       "legal": "© tukio.one · {year} · Made in Loire-Atlantique",
       "linkBecomePro": "Become a pro",

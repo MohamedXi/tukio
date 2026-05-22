@@ -79,7 +79,7 @@ export default async function ConfidentialitePage({ params }: PageProps) {
         />
       }
     >
-      <div id="main-content">
+      <div id="main-content" tabIndex={-1}>
         <PrivacyContent locale={locale} />
       </div>
     </EditorialPageShell>

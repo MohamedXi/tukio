@@ -366,7 +366,7 @@
     "titleLine1": "Vos données,",
     "titleEmphasis": "en clair",
     "intro": "tukio.one est aujourd'hui un site de présentation. Cette page décrit ce que nous faisons des seules données collectées en phase de pré-lancement, et anticipe ce qui s'appliquera à la plateforme une fois ouverte.",
-    "lastUpdated": "Dernière mise à jour : 20 mai 2026",
+    "lastUpdated": "Dernière mise à jour : {date}",
     "preLaunchBanner": {
       "title": "En phase de pré-lancement",
       "body": "Aujourd'hui, tukio.one ne collecte que les informations laissées volontairement via le formulaire d'inscription à la liste d'attente : prénom, nom, email, profil. Pas de cookie analytique, pas de pixel publicitaire, pas de revente."
@@ -432,7 +432,7 @@
     "titleLine1": "Un projet",
     "titleEmphasis": "en préparation",
     "intro": "tukio.one est un projet en cours de structuration. Cette page sera mise à jour avec toutes les mentions légales complètes (forme juridique, RCS, siège social, TVA, hébergeur définitif) au moment du lancement officiel.",
-    "lastUpdated": "Dernière mise à jour : 20 mai 2026",
+    "lastUpdated": "Dernière mise à jour : {date}",
     "statusBanner": {
       "title": "Statut du projet",
       "body": "À ce jour, tukio.one est un projet en phase de préparation. La structure juridique (SAS) est en cours d'enregistrement. Aucune transaction commerciale n'est encore possible sur le site, et aucune donnée personnelle n'est collectée en dehors du formulaire d'inscription à la liste d'attente."
@@ -566,6 +566,8 @@
       }
     },
     "preparationNote": "L'entreprise tukio est en cours de création. L'adresse postale et les coordonnées définitives seront publiées au moment du lancement officiel.",
+    "preparationTitle": "En phase de préparation",
+    "channelsAriaLabel": "Canaux de contact",
     "footer": {
       "legal": "© tukio.one · {year} · Fait en Pays de la Loire",
       "linkBecomePro": "Devenir pro pilote",

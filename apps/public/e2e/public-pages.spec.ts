@@ -70,16 +70,19 @@ test.describe('public-pages FR', () => {
     await expect(page.getByRole('alert')).toContainText('Message envoyé');
   });
 
-  test('Contact form validation — empty submit shows errors', async ({ page }) => {
+  test('Contact form validation — empty submit shows required errors', async ({ page }) => {
     await page.goto('/fr/contact');
     await page.click('button[type="submit"]');
     await expect(page.getByText('Prénom requis.')).toBeVisible();
     await expect(page.getByText('Nom requis.')).toBeVisible();
+    await expect(page.getByText('Veuillez sélectionner votre profil.')).toBeVisible();
+    await expect(page.getByText('Veuillez sélectionner un sujet.')).toBeVisible();
+    await expect(page.getByText('Message trop court (10 caractères min).')).toBeVisible();
   });
 
   test('Footer nav → Mentions légales link navigates correctly', async ({ page }) => {
     await page.goto('/fr/coming-soon');
-    await page.click('text=Mentions légales');
+    await page.locator('footer').getByRole('link', { name: 'Mentions légales' }).click();
     await expect(page).toHaveURL(/mentions-legales/);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Un projet');
   });
@@ -151,6 +154,24 @@ test.describe('public-pages EN', () => {
     await page.fill('[id="message"]', 'Hello, I would like to know more about your platform.');
     await page.click('button[type="submit"]');
     await expect(page.getByRole('alert')).toContainText('Message sent');
+  });
+
+  test('axe-core 0 violations — /en/a-propos', async ({ page }) => {
+    await page.goto('/en/a-propos');
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toHaveLength(0);
+  });
+
+  test('axe-core 0 violations — /en/confidentialite', async ({ page }) => {
+    await page.goto('/en/confidentialite');
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toHaveLength(0);
+  });
+
+  test('axe-core 0 violations — /en/mentions-legales', async ({ page }) => {
+    await page.goto('/en/mentions-legales');
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toHaveLength(0);
   });
 
   test('axe-core 0 violations — /en/contact', async ({ page }) => {

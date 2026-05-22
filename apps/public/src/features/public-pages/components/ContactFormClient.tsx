@@ -67,6 +67,7 @@ export function ContactFormClient({ locale }: ContactFormClientProps) {
 
   const onSubmit = handleSubmit((data) => {
     setFormError(null);
+    setSubmitted(false);
     mutate(
       { ...data, locale: locale === 'en' ? 'en' : 'fr' },
       {
@@ -135,6 +136,7 @@ export function ContactFormClient({ locale }: ContactFormClientProps) {
               autoComplete="given-name"
               placeholder={t('fields.firstName.placeholder')}
               aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+              aria-invalid={errors.firstName ? 'true' : undefined}
               className={INPUT_CLASS}
               {...register('firstName')}
             />
@@ -154,6 +156,7 @@ export function ContactFormClient({ locale }: ContactFormClientProps) {
               autoComplete="family-name"
               placeholder={t('fields.lastName.placeholder')}
               aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+              aria-invalid={errors.lastName ? 'true' : undefined}
               className={INPUT_CLASS}
               {...register('lastName')}
             />
@@ -174,6 +177,7 @@ export function ContactFormClient({ locale }: ContactFormClientProps) {
             autoComplete="email"
             placeholder={t('fields.email.placeholder')}
             aria-describedby={errors.email ? 'email-error' : undefined}
+            aria-invalid={errors.email ? 'true' : undefined}
             className={INPUT_CLASS}
             {...register('email')}
           />

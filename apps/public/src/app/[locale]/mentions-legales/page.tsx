@@ -79,7 +79,7 @@ export default async function MentionsLegalesPage({ params }: PageProps) {
         />
       }
     >
-      <div id="main-content">
+      <div id="main-content" tabIndex={-1}>
         <LegalContent locale={locale} />
       </div>
     </EditorialPageShell>

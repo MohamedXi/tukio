@@ -51,7 +51,7 @@ export default async function ContactPage({ params }: PageProps) {
         Aller au contenu / Skip to content
       </a>
       <SiteHeader />
-      <main className="flex-1">
+      <main className="flex-1" id="main-content">
         <ContactPageShell locale={locale} />
       </main>
       <Footer

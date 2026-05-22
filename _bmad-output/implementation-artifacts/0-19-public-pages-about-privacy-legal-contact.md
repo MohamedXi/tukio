@@ -1,6 +1,6 @@
 # Story 0.19: 4 pages publiques institutionnelles — À propos + Confidentialité + Mentions légales + Contact
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -504,4 +504,5 @@ claude-opus-4-7[1m]
 | Date | Author | Change |
 |------|--------|--------|
 | 2026-05-20 | bmad-create-story (Opus 4.7) | Initial story creation — 4 pages institutionnelles publiques (About 5 blocks + Privacy 8 blocks + Legal 6 blocks + Contact form 7 fields + 4 cards canaux), 3 Server Components purs + 1 page mixte Server+Client form, i18n FR+EN 4 namespaces ~140 keys × 2 = 280 strings avec VALIDATION HUMAINE Privacy+Legal, EditorialPageShell + Block Story 0.16 réutilisés, Contact form RHF + zodResolver pattern Story 0.17, SEO metadata + indexabilité, Lighthouse ≥ 95 + axe-core 0, Playwright 12+ cases × 2 locales. ~17 fichiers, 2.5-3j dev. |
+| 2026-05-22 | bmad-code-review (Sonnet 4.6) | Code-review 3 layers (Blind+Edge+Auditor) — 10 patches appliqués : P1 `{date}` placeholder dans lastUpdated i18n ; P2 "En phase de préparation" + aria-label i18n ContactPageShell ; P3 `setSubmitted(false)` au début du submit ; P4 `tabIndex={-1}` sur `<div id="main-content">` + id sur `<main>` contact page ; P5 `aria-invalid` sur firstName/lastName/email inputs ; P6 `_NEEDS_HUMAN_REVIEW` retiré du catalogue `about` EN ; P7 footer nav selector scopé dans `footer` ; P8 axe-core EN ajouté pour a-propos/confidentialite/mentions-legales ; P9 validation E2E étendue (category/subject/message) ; P10 `'use client'` dans mock hook. Story → done. |
 | 2026-05-22 | bmad-dev-story (Sonnet 4.6) | Implementation done — 17 fichiers (11 NEW + 6 UPDATE). 3 Server Components purs (About/Privacy/Legal) via EditorialPageShell + Block Story 0.16. 1 page mixte Contact (Server shell + Client form). Décisions dev-time : hébergement Option B (DigitalOcean Frankfurt), fondateur anonyme (suit design), `_NEEDS_LEGAL_REVIEW: true` dans privacy+legal FR+EN. Contact form RHF + Zod v4 + mock hook Story 0.20. i18n 4 namespaces FR+EN complets (~280 strings). SEO metadata + robots index:true × 4 pages. Skip-links + aria-labels + role="alert" a11y. 17 tests Playwright e2e (FR+EN) + 2 test.skip Lighthouse. Schema spec 13 tests. ContactFormClient spec 6 tests. Lint 0 errors · typecheck 0 errors · test 103/103 · build ✅. **⚠️ VALIDATION HUMAINE OBLIGATOIRE** Privacy + Legal avant merge prod. |
