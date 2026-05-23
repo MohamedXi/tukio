@@ -412,7 +412,7 @@
       },
       "hosting": {
         "title": "7. Hosting and sub-processors in pre-launch",
-        "body": "This presentation site is hosted by DigitalOcean LLC (Frankfurt region, Germany). Waitlist emails are processed via Resend (EU region). No other sub-processor has access to your data today."
+        "body": "This presentation site is hosted by DigitalOcean LLC (Frankfurt region, Germany). Waitlist emails are processed via Resend (EU region). Audience measurement runs on Plausible Analytics (Germany): no cookies set, no IP stored, GDPR compliant without a consent banner. No other sub-processor has access to your data today."
       },
       "complaint": {
         "title": "8. Complaints",
