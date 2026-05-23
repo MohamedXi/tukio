@@ -14,6 +14,14 @@ type ContactError =
   | { kind: 'network' }
   | { kind: 'rate_limited'; retryAfterSeconds: number };
 
+// Plausible custom event helper — no-op when the script isn't loaded.
+type PlausibleFn = (name: string, opts?: { props?: Record<string, string> }) => void;
+function trackEvent(name: string, props?: Record<string, string>): void {
+  if (typeof window === 'undefined') return;
+  const w = window as Window & { plausible?: PlausibleFn };
+  w.plausible?.(name, props ? { props } : undefined);
+}
+
 const FormSchema = ContactFormSchema.omit({ locale: true });
 
 const zodResolver: Resolver<ContactFormValues> = async (values) => {
@@ -72,6 +80,11 @@ export function ContactFormClient({ locale }: ContactFormClientProps) {
       { ...data, locale: locale === 'en' ? 'en' : 'fr' },
       {
         onSuccess: () => {
+          trackEvent('Contact Form Submit', {
+            category: data.category,
+            subject: data.subject,
+            locale,
+          });
           setSubmitted(true);
           reset();
         },

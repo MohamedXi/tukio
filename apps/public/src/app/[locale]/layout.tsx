@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -34,10 +35,49 @@ const jetbrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
 });
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://tukio.one';
+
 export const metadata: Metadata = {
-  title: 'Tukio — Public',
-  description: 'Tukio public web (Sprint 0 placeholder).',
+  metadataBase: new URL(BASE_URL),
+  title: {
+    template: '%s — tukio.one',
+    default: 'tukio.one — Bientôt en Pays de la Loire',
+  },
+  description:
+    "Marketplace des professionnels de l'événementiel en Pays de la Loire — tentes, mobilier, traiteur, décoration.",
 };
+
+const PLAUSIBLE_ENABLED = process.env.NEXT_PUBLIC_PLAUSIBLE_ENABLED === 'true';
+
+function buildOrganizationJsonLd(locale: 'fr' | 'en'): string {
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'tukio.one',
+    alternateName: 'tukio',
+    url: 'https://tukio.one',
+    description:
+      locale === 'fr'
+        ? "Marketplace des professionnels de l'événementiel en Pays de la Loire — tentes, mobilier, traiteur, décoration."
+        : 'Marketplace for event service professionals in Pays de la Loire — tents, furniture, catering, decoration.',
+    foundingDate: '2026',
+    foundingLocation: {
+      '@type': 'Place',
+      address: {
+        '@type': 'PostalAddress',
+        addressRegion: 'Pays de la Loire',
+        addressCountry: 'FR',
+      },
+    },
+    areaServed: { '@type': 'AdministrativeArea', name: 'Pays de la Loire' },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: 'contact@tukio.one',
+      contactType: 'Customer Service',
+      availableLanguage: ['French', 'English'],
+    },
+  });
+}
 
 export default async function RootLayout({
   children,
@@ -64,6 +104,17 @@ export default async function RootLayout({
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: buildOrganizationJsonLd(locale) }}
+        />
+        {PLAUSIBLE_ENABLED && (
+          <Script
+            strategy="afterInteractive"
+            src="https://plausible.io/js/script.outbound-links.tagged-events.js"
+            data-domain="tukio.one"
+          />
+        )}
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>{children}</QueryProvider>
         </NextIntlClientProvider>

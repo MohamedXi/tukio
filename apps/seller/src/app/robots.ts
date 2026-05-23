@@ -1,24 +1,30 @@
 import type { MetadataRoute } from 'next';
 
-// Story 0.15 stub. Story 0.21 will deliver the full robots.txt with sitemap
-// reference. seller.tukio.one is a Pro-only portal — pre-launch and after
-// launch the `/seller/*` tree must never be indexed (post code-review P5,
-// the disallow lives in the BASE rule for both flag states). Only the
-// public `/seller-coming-soon` (pre-launch) and Story 0.18's `/devenir-pro`
-// landing (post-launch) are crawler-visible.
+// seller.tukio.one is a Pro-only portal — the `/seller/*` tree (dashboard,
+// onboarding, listings) is private in BOTH states. Only the public-facing
+// `/seller-coming-soon` landing (Story 0.18) is crawler-visible.
+// Paths are locale-prefixed: crawlers prefix-match literally
+// (Story 0.15 post-review P5/P9).
+const PRIVATE_DISALLOW = ['/api/', '/_next/', '/fr/seller/', '/en/seller/'];
+
+const PRE_LAUNCH_ALLOW = ['/', '/fr/seller-coming-soon', '/en/seller-coming-soon'];
+
 export default function robots(): MetadataRoute.Robots {
+  const sellerBaseUrl = process.env.NEXT_PUBLIC_SELLER_BASE_URL ?? 'https://seller.tukio.one';
   const isComingSoon = process.env.NEXT_PUBLIC_COMING_SOON_MODE === 'true';
-  const baseDisallow = ['/api/', '/_next/', '/fr/seller/', '/en/seller/'];
+
   return {
     rules: [
       isComingSoon
         ? {
             userAgent: '*',
-            allow: ['/fr/seller-coming-soon', '/en/seller-coming-soon', '/'],
-            disallow: [...baseDisallow, '/fr/', '/en/'],
+            allow: PRE_LAUNCH_ALLOW,
+            disallow: [...PRIVATE_DISALLOW, '/fr/', '/en/'],
           }
-        : { userAgent: '*', allow: ['/'], disallow: baseDisallow },
+        : { userAgent: '*', allow: ['/'], disallow: PRIVATE_DISALLOW },
+      { userAgent: 'GPTBot', disallow: ['/'] },
     ],
-    sitemap: 'https://seller.tukio.one/sitemap.xml',
+    sitemap: `${sellerBaseUrl}/sitemap.xml`,
+    host: sellerBaseUrl,
   };
 }

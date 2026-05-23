@@ -408,7 +408,7 @@
       },
       "hosting": {
         "title": "7. Hébergement et sous-traitants en pré-lancement",
-        "body": "Ce site vitrine est hébergé par DigitalOcean LLC (région Frankfurt, Allemagne). Les emails de la liste d'attente sont traités via Resend (région EU). Aucun autre sous-traitant n'a accès à vos données aujourd'hui."
+        "body": "Ce site vitrine est hébergé par DigitalOcean LLC (région Frankfurt, Allemagne). Les emails de la liste d'attente sont traités via Resend (région EU). La mesure d'audience est faite par Plausible Analytics (Allemagne) : aucun cookie déposé, aucune IP stockée, conforme RGPD sans bandeau de consentement. Aucun autre sous-traitant n'a accès à vos données aujourd'hui."
       },
       "complaint": {
         "title": "8. Réclamation",

@@ -1,5 +1,15 @@
 # Deferred Work
 
+## Deferred from: code review of 0-21-seo-foundation-analytics-pre-launch (2026-05-23)
+
+- **trackEvent helper dupliqué** — `ComingSoonFormClient.tsx` + `ContactFormClient.tsx` ont la même `type PlausibleFn` + `function trackEvent`. Acceptable par code style projet (≤10 lignes), candidat extraction vers `@tukio/api-client/utils/plausible.ts` post-launch.
+- **NEXT_PUBLIC_* baked at build time** — `robots.ts`, `sitemap.ts`, `og/route.ts` lisent `NEXT_PUBLIC_COMING_SOON_MODE` et `NEXT_PUBLIC_BASE_URL` qui sont inlinés au build. Toggle nécessite un full rebuild (documenté dans `docs/runbook/pre-launch-toggle.md`).
+- **308 redirect caching** — `/og/route.ts` (apex + seller) redirigent en 308 permanent. Peut bloquer les updates CDN post-launch si le slug de destination change. Passer à 307 Temporary post-launch si besoin.
+- **Seller RootLayout `hasLocale()`/`notFound()` guard absent** — [`apps/seller/src/app/[locale]/layout.tsx`] — pré-existant Story 0.15, pas introduit par 0.21. Ajouter avant Story 1.x seller auth.
+- **Post-launch `PRIVATE_DISALLOW` conservatif** — `robots.ts` public désallow 10 paths (auth/account/cart/checkout locale-préfixés) quand flag OFF. Spec voulait `['/api/', '/_next/']` minimal. Implémentation plus sécurisée ; revoir post-launch si des pages Epic 1+ ont besoin d'être indexables.
+- **`buildOrganizationJsonLd` dupliqué** — apex + seller layouts ont des versions légèrement différentes de la fonction. Candidat extraction vers `@tukio/i18n-client` ou `@tukio/ui` post-launch V1.
+- **`Coming-soon` priority 1.0 + noindex à vérifier** — sitemap public donne `priority: 1.0` à `/coming-soon`. Vérifier post-deploy que la page n'a pas un `robots: noindex` résiduel (le noindex concerne uniquement `/coming-soon/success`).
+
 ## Deferred from: code review of 1-4b-gateway-api-endpoints-usecases-csrf-e2e (2026-05-18, round 2)
 
 - **D9** — `auth-customer-register.e2e-spec.ts:2509` + `auth-pro-register.e2e-spec.ts:2635` bumped `jest.setTimeout(30_000)` (6× the 5s default) to mask slow module-wiring boot. Either 6s real boot (alarming) or hedge against flake. Root cause investigation deferred to ops sprint.

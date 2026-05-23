@@ -60,6 +60,15 @@ type FormError =
   | { kind: 'network' }
   | { kind: 'rate_limited'; retryAfterSeconds: number };
 
+// Plausible custom event helper — no-op when the script isn't loaded
+// (NEXT_PUBLIC_PLAUSIBLE_ENABLED=false in dev, or ad-blocker stripped it).
+type PlausibleFn = (name: string, opts?: { props?: Record<string, string> }) => void;
+function trackEvent(name: string, props?: Record<string, string>): void {
+  if (typeof window === 'undefined') return;
+  const w = window as Window & { plausible?: PlausibleFn };
+  w.plausible?.(name, props ? { props } : undefined);
+}
+
 interface ComingSoonFormClientProps {
   locale: string;
   initialRole: 'organisateur' | 'professionnel';
@@ -95,11 +104,17 @@ export function ComingSoonFormClient({ locale, initialRole }: ComingSoonFormClie
 
   const onSubmit = handleSubmit((data) => {
     setFormError(null);
+    trackEvent('Coming Soon Form Submit', { role: data.role, locale });
     // P10 fix: derive locale from prop (single source of truth) — was rawLocale via useLocale().
     mutate(
       { ...data, locale: locale === 'en' ? 'en' : 'fr' },
       {
-        onSuccess: ({ position }) => {
+        onSuccess: ({ position, alreadySubscribed }) => {
+          trackEvent('Coming Soon Form Submit Success', {
+            role: data.role,
+            locale,
+            alreadySubscribed: String(alreadySubscribed ?? false),
+          });
           // P12 fix: encode position defensively (Story 0.20 may return string-typed values).
           router.push(
             `/${locale}/coming-soon/success?firstName=${encodeURIComponent(data.firstName)}&position=${encodeURIComponent(String(position))}`,
