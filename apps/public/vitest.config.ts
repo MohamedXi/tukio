@@ -12,6 +12,12 @@ export default defineConfig({
       '@tukio/contracts/types/Acquisition': fileURLToPath(
         new URL('../../packages/contracts/src/types/Acquisition.ts', import.meta.url),
       ),
+      '@tukio/api-client/hooks/pre-launch': fileURLToPath(
+        new URL('../../packages/api-client/src/hooks/pre-launch/index.ts', import.meta.url),
+      ),
+      '@tukio/api-client/providers': fileURLToPath(
+        new URL('../../packages/api-client/src/providers/query-provider.tsx', import.meta.url),
+      ),
     },
   },
   test: {

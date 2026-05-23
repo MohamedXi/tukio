@@ -28,7 +28,9 @@
     "./hooks/identity/*": "./src/hooks/identity/*.ts",
     "./hooks/admin": "./src/hooks/admin/index.ts",
     "./hooks/admin/*": "./src/hooks/admin/*.ts",
-    "./hooks/use-acquisition-tracking": "./src/hooks/use-acquisition-tracking.ts"
+    "./hooks/use-acquisition-tracking": "./src/hooks/use-acquisition-tracking.ts",
+    "./hooks/pre-launch": "./src/hooks/pre-launch/index.ts",
+    "./hooks/pre-launch/*": "./src/hooks/pre-launch/*.ts"
   },
   "scripts": {
     "test": "vitest run",

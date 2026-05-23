@@ -134,4 +134,9 @@ when the sub-folder genuinely needs different rules (e.g. a Next.js app's
 - ✅ Pre-launch mode (Story 0.15): `NEXT_PUBLIC_COMING_SOON_MODE` rewrites
   every non-whitelisted route to `/${locale}/{coming-soon,seller-coming-soon}`.
   Build-time toggle (`'true'` strict). See `docs/runbook/pre-launch-toggle.md`.
+- ✅ Resend Audiences (Story 0.20): waitlist capture via `POST /api/pre-launch/signup`
+  → Resend Audiences EU (RGPD compliant, zéro PII en DB). Contact form via
+  `POST /api/pre-launch/contact` → Resend transactional email. Rate limit Upstash
+  sliding window 5 req/min/IP. Hooks in `@tukio/api-client/hooks/pre-launch`.
+  Cleanup runbook: `docs/runbook/pre-launch-resend-cleanup.md`.
 - ✅ Validate every change with `/check` before declaring it done.

@@ -335,3 +335,17 @@
 - **W45-review (0.17) — Bundle size landing ~30 KB gzip (RHF + Zod core + Radix Checkbox + lucide icons)** — Sous le seuil ≤ 50 KB AC10. Story 0.21 ajoutera Plausible (~1 KB). Monitorer Lighthouse perf.
 - **W46-review (0.17) — `validation` kind manquant dans `classifyPreLaunchError`** — Spec AC3 inclut `validation` avec `fieldErrors?`. Story 0.20 ajoutera quand le real handler retournera 422 + Zod issues. Pour le moment classifier minimal suffit.
 - **W47-review (0.17) — Mock hook pas de path `onError` simulé** — Story 0.20 fournira real `onError` paths (rate_limited, network, validation, generic). Mock minimal aujourd'hui ne permet pas de tester les branches error en dev sans manual injection.
+
+## Deferred from: code review of story-0.20-resend-audiences (2026-05-22)
+
+- **DF1 (0.20)** — `emailHash` 8-char sha256 truncation (32 bits) brute-forceable via rainbow tables of common emails. Spec line 274 explicitly defines this as the design pattern (Story 1.2b P10). Accept spec choice; revisit if logs become a sensitive surface.
+- **DF2 (0.20)** — `@react-email/components@0.0.35` marked deprecated in pnpm lockfile ("Package no longer supported"). Templates still functional today. Investigate replacement (`@react-email/components@latest` or successor) as part of post-launch dependency audit.
+- **DF3 (0.20)** — Contact form rate limit 5 req/min/IP allows up to 7200 spam emails/day per IP. MVP-acceptable; tighten to 2/min + per-email rate limit if abuse observed post-launch.
+- **DF4 (0.20)** — Pino default synchronous stdout transport blocks event loop under load. Premature optimization for pre-launch waitlist volumes; reconsider when traffic > 100 RPS.
+- **DF5 (0.20)** — `mapPreLaunchError` `parseInt(retry-after)` doesn't handle HTTP-date format per RFC 7231 (`Retry-After: Wed, 21 Oct 2026 07:28:00 GMT`). Falls back to 60s — acceptable degradation; rare for Upstash/Resend to send dates.
+- **DF6 (0.20)** — No test for `rgpdOptIn: false` rejection at handler level. Zod schema `z.literal(true)` already enforces it (verified indirectly via validation test). Add explicit test if schema is ever softened.
+- **DF7 (0.20)** — No test for `Content-Length: 0` empty POST body (only `null` body tested). Edge case; bot pattern, low priority.
+- **DF8 (0.20)** — Position cache 5min TTL approximation accepted per spec L502 ("user perçoit '247ᵉ personne' comme indicatif"). Separate from P23 atomicity patch.
+- **DF9 (0.20)** — `ContactEmail.tsx` hardcodes French labels ("De :", "Email :", "Nouveau message"). Email is internal (inbox `contact@tukio.one`) so FR is acceptable, but `<Html lang={locale}>` says EN for English submissions — minor mismatch. Clarify with Ismael if EN locale submissions should send EN-localized internal email.
+- **DF10 (0.20)** — `vitest.config.ts` aliases manually duplicate `package.json#exports` subpaths. Maintenance burden; consolidate via `vite-tsconfig-paths` plugin in a follow-up infra PR.
+- **DF11 (0.20)** — Upstash Redis REST API unreachable in `signupRatelimit.limit()` / `compute-position` propagates to 500. Design call: fail-open (allow + log) vs fail-closed (return 503). MVP keeps current fail-closed behavior; revisit if Upstash availability drops.

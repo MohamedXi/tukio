@@ -50,7 +50,7 @@ vi.mock('next/link', () => ({
 }));
 
 const mockMutate = vi.fn();
-vi.mock('../../hooks/use-submit-pre-launch-signup-mock.js', () => ({
+vi.mock('@tukio/api-client/hooks/pre-launch', () => ({
   useSubmitPreLaunchSignup: () => ({ mutate: mockMutate, isPending: false, error: null }),
 }));
 
