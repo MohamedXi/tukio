@@ -1,14 +1,23 @@
 name: Deploy — staging
 
 # Story 0.12 — SSH-based deploy to DigitalOcean droplet `tukio-apps`.
-# Triggers automatically on a successful Build Images run for `develop`,
-# or manually via workflow_dispatch (defaults to the `develop` Docker tag).
+# Triggers on:
+#   1. Successful Build Images run for `develop` (app code changed → new images).
+#   2. Direct push to `develop` on infra-only paths (compose/Caddy/deploy workflow)
+#      — no new images needed, re-deploys with the existing `develop` tag.
+#   3. Manual workflow_dispatch (defaults to the `develop` Docker tag).
 
 on:
   workflow_run:
     workflows: ['Build Images']
     types: [completed]
     branches: [develop]
+  push:
+    branches: [develop]
+    paths:
+      - 'infra/docker-compose/apps.prod.yml'
+      - 'infra/docker-compose/Caddyfile'
+      - '.github/workflows/deploy-staging.yml'
   workflow_dispatch:
     inputs:
       image_tag:
@@ -38,7 +47,7 @@ env:
 jobs:
   ssh-deploy:
     name: SSH deploy — tukio-apps
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: staging
