@@ -77,19 +77,19 @@ describe('decideComingSoon — public app', () => {
     }
   });
 
-  it('case 8 — flag ON + invalid locale → fallback fr', () => {
+  it('case 8 — flag ON + invalid locale → fallback en', () => {
     expect(decideComingSoon(true, '/xx/whatever', LOCALES)).toEqual({
       kind: 'rewrite',
-      locale: 'fr',
-      target: '/fr/coming-soon',
+      locale: 'en',
+      target: '/en/coming-soon',
     });
   });
 
-  it('case 9 — flag ON + root path → fallback fr rewrite', () => {
+  it('case 9 — flag ON + root path → fallback en rewrite', () => {
     expect(decideComingSoon(true, '/', LOCALES)).toEqual({
       kind: 'rewrite',
-      locale: 'fr',
-      target: '/fr/coming-soon',
+      locale: 'en',
+      target: '/en/coming-soon',
     });
   });
 
@@ -126,9 +126,9 @@ describe('safeLocaleFromPath — public app', () => {
     expect(safeLocaleFromPath('/en/foo/bar', LOCALES)).toBe('en');
   });
 
-  it('falls back to fr when first segment is unknown or missing', () => {
-    expect(safeLocaleFromPath('/xx/foo', LOCALES)).toBe('fr');
-    expect(safeLocaleFromPath('/', LOCALES)).toBe('fr');
-    expect(safeLocaleFromPath('', LOCALES)).toBe('fr');
+  it('falls back to en when first segment is unknown or missing', () => {
+    expect(safeLocaleFromPath('/xx/foo', LOCALES)).toBe('en');
+    expect(safeLocaleFromPath('/', LOCALES)).toBe('en');
+    expect(safeLocaleFromPath('', LOCALES)).toBe('en');
   });
 });

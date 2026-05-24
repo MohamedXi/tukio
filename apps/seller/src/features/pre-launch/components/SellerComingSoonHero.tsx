@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { Zap } from 'lucide-react';
 import { Kicker } from '@tukio/ui/components/Kicker';
 import { CrossZoneCta } from './CrossZoneCta';
+import { Spacer } from '@tukio/ui/components/Spacer';
 
 interface SellerComingSoonHeroProps {
   locale: string;
@@ -20,12 +21,12 @@ export async function SellerComingSoonHero({ locale }: SellerComingSoonHeroProps
           <h1 className="font-display font-normal text-[60px] tracking-tight leading-[1.02] text-charcoal-800 mt-3.5 max-w-[520px] max-md:text-[44px]">
             {t('titleLine1')} <em className="italic text-brand-600">{t('titleLine2Emphasis')}</em>.
           </h1>
-
+          <Spacer size={10} />
           <p className="text-[17px] text-charcoal-600 mt-4 leading-[1.6] max-w-[520px]">
             {t('pitch')}
           </p>
-
-          <div className="mt-7 p-4 bg-brand-50 border border-brand-100 rounded-xl flex gap-3 items-start">
+          <Spacer size={5} />
+          <div className="p-4 bg-brand-50 border border-brand-100 rounded-xl flex gap-3 items-start">
             <Zap
               size={18}
               color="var(--color-brand-700)"

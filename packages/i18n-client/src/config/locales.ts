@@ -4,9 +4,17 @@
 export const LOCALES = ['fr', 'en'] as const;
 export type Locale = (typeof LOCALES)[number];
 
-// Default for first-visit users without Accept-Language preference.
-// Pays de la Loire / France-first launch → fr.
-export const DEFAULT_LOCALE: Locale = 'fr';
+// Default for first-visit users whose Accept-Language doesn't match any
+// supported Tukio locale. We picked `en` (not `fr`) because:
+// 1. The marketplace is repositioned as France-wide (not Pays-de-la-Loire-only),
+//    so the audience extends beyond strictly francophone visitors.
+// 2. Browser language detection (`localeDetection: true` in
+//    `createTukioI18nMiddleware`) already routes French-speaking visitors to
+//    `/fr/...` via Accept-Language — this constant is the EDGE-CASE fallback
+//    for browsers that report a non-FR, non-EN language. `en` is the safer
+//    international default.
+// 3. Persisted locale (cookie `NEXT_LOCALE`) overrides this on subsequent visits.
+export const DEFAULT_LOCALE: Locale = 'en';
 
 export const LOCALE_LABELS: Record<Locale, string> = {
   fr: 'Français',

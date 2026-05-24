@@ -4,7 +4,7 @@ Shared `next-intl` 4.x config, middleware, formatters, and SEO components for Tu
 
 ## What's inside
 
-- **`config/locales`** — `LOCALES = ['fr', 'en']`, `DEFAULT_LOCALE = 'fr'`, BCP 47 mapping, type guard.
+- **`config/locales`** — `LOCALES = ['fr', 'en']`, `DEFAULT_LOCALE = 'en'`, BCP 47 mapping, type guard.
 - **`config/next-intl`** — `createI18nRequestConfig(loadMessages)` factory for Server Components.
 - **`middleware/create-i18n-middleware`** — `createTukioI18nMiddleware()` factory + `composeMiddlewares(...)` helper to chain with `@tukio/auth-client` middleware.
 - **Formatters** — `formatDate`, `formatDateTime`, `formatDateRange`, `formatNumber`, `formatPercent`, `formatCurrency`, `formatRelativeTime`. All locale-aware, all timezone-aware (Europe/Paris).

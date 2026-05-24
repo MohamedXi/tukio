@@ -11,7 +11,7 @@ export async function SellerComingSoonPricing({ locale }: SellerComingSoonPricin
   const t = await getTranslations({ locale, namespace: 'seller_coming_soon.pricing' });
 
   return (
-    <section className="px-10 py-18 max-w-[1200px] mx-auto max-md:px-6 max-md:py-14">
+    <section className="py-18 max-w-[1200px] mx-auto max-md:px-6 max-md:py-14">
       <Kicker>{t('kicker')}</Kicker>
       <h2 className="text-[36px] font-display font-normal mt-2 mb-3.5 text-charcoal-800 max-md:text-[28px]">
         {t('title')}
