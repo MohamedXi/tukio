@@ -92,7 +92,7 @@ export default async function SellerComingSoonPage({ params }: PageProps) {
         variant="minimal"
         legal={tFooter('legal', { year })}
         inlineLinks={[
-          { label: tFooter('linkLegalNotice'), href: `${apexBaseUrl}/${locale}/mentions-legales` },
+          { label: tFooter('linkLegalNotice'), href: `${apexBaseUrl}/${locale}/legal` },
           { label: tFooter('linkContactEmail'), href: 'mailto:contact@tukio.one' },
         ]}
       />

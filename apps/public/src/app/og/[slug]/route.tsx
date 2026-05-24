@@ -12,15 +12,15 @@ const SLUGS = {
     fr: 'Bientôt en Pays de la Loire',
     en: 'Coming soon to Pays de la Loire',
   },
-  'a-propos': {
+  about: {
     fr: 'Une plateforme, un événement',
     en: 'One platform, one event',
   },
-  confidentialite: {
+  privacy: {
     fr: 'Vos données, en clair',
     en: 'Your data, transparent',
   },
-  'mentions-legales': {
+  legal: {
     fr: 'Un projet en préparation',
     en: 'A project in preparation',
   },

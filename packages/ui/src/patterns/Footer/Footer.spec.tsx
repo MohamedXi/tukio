@@ -46,8 +46,8 @@ describe('Footer', () => {
 
   describe("variant='minimal' (Story 0.16)", () => {
     const inlineLinks = [
-      { label: 'Devenir pro pilote', href: '/devenir-pro' },
-      { label: 'Mentions légales', href: '/mentions-legales' },
+      { label: 'Devenir pro pilote', href: '/become-pro' },
+      { label: 'Mentions légales', href: '/legal' },
       { label: 'contact@tukio.one', href: 'mailto:contact@tukio.one' },
     ];
 

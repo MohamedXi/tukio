@@ -10,14 +10,14 @@
 
 // Routes that REMAIN ACCESSIBLE while NEXT_PUBLIC_COMING_SOON_MODE=true.
 // Locale-prefixed routes follow the next-intl `localePrefix: 'always'`
-// convention from @tukio/i18n-client (so `/fr/a-propos` and `/en/a-propos`
+// convention from @tukio/i18n-client (so `/fr/about` and `/en/about`
 // both match — the regex captures any 2-letter locale segment).
 const PUBLIC_WHITELIST: readonly RegExp[] = [
   /^\/[a-z]{2}\/coming-soon(\/|$)/u,
-  /^\/[a-z]{2}\/devenir-pro(\/|$)/u,
-  /^\/[a-z]{2}\/a-propos(\/|$)/u,
-  /^\/[a-z]{2}\/confidentialite(\/|$)/u,
-  /^\/[a-z]{2}\/mentions-legales(\/|$)/u,
+  /^\/[a-z]{2}\/become-pro(\/|$)/u,
+  /^\/[a-z]{2}\/about(\/|$)/u,
+  /^\/[a-z]{2}\/privacy(\/|$)/u,
+  /^\/[a-z]{2}\/legal(\/|$)/u,
   /^\/[a-z]{2}\/contact(\/|$)/u,
 ];
 

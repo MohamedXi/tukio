@@ -43,12 +43,12 @@ describe('decideComingSoon — public app', () => {
 
   it('case 5 — flag ON + whitelist public pages → pass', () => {
     for (const path of [
-      '/fr/a-propos',
-      '/fr/confidentialite',
-      '/fr/mentions-legales',
+      '/fr/about',
+      '/fr/privacy',
+      '/fr/legal',
       '/fr/contact',
-      '/fr/devenir-pro',
-      '/en/a-propos',
+      '/fr/become-pro',
+      '/en/about',
       '/en/contact',
     ]) {
       expect(decideComingSoon(true, path, LOCALES).kind).toBe('pass');
@@ -109,14 +109,14 @@ describe('decideComingSoon — public app', () => {
     });
   });
 
-  it('case 12 — whitelist regex strictness — /fr/a-proposition (substring) → rewrite', () => {
-    // The whitelist regex requires (\/|$) after `/a-propos`, so
-    // `/fr/a-proposition` should NOT match the whitelist and be rewritten.
-    expect(decideComingSoon(true, '/fr/a-proposition', LOCALES).kind).toBe('rewrite');
+  it('case 12 — whitelist regex strictness — /fr/aboutition (substring) → rewrite', () => {
+    // The whitelist regex requires (\/|$) after `/about`, so
+    // `/fr/aboutition` should NOT match the whitelist and be rewritten.
+    expect(decideComingSoon(true, '/fr/aboutition', LOCALES).kind).toBe('rewrite');
   });
 
-  it('case 13 — flag ON + /fr/devenir-pro/something → pass (nested whitelist)', () => {
-    expect(decideComingSoon(true, '/fr/devenir-pro/cta', LOCALES).kind).toBe('pass');
+  it('case 13 — flag ON + /fr/become-pro/something → pass (nested whitelist)', () => {
+    expect(decideComingSoon(true, '/fr/become-pro/cta', LOCALES).kind).toBe('pass');
   });
 });
 

@@ -20,16 +20,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: 'website',
       locale: locale === 'fr' ? 'fr_FR' : 'en_US',
       siteName: 'tukio.one',
-      images: [{ url: `${baseUrl}/og/a-propos.png`, width: 1200, height: 630 }],
-      url: `${baseUrl}/${locale}/a-propos`,
+      images: [{ url: `${baseUrl}/og/about.png`, width: 1200, height: 630 }],
+      url: `${baseUrl}/${locale}/about`,
     },
     twitter: { card: 'summary_large_image', title: t('title'), description: t('description') },
     alternates: {
-      canonical: `${baseUrl}/${locale}/a-propos`,
+      canonical: `${baseUrl}/${locale}/about`,
       languages: {
-        fr: `${baseUrl}/fr/a-propos`,
-        en: `${baseUrl}/en/a-propos`,
-        'x-default': `${baseUrl}/fr/a-propos`,
+        fr: `${baseUrl}/fr/about`,
+        en: `${baseUrl}/en/about`,
+        'x-default': `${baseUrl}/fr/about`,
       },
     },
     robots: { index: true, follow: true },
@@ -74,7 +74,7 @@ export default async function AProposPage({ params }: PageProps) {
               label: tFooter('linkBecomePro'),
               href: `${sellerBaseUrl}/${locale}/seller-coming-soon`,
             },
-            { label: tFooter('linkLegalNotice'), href: `/${locale}/mentions-legales` },
+            { label: tFooter('linkLegalNotice'), href: `/${locale}/legal` },
             { label: tFooter('linkContactEmail'), href: 'mailto:contact@tukio.one' },
           ]}
         />

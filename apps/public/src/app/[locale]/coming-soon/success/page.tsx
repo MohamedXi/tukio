@@ -47,7 +47,7 @@ export default async function ComingSoonSuccessPage({ params, searchParams }: Pa
       </a>
       <SiteHeader
         navItems={[
-          { label: tSuccess('headerNavAbout'), href: `/${locale}/a-propos` },
+          { label: tSuccess('headerNavAbout'), href: `/${locale}/about` },
           {
             label: tSuccess('headerNavBecomePro'),
             href: `${sellerBaseUrl}/${locale}/seller-coming-soon`,
@@ -66,7 +66,7 @@ export default async function ComingSoonSuccessPage({ params, searchParams }: Pa
             label: tFooter('linkBecomePro'),
             href: `${sellerBaseUrl}/${locale}/seller-coming-soon`,
           },
-          { label: tFooter('linkLegalNotice'), href: `/${locale}/mentions-legales` },
+          { label: tFooter('linkLegalNotice'), href: `/${locale}/legal` },
           { label: tFooter('linkContactEmail'), href: 'mailto:contact@tukio.one' },
         ]}
       />

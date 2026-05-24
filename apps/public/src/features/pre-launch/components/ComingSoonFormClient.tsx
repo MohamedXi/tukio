@@ -292,7 +292,7 @@ export function ComingSoonFormClient({ locale, initialRole }: ComingSoonFormClie
                 <label htmlFor="rgpdOptIn" className="text-[12px] leading-snug text-charcoal-600">
                   {t('fields.rgpd.label')}
                   <Link
-                    href={`/${locale}/confidentialite`}
+                    href={`/${locale}/privacy`}
                     className="text-brand-700 underline underline-offset-2 hover:text-brand-800"
                   >
                     {t('fields.rgpd.linkLabel')}
