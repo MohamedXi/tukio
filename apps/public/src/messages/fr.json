@@ -8,7 +8,7 @@
     "signup": "S'inscrire"
   },
   "Home": {
-    "kicker": "Pilote Pays de la Loire · 142 pros vérifiés",
+    "kicker": "Pilote 2026 · Loire-Atlantique (44) · Maine-et-Loire (49)",
     "title": "Vos événements,",
     "titleEmphasis": "réservés",
     "titleSuffix": "avec les meilleurs pros près de chez vous.",
@@ -184,10 +184,10 @@
       "titleLine2Emphasis": "réservés.",
       "pitch": "tukio.one est la marketplace française des professionnels de l'événementiel : tentes, mobilier, traiteur, décoration. Un événement, une plateforme, près de chez vous. Lancement pilote 2026 en Pays de la Loire.",
       "subPitch": "On finalise les derniers détails avant l'ouverture. Laissez-nous votre email pour être prévenu·e dès que tukio.one est en ligne.",
-      "stat1Value": "140+",
-      "stat1Label": "Pros déjà inscrits",
+      "stat1Value": "1",
+      "stat1Label": "Inscrit·e sur la liste",
       "stat2Value": "44 · 49",
-      "stat2Label": "Lancement pilote",
+      "stat2Label": "Loire-Atlantique · Maine-et-Loire",
       "stat3Value": "0 €",
       "stat3Label": "Inscription"
     },
@@ -482,7 +482,9 @@
   "contact": {
     "meta": {
       "title": "Contact · tukio.one",
-      "description": "Contactez tukio.one : support général, données personnelles (RGPD), signalement urgent, presse et partenariats. Réponse sous 48h ouvrées."
+      "description": "Contactez tukio.one : support général, données personnelles (RGPD), signalement urgent, presse et partenariats. Réponse sous 48h ouvrées.",
+      "successTitle": "Message reçu · tukio.one",
+      "successDescription": "Votre message a bien été reçu. Réponse sous 48h ouvrées."
     },
     "kicker": "Contact",
     "titleLine1": "On",
@@ -524,7 +526,6 @@
       "submit": "Envoyer",
       "submitting": "Envoi en cours…",
       "disclaimer": "Vos données sont traitées conformément à notre politique de confidentialité. Réponse sous 48h ouvrées.",
-      "successMessage": "Message envoyé. Réponse sous 48h ouvrées.",
       "errors": {
         "generic": "Une erreur est survenue. Veuillez réessayer.",
         "network": "Problème réseau. Vérifiez votre connexion et réessayez.",
@@ -573,6 +574,27 @@
       "linkBecomePro": "Devenir pro pilote",
       "linkLegalNotice": "Mentions légales",
       "linkContactEmail": "contact@tukio.one"
+    },
+    "success": {
+      "kicker": "Message reçu",
+      "titleLine1": "Merci",
+      "titleEmphasisSuffix": ", on a bien votre message.",
+      "lead": "On revient vers vous sous 48h ouvrées, à l'adresse indiquée ci-dessous.",
+      "recapTitle": "Récapitulatif",
+      "recapEmailLabel": "Adresse de réponse",
+      "recapSubjectLabel": "Sujet",
+      "recapTimeLabel": "Envoyé le",
+      "subjects": {
+        "general": "Question générale",
+        "devenirPro": "Devenir pro tukio.one",
+        "technique": "Problème technique",
+        "partenariat": "Proposition partenariat",
+        "presse": "Presse et communication"
+      },
+      "whatNextTitle": "Ce qui se passe ensuite",
+      "whatNextBody": "On lit chaque message à la main. Vous recevrez notre réponse à l'adresse renseignée. Pensez à vérifier vos spams si rien n'arrive sous 48h.",
+      "ctaHome": "Retour à l'accueil",
+      "ctaBecomePro": "Découvrir l'espace pro"
     }
   }
 }

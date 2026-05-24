@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { Button } from '@tukio/ui/components/Button';
 import { ContactFormSchema, type ContactFormValues } from '../schemas/contact-form.schema.js';
 import { classifyContactError } from '../services/classify-contact-error.js';
@@ -46,15 +47,14 @@ const INPUT_CLASS =
 
 export function ContactFormClient({ locale }: ContactFormClientProps) {
   const t = useTranslations('contact.form');
+  const router = useRouter();
   const [formError, setFormError] = useState<ContactError | null>(null);
-  const [submitted, setSubmitted] = useState(false);
   const bannerRef = useRef<HTMLDivElement | null>(null);
   const { mutate, isPending } = useSubmitPreLaunchContact();
 
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors },
   } = useForm<ContactFormValues>({
     resolver: zodResolver,
@@ -75,7 +75,6 @@ export function ContactFormClient({ locale }: ContactFormClientProps) {
 
   const onSubmit = handleSubmit((data) => {
     setFormError(null);
-    setSubmitted(false);
     mutate(
       { ...data, locale: locale === 'en' ? 'en' : 'fr' },
       {
@@ -85,8 +84,13 @@ export function ContactFormClient({ locale }: ContactFormClientProps) {
             subject: data.subject,
             locale,
           });
-          setSubmitted(true);
-          reset();
+          const params = new URLSearchParams({
+            firstName: data.firstName,
+            email: data.email,
+            subject: data.subject,
+            time: new Date().toISOString(),
+          });
+          router.push(`/${locale}/contact/success?${params.toString()}`);
         },
         onError: (error) => {
           const failure = classifyContactError(error);
@@ -103,18 +107,8 @@ export function ContactFormClient({ locale }: ContactFormClientProps) {
   });
 
   return (
-    <div className="p-8 rounded-xl bg-cream-50 border border-cream-200">
+    <>
       <h2 className="text-[22px] font-display font-medium text-charcoal-800 mb-5">{t('title')}</h2>
-
-      {submitted && (
-        <div
-          role="alert"
-          aria-live="polite"
-          className="mb-5 rounded-md border border-success-500/30 bg-success-50 p-3 text-sm text-success-700"
-        >
-          {t('successMessage')}
-        </div>
-      )}
 
       {formError && (
         <div
@@ -315,7 +309,7 @@ export function ContactFormClient({ locale }: ContactFormClientProps) {
 
         <p className="text-[12px] text-charcoal-500 text-center leading-[1.5]">{t('disclaimer')}</p>
       </form>
-    </div>
+    </>
   );
 }
 
