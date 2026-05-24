@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteHeader } from '@tukio/ui/patterns/SiteHeader';
 import { Footer } from '@tukio/ui/patterns/Footer';
 import { ContactSuccessHero } from '../../../../features/public-pages/components/ContactSuccessHero.js';
+import { LinkedLogo } from '../../../../components/LinkedLogo.js';
 import { LocaleSwitcherClient } from '../../../../components/LocaleSwitcherClient.js';
 
 const SUBJECT_KEYS = ['general', 'devenirPro', 'technique', 'partenariat', 'presse'] as const;
@@ -56,7 +57,7 @@ export default async function ContactSuccessPage({ params, searchParams }: PageP
       >
         {locale === 'fr' ? 'Aller au contenu' : 'Skip to content'}
       </a>
-      <SiteHeader localeSwitcher={<LocaleSwitcherClient />} />
+      <SiteHeader logo={<LinkedLogo locale={locale} />} localeSwitcher={<LocaleSwitcherClient />} />
 
       <ContactSuccessHero
         locale={locale}
