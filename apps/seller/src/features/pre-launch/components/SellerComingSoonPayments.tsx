@@ -18,7 +18,7 @@ export async function SellerComingSoonPayments({ locale }: SellerComingSoonPayme
 
   return (
     <section className="px-10 py-18 bg-charcoal-800 text-cream-50 max-md:px-6 max-md:py-14">
-      <div className="max-w-[1200px] mx-auto">
+      <div className="max-w-300 mx-auto">
         <Kicker color="cream">{t('kicker')}</Kicker>
         <h2 className="text-[36px] font-display font-normal mt-2 mb-3.5 text-cream-50 max-md:text-[28px]">
           {t('title')}

@@ -1,6 +1,8 @@
 import { cn } from '../../utils/cn';
 import { Kicker } from '../../components/Kicker/Kicker';
 import type { BlockProps, EditorialPageShellProps } from './EditorialPageShell.types';
+import { Spacer } from '../../../../ui/src/components/Spacer/Spacer';
+import { Fragment } from 'react';
 
 /**
  * Two-column editorial shell for institutional pages (About, Privacy, Legal,
@@ -32,11 +34,14 @@ export function EditorialPageShell({
           {title}
         </h1>
         {intro && (
-          <p className="mt-[18px] text-[17px] leading-[1.6] text-charcoal-600 max-w-[640px]">
-            {intro}
-          </p>
+          <Fragment>
+            <Spacer size={4} />
+            <p className="mt-[18px] text-[17px] leading-[1.6] text-charcoal-600 max-w-[640px]">
+              {intro}
+            </p>
+          </Fragment>
         )}
-        <div className="mt-12">{children}</div>
+        <div className="mt-5">{children}</div>
       </main>
       {footer}
     </div>
@@ -52,9 +57,9 @@ EditorialPageShell.displayName = 'EditorialPageShell';
  */
 export function Block({ title, children, className }: BlockProps) {
   return (
-    <section className={cn('mb-10', className)}>
+    <section className={cn(className)}>
       <h2 className="text-2xl font-display font-medium text-charcoal-800 mb-3.5">{title}</h2>
-      <div className="text-[15px] text-charcoal-700 leading-[1.7]">{children}</div>
+      <div className="mt-2 text-[15px] text-charcoal-700 leading-[1.7]">{children}</div>
     </section>
   );
 }

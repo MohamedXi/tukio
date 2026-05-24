@@ -10,7 +10,7 @@ export async function ComingSoonHero({ locale }: ComingSoonHeroProps) {
 
   return (
     <section className="flex flex-col justify-center pt-16 pb-20 px-20 max-md:px-6 max-md:pt-10 max-md:pb-12">
-      <Pill pulseDot variant="brand" className="w-fit">
+      <Pill pulseDot variant="brand" className="w-fit mb-3">
         {t('hero.pillLabel')}
       </Pill>
 
@@ -20,9 +20,9 @@ export async function ComingSoonHero({ locale }: ComingSoonHeroProps) {
         <em className="italic text-brand-600">{t('hero.titleLine2Emphasis')}</em>
       </h1>
 
-      <p className="text-[18px] text-charcoal-600 mt-6 max-w-[480px] leading-[1.6] max-md:text-[16px]">
-        {t('hero.pitch')}
-      </p>
+      <div className="my-6 text-[18px] text-charcoal-600 mt-6 max-w-[480px] leading-[1.6] max-md:text-[16px]">
+        <p>{t('hero.pitch')}</p>
+      </div>
 
       <p className="text-[14px] text-charcoal-500 mt-4 max-w-[460px] leading-[1.55]">
         {t('hero.subPitch')}
