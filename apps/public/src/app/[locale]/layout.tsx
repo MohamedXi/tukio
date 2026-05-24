@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     "Marketplace des professionnels de l'événementiel en Pays de la Loire — tentes, mobilier, traiteur, décoration.",
 };
 
-const PLAUSIBLE_ENABLED = process.env.NEXT_PUBLIC_PLAUSIBLE_ENABLED === 'true';
+const PLAUSIBLE_SCRIPT_URL = process.env.NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL;
 
 function buildOrganizationJsonLd(locale: 'fr' | 'en'): string {
   return JSON.stringify({
@@ -108,12 +108,15 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: buildOrganizationJsonLd(locale) }}
         />
-        {PLAUSIBLE_ENABLED && (
-          <Script
-            strategy="afterInteractive"
-            src="https://plausible.io/js/script.outbound-links.tagged-events.js"
-            data-domain="tukio.one"
-          />
+        {PLAUSIBLE_SCRIPT_URL && (
+          <>
+            <Script strategy="afterInteractive" src={PLAUSIBLE_SCRIPT_URL} />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`,
+              }}
+            />
+          </>
         )}
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>{children}</QueryProvider>

@@ -37,9 +37,10 @@ env:
   DO_HOST_APPS: ${{ secrets.DO_HOST_APPS }}
   DO_DEPLOY_KEY: ${{ secrets.DO_DEPLOY_KEY }}
   SLACK_WEBHOOK_DEPLOYS: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
-  # Feature flags injected from GitHub repo vars (Settings → Variables → Actions).
-  # Safe to expose — these are build-time booleans, not secrets.
-  PLAUSIBLE_ENABLED: ${{ vars.PLAUSIBLE_ENABLED || 'false' }}
+  # Plausible script URLs injected from GitHub repo vars (Settings → Variables → Actions).
+  # Each site has its own tokenized URL. Empty = analytics disabled for that site.
+  PLAUSIBLE_SCRIPT_URL_PUBLIC: ${{ vars.PLAUSIBLE_SCRIPT_URL_PUBLIC || '' }}
+  PLAUSIBLE_SCRIPT_URL_SELLER: ${{ vars.PLAUSIBLE_SCRIPT_URL_SELLER || '' }}
   # Default probes the gateway root (200 OK) until a dedicated /health endpoint
   # lands in gateway-api (Epic 1+ DF2). Override via repo var STAGING_HEALTH_URL.
   STAGING_HEALTH_URL: ${{ vars.STAGING_HEALTH_URL || 'https://api.tukio.one' }}
@@ -127,10 +128,11 @@ jobs:
             # Persist the deployed tag to .env.staging (not .env.production).
             sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_TAG}|" .env.staging || \\
               echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.staging
-            # Feature flags — upsert from GitHub repo vars so operators don't
-            # need to SSH in to flip toggles (PLAUSIBLE_ENABLED, etc.).
-            sed -i "s|^PLAUSIBLE_ENABLED=.*|PLAUSIBLE_ENABLED=${PLAUSIBLE_ENABLED}|" .env.staging || \\
-              echo "PLAUSIBLE_ENABLED=${PLAUSIBLE_ENABLED}" >> .env.staging
+            # Plausible script URLs — upsert from GitHub repo vars.
+            sed -i "s|^PLAUSIBLE_SCRIPT_URL_PUBLIC=.*|PLAUSIBLE_SCRIPT_URL_PUBLIC=${PLAUSIBLE_SCRIPT_URL_PUBLIC}|" .env.staging || \\
+              echo "PLAUSIBLE_SCRIPT_URL_PUBLIC=${PLAUSIBLE_SCRIPT_URL_PUBLIC}" >> .env.staging
+            sed -i "s|^PLAUSIBLE_SCRIPT_URL_SELLER=.*|PLAUSIBLE_SCRIPT_URL_SELLER=${PLAUSIBLE_SCRIPT_URL_SELLER}|" .env.staging || \\
+              echo "PLAUSIBLE_SCRIPT_URL_SELLER=${PLAUSIBLE_SCRIPT_URL_SELLER}" >> .env.staging
             export DB_USER=\$(cat /home/tukio/tukio/secrets/pg_user)
             export DB_PASSWORD=\$(cat /home/tukio/tukio/secrets/pg_password)
             export MEILI_MASTER_KEY=\$(cat /home/tukio/tukio/secrets/meili_key)
