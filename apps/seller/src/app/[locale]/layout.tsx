@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
@@ -83,16 +82,10 @@ export default async function RootLayout({
       lang={locale}
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <body>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: buildOrganizationJsonLd(localeNarrow),
-          }}
-        />
+      <head>
         {PLAUSIBLE_SCRIPT_URL && (
           <>
-            <Script strategy="afterInteractive" src={PLAUSIBLE_SCRIPT_URL} />
+            <script async src={PLAUSIBLE_SCRIPT_URL} />
             <script
               dangerouslySetInnerHTML={{
                 __html: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`,
@@ -100,6 +93,14 @@ export default async function RootLayout({
             />
           </>
         )}
+      </head>
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: buildOrganizationJsonLd(localeNarrow),
+          }}
+        />
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>
     </html>
