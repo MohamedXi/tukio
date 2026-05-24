@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Logo } from '@tukio/ui/patterns/Logo';
+import { LocaleSwitcherClient } from '../../../components/LocaleSwitcherClient.js';
 
 interface ComingSoonHeaderProps {
   locale: string;
@@ -17,9 +18,12 @@ export async function ComingSoonHeader({ locale }: ComingSoonHeaderProps) {
       className="flex items-center justify-between px-10 py-6 bg-cream-50 max-md:px-4 max-md:py-5"
     >
       <Logo size={22} />
-      <span className="text-xs font-mono uppercase tracking-wider text-charcoal-500">
-        {t('badge')}
-      </span>
+      <div className="flex items-center gap-4">
+        <span className="text-xs font-mono uppercase tracking-wider text-charcoal-500">
+          {t('badge')}
+        </span>
+        <LocaleSwitcherClient />
+      </div>
     </header>
   );
 }

@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteHeader } from '@tukio/ui/patterns/SiteHeader';
 import { Footer } from '@tukio/ui/patterns/Footer';
 import { ContactPageShell } from '../../../features/public-pages/components/ContactPageShell.js';
+import { LocaleSwitcherClient } from '../../../components/LocaleSwitcherClient.js';
 
 type PageProps = { params: Promise<{ locale: string }> };
 
@@ -50,7 +51,7 @@ export default async function ContactPage({ params }: PageProps) {
       >
         Aller au contenu / Skip to content
       </a>
-      <SiteHeader />
+      <SiteHeader localeSwitcher={<LocaleSwitcherClient />} />
       <main className="flex-1" id="main-content">
         <ContactPageShell locale={locale} />
       </main>

@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteHeader } from '@tukio/ui/patterns/SiteHeader';
 import { Footer } from '@tukio/ui/patterns/Footer';
 import { ComingSoonSuccessHero } from '../../../../features/pre-launch/components/ComingSoonSuccessHero.js';
+import { LocaleSwitcherClient } from '../../../../components/LocaleSwitcherClient.js';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -54,6 +55,7 @@ export default async function ComingSoonSuccessPage({ params, searchParams }: Pa
           },
           { label: tSuccess('headerNavContact'), href: `/${locale}/contact` },
         ]}
+        localeSwitcher={<LocaleSwitcherClient />}
       />
 
       <ComingSoonSuccessHero locale={locale} firstName={firstName} position={position} />
