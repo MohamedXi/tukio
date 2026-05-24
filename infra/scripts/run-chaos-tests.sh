@@ -56,7 +56,7 @@ run_chaos() {
 declare -i failures=0
 
 run_chaos "@tukio/messaging" test --testNamePattern=@chaos || failures=$((failures + 1))
-run_chaos "identity-svc"     test --testPathPattern=chaos  || failures=$((failures + 1))
+run_chaos "identity-svc"     test --testPathPatterns=chaos || failures=$((failures + 1))
 
 echo ""
 if [ "$failures" -eq 0 ]; then
