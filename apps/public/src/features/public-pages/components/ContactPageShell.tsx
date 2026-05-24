@@ -28,8 +28,7 @@ export async function ContactPageShell({ locale }: ContactPageShellProps) {
       </p>
 
       <div className="grid grid-cols-[1.2fr_1fr] gap-12 mt-14 max-md:grid-cols-1">
-        {/* Form — wrapped in a card to mirror design ref `<form class="tk-card">` */}
-        <div className="p-8 rounded-xl bg-cream-50 border border-cream-200 max-md:p-6">
+        <div className="rounded-xl bg-cream-50 border border-cream-200 px-6 py-7 max-md:px-5 max-md:py-6">
           <ContactFormClient locale={locale} />
         </div>
 

@@ -54,6 +54,11 @@ vi.mock('@tukio/api-client/hooks/pre-launch', () => ({
   }),
 }));
 
+const pushMock = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: pushMock, replace: vi.fn(), back: vi.fn(), forward: vi.fn() }),
+}));
+
 import { ContactFormClient } from '../ContactFormClient.js';
 
 describe('ContactFormClient', () => {
@@ -72,7 +77,7 @@ describe('ContactFormClient', () => {
     expect(screen.getByRole('button', { name: 'Envoyer' })).toBeInTheDocument();
   });
 
-  it('shows success message on valid submit', async () => {
+  it('redirects to success page with submission details on valid submit', async () => {
     render(<ContactFormClient locale="fr" />);
 
     fireEvent.change(screen.getByLabelText('Prénom'), { target: { value: 'Camille' } });
@@ -87,8 +92,15 @@ describe('ContactFormClient', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Envoyer' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent('Message envoyé');
+      expect(pushMock).toHaveBeenCalledTimes(1);
     });
+    const url = pushMock.mock.calls[0]?.[0] as string;
+    expect(url).toMatch(/^\/fr\/contact\/success\?/);
+    const params = new URLSearchParams(url.split('?')[1]);
+    expect(params.get('firstName')).toBe('Camille');
+    expect(params.get('email')).toBe('camille@exemple.fr');
+    expect(params.get('subject')).toBe('general');
+    expect(params.get('time')).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it('shows required errors on empty submit', async () => {

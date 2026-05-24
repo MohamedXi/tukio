@@ -8,7 +8,7 @@
     "signup": "Sign up"
   },
   "Home": {
-    "kicker": "Pays de la Loire pilot · 142 verified pros",
+    "kicker": "Pilot 2026 · Loire-Atlantique (44) · Maine-et-Loire (49)",
     "title": "Your events,",
     "titleEmphasis": "booked",
     "titleSuffix": "with the best local pros near you.",
@@ -184,10 +184,10 @@
       "titleLine2Emphasis": "booked.",
       "pitch": "tukio.one is the French marketplace for event service professionals: tents, furniture, catering, decoration. One event, one platform, close to home. 2026 pilot launch in Pays de la Loire.",
       "subPitch": "We're putting the finishing touches before launch. Leave your email and we'll let you know as soon as tukio.one goes live.",
-      "stat1Value": "140+",
-      "stat1Label": "Pros already registered",
+      "stat1Value": "1",
+      "stat1Label": "Person on the list",
       "stat2Value": "44 · 49",
-      "stat2Label": "Pilot launch",
+      "stat2Label": "Loire-Atlantique · Maine-et-Loire",
       "stat3Value": "€0",
       "stat3Label": "Registration"
     },
@@ -486,7 +486,9 @@
   "contact": {
     "meta": {
       "title": "Contact · tukio.one",
-      "description": "Contact tukio.one: general support, personal data (GDPR), urgent reports, press and partnerships. Response within 48 business hours."
+      "description": "Contact tukio.one: general support, personal data (GDPR), urgent reports, press and partnerships. Response within 48 business hours.",
+      "successTitle": "Message received · tukio.one",
+      "successDescription": "Your message has been received. Response within 48 business hours."
     },
     "kicker": "Contact",
     "titleLine1": "We're",
@@ -528,7 +530,6 @@
       "submit": "Send",
       "submitting": "Sending…",
       "disclaimer": "Your data is processed in accordance with our privacy policy. Response within 48 business hours.",
-      "successMessage": "Message sent. Response within 48 business hours.",
       "errors": {
         "generic": "An error occurred. Please try again.",
         "network": "Network error. Check your connection and try again.",
@@ -580,6 +581,27 @@
       "linkBecomePro": "Become a pro",
       "linkLegalNotice": "Legal notice",
       "linkContactEmail": "contact@tukio.one"
+    },
+    "success": {
+      "kicker": "Message received",
+      "titleLine1": "Thanks",
+      "titleEmphasisSuffix": ", we've got your message.",
+      "lead": "We'll get back to you within 48 business hours, at the address shown below.",
+      "recapTitle": "Summary",
+      "recapEmailLabel": "Reply address",
+      "recapSubjectLabel": "Subject",
+      "recapTimeLabel": "Sent on",
+      "subjects": {
+        "general": "General question",
+        "devenirPro": "Becoming a pro on tukio.one",
+        "technique": "Technical issue",
+        "partenariat": "Partnership proposal",
+        "presse": "Press and communications"
+      },
+      "whatNextTitle": "What happens next",
+      "whatNextBody": "We read every message by hand. You'll receive our reply at the address you provided. Check your spam folder if nothing arrives within 48 hours.",
+      "ctaHome": "Back to home",
+      "ctaBecomePro": "Discover the pro space"
     }
   }
 }
