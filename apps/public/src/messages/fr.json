@@ -8,7 +8,7 @@
     "signup": "S'inscrire"
   },
   "Home": {
-    "kicker": "Pays de la Loire · 142 pros vérifiés",
+    "kicker": "Pilote Pays de la Loire · 142 pros vérifiés",
     "title": "Vos événements,",
     "titleEmphasis": "réservés",
     "titleSuffix": "avec les meilleurs pros près de chez vous.",
@@ -172,7 +172,7 @@
   },
   "coming_soon": {
     "header": {
-      "badge": "Bientôt en Pays de la Loire",
+      "badge": "Bientôt · Pilote Pays de la Loire",
       "navAbout": "À propos",
       "navBecomePro": "Devenir pro",
       "navContact": "Contact",
@@ -182,7 +182,7 @@
       "pillLabel": "En construction",
       "titleLine1": "Vos événements,",
       "titleLine2Emphasis": "réservés.",
-      "pitch": "tukio.one est la marketplace des professionnels de l'événementiel en Pays de la Loire. Tentes, mobilier, traiteur, décoration : un événement, une plateforme, près de chez vous.",
+      "pitch": "tukio.one est la marketplace française des professionnels de l'événementiel : tentes, mobilier, traiteur, décoration. Un événement, une plateforme, près de chez vous. Lancement pilote 2026 en Pays de la Loire.",
       "subPitch": "On finalise les derniers détails avant l'ouverture. Laissez-nous votre email pour être prévenu·e dès que tukio.one est en ligne.",
       "stat1Value": "140+",
       "stat1Label": "Pros déjà inscrits",
@@ -257,8 +257,8 @@
       "linkContactEmail": "contact@tukio.one"
     },
     "meta": {
-      "title": "tukio.one · Bientôt en Pays de la Loire",
-      "description": "La marketplace des professionnels de l'événementiel en Pays de la Loire. Tentes, mobilier, traiteur, décoration. Soyez prévenu·e dès l'ouverture.",
+      "title": "tukio.one · Bientôt en France",
+      "description": "La marketplace française des professionnels de l'événementiel : tentes, mobilier, traiteur, décoration. Lancement pilote 2026 en Pays de la Loire. Soyez prévenu·e dès l'ouverture.",
       "successTitle": "Inscription confirmée · tukio.one",
       "successDescription": "Vous êtes sur la liste d'attente tukio.one. On vous écrit dès l'ouverture, pas avant."
     }

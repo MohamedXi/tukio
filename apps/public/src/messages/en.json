@@ -8,7 +8,7 @@
     "signup": "Sign up"
   },
   "Home": {
-    "kicker": "Pays de la Loire · 142 verified pros",
+    "kicker": "Pays de la Loire pilot · 142 verified pros",
     "title": "Your events,",
     "titleEmphasis": "booked",
     "titleSuffix": "with the best local pros near you.",
@@ -172,7 +172,7 @@
   },
   "coming_soon": {
     "header": {
-      "badge": "Coming soon to Pays de la Loire",
+      "badge": "Coming soon · Pays de la Loire pilot",
       "navAbout": "About",
       "navBecomePro": "Become a pro",
       "navContact": "Contact",
@@ -182,7 +182,7 @@
       "pillLabel": "Under construction",
       "titleLine1": "Your events,",
       "titleLine2Emphasis": "booked.",
-      "pitch": "tukio.one is the marketplace for event service professionals in Pays de la Loire. Tents, furniture, catering, decoration: one event, one platform, close to home.",
+      "pitch": "tukio.one is the French marketplace for event service professionals: tents, furniture, catering, decoration. One event, one platform, close to home. 2026 pilot launch in Pays de la Loire.",
       "subPitch": "We're putting the finishing touches before launch. Leave your email and we'll let you know as soon as tukio.one goes live.",
       "stat1Value": "140+",
       "stat1Label": "Pros already registered",
@@ -257,8 +257,8 @@
       "linkContactEmail": "contact@tukio.one"
     },
     "meta": {
-      "title": "tukio.one · Coming Soon to Pays de la Loire",
-      "description": "The marketplace for event professionals in Pays de la Loire. Tents, furniture, catering, decoration. Be notified at launch.",
+      "title": "tukio.one · Coming Soon to France",
+      "description": "The French marketplace for event professionals: tents, furniture, catering, decoration. 2026 pilot launch in Pays de la Loire. Be notified at launch.",
       "successTitle": "Registration confirmed · tukio.one",
       "successDescription": "You're on the tukio.one waitlist. We'll email you when we open, not before."
     },
