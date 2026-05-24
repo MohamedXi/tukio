@@ -8,10 +8,10 @@ const LAST_MODIFIED = new Date('2026-05-23T00:00:00Z');
 
 const ROUTES = [
   { path: '/coming-soon', priority: 1.0, changeFrequency: 'weekly' as const },
-  { path: '/a-propos', priority: 0.7, changeFrequency: 'monthly' as const },
+  { path: '/about', priority: 0.7, changeFrequency: 'monthly' as const },
   { path: '/contact', priority: 0.6, changeFrequency: 'monthly' as const },
-  { path: '/confidentialite', priority: 0.4, changeFrequency: 'yearly' as const },
-  { path: '/mentions-legales', priority: 0.4, changeFrequency: 'yearly' as const },
+  { path: '/privacy', priority: 0.4, changeFrequency: 'yearly' as const },
+  { path: '/legal', priority: 0.4, changeFrequency: 'yearly' as const },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

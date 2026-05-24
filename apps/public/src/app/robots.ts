@@ -18,18 +18,18 @@ const PRIVATE_DISALLOW = [
 ];
 
 // Pre-launch whitelist — every other Epic 1+ surface is hidden via the
-// `/fr/`+`/en/` blanket disallow. Story 0.18 `/devenir-pro` lives on
+// `/fr/`+`/en/` blanket disallow. Story 0.18 `/become-pro` lives on
 // seller.tukio.one and is not relevant here.
 const PRE_LAUNCH_ALLOW = [
   '/',
   '/fr/coming-soon',
   '/en/coming-soon',
-  '/fr/a-propos',
-  '/en/a-propos',
-  '/fr/confidentialite',
-  '/en/confidentialite',
-  '/fr/mentions-legales',
-  '/en/mentions-legales',
+  '/fr/about',
+  '/en/about',
+  '/fr/privacy',
+  '/en/privacy',
+  '/fr/legal',
+  '/en/legal',
   '/fr/contact',
   '/en/contact',
 ];

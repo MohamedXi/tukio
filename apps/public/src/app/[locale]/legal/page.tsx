@@ -3,14 +3,14 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { EditorialPageShell } from '@tukio/ui/patterns/EditorialPageShell';
 import { SiteHeader } from '@tukio/ui/patterns/SiteHeader';
 import { Footer } from '@tukio/ui/patterns/Footer';
-import { PrivacyContent } from '../../../features/public-pages/components/PrivacyContent.js';
+import { LegalContent } from '../../../features/public-pages/components/LegalContent.js';
 import { LocaleSwitcherClient } from '../../../components/LocaleSwitcherClient.js';
 
 type PageProps = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'privacy.meta' });
+  const t = await getTranslations({ locale, namespace: 'legal.meta' });
   const baseUrl = process.env['NEXT_PUBLIC_BASE_URL'] ?? 'https://tukio.one';
   return {
     title: t('title'),
@@ -21,27 +21,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: 'website',
       locale: locale === 'fr' ? 'fr_FR' : 'en_US',
       siteName: 'tukio.one',
-      images: [{ url: `${baseUrl}/og/confidentialite.png`, width: 1200, height: 630 }],
-      url: `${baseUrl}/${locale}/confidentialite`,
+      images: [{ url: `${baseUrl}/og/legal.png`, width: 1200, height: 630 }],
+      url: `${baseUrl}/${locale}/legal`,
     },
     twitter: { card: 'summary_large_image', title: t('title'), description: t('description') },
     alternates: {
-      canonical: `${baseUrl}/${locale}/confidentialite`,
+      canonical: `${baseUrl}/${locale}/legal`,
       languages: {
-        fr: `${baseUrl}/fr/confidentialite`,
-        en: `${baseUrl}/en/confidentialite`,
-        'x-default': `${baseUrl}/fr/confidentialite`,
+        fr: `${baseUrl}/fr/legal`,
+        en: `${baseUrl}/en/legal`,
+        'x-default': `${baseUrl}/fr/legal`,
       },
     },
     robots: { index: true, follow: true },
   };
 }
 
-export default async function ConfidentialitePage({ params }: PageProps) {
+export default async function MentionsLegalesPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: 'privacy' });
-  const tFooter = await getTranslations({ locale, namespace: 'privacy.footer' });
+  const t = await getTranslations({ locale, namespace: 'legal' });
+  const tFooter = await getTranslations({ locale, namespace: 'legal.footer' });
   const sellerBaseUrl = process.env['NEXT_PUBLIC_SELLER_BASE_URL'] ?? 'https://seller.tukio.one';
   const year = new Date().getFullYear();
 
@@ -74,14 +74,14 @@ export default async function ConfidentialitePage({ params }: PageProps) {
               label: tFooter('linkBecomePro'),
               href: `${sellerBaseUrl}/${locale}/seller-coming-soon`,
             },
-            { label: tFooter('linkLegalNotice'), href: `/${locale}/mentions-legales` },
+            { label: tFooter('linkLegalNotice'), href: `/${locale}/legal` },
             { label: tFooter('linkContactEmail'), href: 'mailto:contact@tukio.one' },
           ]}
         />
       }
     >
       <div id="main-content" tabIndex={-1}>
-        <PrivacyContent locale={locale} />
+        <LegalContent locale={locale} />
       </div>
     </EditorialPageShell>
   );

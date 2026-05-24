@@ -3,14 +3,14 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { EditorialPageShell } from '@tukio/ui/patterns/EditorialPageShell';
 import { SiteHeader } from '@tukio/ui/patterns/SiteHeader';
 import { Footer } from '@tukio/ui/patterns/Footer';
-import { LegalContent } from '../../../features/public-pages/components/LegalContent.js';
+import { PrivacyContent } from '../../../features/public-pages/components/PrivacyContent.js';
 import { LocaleSwitcherClient } from '../../../components/LocaleSwitcherClient.js';
 
 type PageProps = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'legal.meta' });
+  const t = await getTranslations({ locale, namespace: 'privacy.meta' });
   const baseUrl = process.env['NEXT_PUBLIC_BASE_URL'] ?? 'https://tukio.one';
   return {
     title: t('title'),
@@ -21,27 +21,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: 'website',
       locale: locale === 'fr' ? 'fr_FR' : 'en_US',
       siteName: 'tukio.one',
-      images: [{ url: `${baseUrl}/og/mentions-legales.png`, width: 1200, height: 630 }],
-      url: `${baseUrl}/${locale}/mentions-legales`,
+      images: [{ url: `${baseUrl}/og/privacy.png`, width: 1200, height: 630 }],
+      url: `${baseUrl}/${locale}/privacy`,
     },
     twitter: { card: 'summary_large_image', title: t('title'), description: t('description') },
     alternates: {
-      canonical: `${baseUrl}/${locale}/mentions-legales`,
+      canonical: `${baseUrl}/${locale}/privacy`,
       languages: {
-        fr: `${baseUrl}/fr/mentions-legales`,
-        en: `${baseUrl}/en/mentions-legales`,
-        'x-default': `${baseUrl}/fr/mentions-legales`,
+        fr: `${baseUrl}/fr/privacy`,
+        en: `${baseUrl}/en/privacy`,
+        'x-default': `${baseUrl}/fr/privacy`,
       },
     },
     robots: { index: true, follow: true },
   };
 }
 
-export default async function MentionsLegalesPage({ params }: PageProps) {
+export default async function ConfidentialitePage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: 'legal' });
-  const tFooter = await getTranslations({ locale, namespace: 'legal.footer' });
+  const t = await getTranslations({ locale, namespace: 'privacy' });
+  const tFooter = await getTranslations({ locale, namespace: 'privacy.footer' });
   const sellerBaseUrl = process.env['NEXT_PUBLIC_SELLER_BASE_URL'] ?? 'https://seller.tukio.one';
   const year = new Date().getFullYear();
 
@@ -74,14 +74,14 @@ export default async function MentionsLegalesPage({ params }: PageProps) {
               label: tFooter('linkBecomePro'),
               href: `${sellerBaseUrl}/${locale}/seller-coming-soon`,
             },
-            { label: tFooter('linkLegalNotice'), href: `/${locale}/mentions-legales` },
+            { label: tFooter('linkLegalNotice'), href: `/${locale}/legal` },
             { label: tFooter('linkContactEmail'), href: 'mailto:contact@tukio.one' },
           ]}
         />
       }
     >
       <div id="main-content" tabIndex={-1}>
-        <LegalContent locale={locale} />
+        <PrivacyContent locale={locale} />
       </div>
     </EditorialPageShell>
   );

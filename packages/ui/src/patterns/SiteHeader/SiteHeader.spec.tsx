@@ -31,7 +31,7 @@ describe('SiteHeader', () => {
     render(
       <SiteHeader
         navItems={[
-          { label: 'About', href: '/a-propos' },
+          { label: 'About', href: '/about' },
           { label: 'Contact', href: '/contact' },
         ]}
       />,
@@ -46,7 +46,7 @@ describe('SiteHeader', () => {
     render(
       <SiteHeader
         navItems={[
-          { label: 'About', href: '/a-propos', active: true },
+          { label: 'About', href: '/about', active: true },
           { label: 'Contact', href: '/contact' },
         ]}
       />,
@@ -71,8 +71,8 @@ describe('SiteHeader', () => {
     render(
       <SiteHeader
         navItems={[
-          { label: 'About', href: '/a-propos' },
-          { label: 'Become Pro', href: '/devenir-pro', active: true },
+          { label: 'About', href: '/about' },
+          { label: 'Become Pro', href: '/become-pro', active: true },
           { label: 'Contact', href: '/contact' },
         ]}
       />,
@@ -101,7 +101,7 @@ describe('SiteHeader', () => {
     const { container } = render(
       <SiteHeader
         navItems={[
-          { label: 'About', href: '/a-propos' },
+          { label: 'About', href: '/about' },
           { label: 'Contact', href: '/contact', active: true },
         ]}
       />,
