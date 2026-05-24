@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteHeader } from '@tukio/ui/patterns/SiteHeader';
 import { Footer } from '@tukio/ui/patterns/Footer';
 import { ComingSoonSuccessHero } from '../../../../features/pre-launch/components/ComingSoonSuccessHero.js';
+import { LinkedLogo } from '../../../../components/LinkedLogo.js';
 import { LocaleSwitcherClient } from '../../../../components/LocaleSwitcherClient.js';
 
 interface PageProps {
@@ -47,6 +48,7 @@ export default async function ComingSoonSuccessPage({ params, searchParams }: Pa
         {tHeader('skipToForm')}
       </a>
       <SiteHeader
+        logo={<LinkedLogo locale={locale} />}
         navItems={[
           { label: tSuccess('headerNavAbout'), href: `/${locale}/about` },
           {

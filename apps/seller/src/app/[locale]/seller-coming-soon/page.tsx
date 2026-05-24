@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { SiteHeader } from '@tukio/ui/patterns/SiteHeader';
 import { Footer } from '@tukio/ui/patterns/Footer';
+import { LinkedLogo } from '../../../components/LinkedLogo';
 import { LocaleSwitcherClient } from '../../../components/LocaleSwitcherClient';
 import { SellerComingSoonHero } from '../../../features/pre-launch/components/SellerComingSoonHero';
 import { SellerComingSoonProfessions } from '../../../features/pre-launch/components/SellerComingSoonProfessions';
@@ -76,7 +77,7 @@ export default async function SellerComingSoonPage({ params }: PageProps) {
         {t('skipToContent')}
       </a>
 
-      <SiteHeader localeSwitcher={<LocaleSwitcherClient />} />
+      <SiteHeader logo={<LinkedLogo locale={locale} />} localeSwitcher={<LocaleSwitcherClient />} />
 
       <main id="main-content" className="flex-1">
         <SellerComingSoonHero locale={locale} />
