@@ -32,7 +32,9 @@ export function EditorialPageShell({
           {title}
         </h1>
         {intro && (
-          <p className="mt-4 text-[17px] leading-[1.6] text-charcoal-600 max-w-[640px]">{intro}</p>
+          <p className="mt-[18px] text-[17px] leading-[1.6] text-charcoal-600 max-w-[640px]">
+            {intro}
+          </p>
         )}
         <div className="mt-12">{children}</div>
       </main>

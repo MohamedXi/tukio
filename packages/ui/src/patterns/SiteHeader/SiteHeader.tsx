@@ -13,6 +13,7 @@ import type { SiteHeaderProps } from './SiteHeader.types';
  */
 export function SiteHeader({
   logo,
+  badge,
   navItems = [],
   localeSwitcher,
   rightSlot,
@@ -22,29 +23,35 @@ export function SiteHeader({
     <header
       role="banner"
       className={cn(
-        'flex items-center justify-between px-10 py-5 bg-white border-b border-cream-200',
+        'flex items-center justify-between px-10 py-5 bg-cream-50 border-b border-cream-200',
         'max-md:px-4 max-md:py-4',
         className,
       )}
     >
-      <div className="flex items-center gap-3">{logo ?? <Logo size={22} />}</div>
-      {navItems.length > 0 && (
-        <nav aria-label="Public site navigation" className="flex items-center gap-6">
-          {navItems.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'text-sm text-charcoal-600 hover:text-charcoal-900 transition-colors',
-                item.active && 'text-brand-700 font-semibold',
-              )}
-              aria-current={item.active ? 'page' : undefined}
-            >
-              {item.label}
-            </a>
-          ))}
-        </nav>
-      )}
+      <div className="flex items-center gap-8 max-md:gap-3">
+        {logo ?? <Logo size={22} />}
+        {badge}
+        {navItems.length > 0 && (
+          <nav
+            aria-label="Public site navigation"
+            className="flex items-center gap-6 max-md:hidden"
+          >
+            {navItems.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'text-sm text-charcoal-600 hover:text-charcoal-900 transition-colors',
+                  item.active && 'text-brand-700 font-semibold',
+                )}
+                aria-current={item.active ? 'page' : undefined}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        )}
+      </div>
       <div className="flex items-center gap-4">
         {localeSwitcher}
         {rightSlot}
