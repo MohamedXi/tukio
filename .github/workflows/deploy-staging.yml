@@ -125,14 +125,23 @@ jobs:
                 exit 1
               }
             done
-            # Persist the deployed tag to .env.staging (not .env.production).
-            sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_TAG}|" .env.staging || \\
-              echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.staging
-            # Plausible script URLs — upsert from GitHub repo vars.
-            sed -i "s|^PLAUSIBLE_SCRIPT_URL_PUBLIC=.*|PLAUSIBLE_SCRIPT_URL_PUBLIC=${PLAUSIBLE_SCRIPT_URL_PUBLIC}|" .env.staging || \\
-              echo "PLAUSIBLE_SCRIPT_URL_PUBLIC=${PLAUSIBLE_SCRIPT_URL_PUBLIC}" >> .env.staging
-            sed -i "s|^PLAUSIBLE_SCRIPT_URL_SELLER=.*|PLAUSIBLE_SCRIPT_URL_SELLER=${PLAUSIBLE_SCRIPT_URL_SELLER}|" .env.staging || \\
-              echo "PLAUSIBLE_SCRIPT_URL_SELLER=${PLAUSIBLE_SCRIPT_URL_SELLER}" >> .env.staging
+            # Upsert env vars in .env.staging. The previous
+            # \`sed -i 's|...|...|' file || echo ... >> file\` idiom was BROKEN
+            # because \`sed -i\` returns 0 even when nothing matched — the
+            # fallback never fired and new vars never got bootstrapped. This
+            # caused PLAUSIBLE_SCRIPT_URL_{PUBLIC,SELLER} to stay empty in
+            # public/seller containers, breaking Plausible detection silently.
+            upsert_env() {
+              local key="\$1" val="\$2"
+              if grep -q "^\${key}=" .env.staging 2>/dev/null; then
+                sed -i "s|^\${key}=.*|\${key}=\${val}|" .env.staging
+              else
+                echo "\${key}=\${val}" >> .env.staging
+              fi
+            }
+            upsert_env IMAGE_TAG "${IMAGE_TAG}"
+            upsert_env PLAUSIBLE_SCRIPT_URL_PUBLIC "${PLAUSIBLE_SCRIPT_URL_PUBLIC}"
+            upsert_env PLAUSIBLE_SCRIPT_URL_SELLER "${PLAUSIBLE_SCRIPT_URL_SELLER}"
             export DB_USER=\$(cat /home/tukio/tukio/secrets/pg_user)
             export DB_PASSWORD=\$(cat /home/tukio/tukio/secrets/pg_password)
             export MEILI_MASTER_KEY=\$(cat /home/tukio/tukio/secrets/meili_key)
