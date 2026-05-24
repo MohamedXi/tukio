@@ -148,6 +148,16 @@ jobs:
             export STATE_JWT_HMAC_SECRET
             PKCE_COOKIE_HMAC_SECRET=\$(cat /home/tukio/tukio/secrets/pkce_cookie_hmac_secret)
             export PKCE_COOKIE_HMAC_SECRET
+            # Story 0.20 — pre-launch handlers (public service). Optional-fallback
+            # pattern: missing file = empty var = handler returns 502 at request
+            # time (env guard); deploy still succeeds. Provision via
+            # \`provision-secrets.sh apps\` to enable.
+            export UPSTASH_REDIS_REST_URL=\$(cat /home/tukio/tukio/secrets/upstash_redis_url 2>/dev/null || echo "")
+            export UPSTASH_REDIS_REST_TOKEN=\$(cat /home/tukio/tukio/secrets/upstash_redis_token 2>/dev/null || echo "")
+            export RESEND_API_KEY=\$(cat /home/tukio/tukio/secrets/resend_api_key 2>/dev/null || echo "")
+            export RESEND_PRE_LAUNCH_AUDIENCE_ID=\$(cat /home/tukio/tukio/secrets/resend_pre_launch_audience_id 2>/dev/null || echo "")
+            export RESEND_FROM_ADDRESS=\$(cat /home/tukio/tukio/secrets/resend_from_address 2>/dev/null || echo "")
+            export CONTACT_INBOX=\$(cat /home/tukio/tukio/secrets/contact_inbox 2>/dev/null || echo "")
             export IMAGE_TAG="${IMAGE_TAG}"
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
@@ -199,6 +209,13 @@ jobs:
             export R2_KYC_ENDPOINT=\$(cat /home/tukio/tukio/secrets/r2_kyc_endpoint 2>/dev/null || echo "")
             export R2_KYC_ACCESS_KEY_ID=\$(cat /home/tukio/tukio/secrets/r2_kyc_access_key_id 2>/dev/null || echo "")
             export R2_KYC_SECRET_ACCESS_KEY=\$(cat /home/tukio/tukio/secrets/r2_kyc_secret_access_key 2>/dev/null || echo "")
+            # Story 0.20 — pre-launch handlers (public service)
+            export UPSTASH_REDIS_REST_URL=\$(cat /home/tukio/tukio/secrets/upstash_redis_url 2>/dev/null || echo "")
+            export UPSTASH_REDIS_REST_TOKEN=\$(cat /home/tukio/tukio/secrets/upstash_redis_token 2>/dev/null || echo "")
+            export RESEND_API_KEY=\$(cat /home/tukio/tukio/secrets/resend_api_key 2>/dev/null || echo "")
+            export RESEND_PRE_LAUNCH_AUDIENCE_ID=\$(cat /home/tukio/tukio/secrets/resend_pre_launch_audience_id 2>/dev/null || echo "")
+            export RESEND_FROM_ADDRESS=\$(cat /home/tukio/tukio/secrets/resend_from_address 2>/dev/null || echo "")
+            export CONTACT_INBOX=\$(cat /home/tukio/tukio/secrets/contact_inbox 2>/dev/null || echo "")
             export IMAGE_TAG="${PREV_TAG}"
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\

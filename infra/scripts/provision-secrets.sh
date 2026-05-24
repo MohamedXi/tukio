@@ -49,6 +49,16 @@ declare -A SECRETS_APPS=(
   [resend_api_key]="Resend API key (re_...)"
   [r2_access_key]="Cloudflare R2 access key ID"
   [r2_secret_key]="Cloudflare R2 secret access key"
+  # Story 0.20 — pre-launch handlers in apps/public consume these via
+  # process.env directly (Next.js Route Handlers have no _FILE loader, so
+  # the deploy script `export VAR=$(cat …)`s them before `docker compose up`).
+  # Co-locating non-sensitive values (audience id / from / inbox) here keeps
+  # provisioning to a single channel; the secrets dir is mode 700 so it's safe.
+  [upstash_redis_url]="Upstash Redis REST URL (https://<endpoint>.upstash.io)"
+  [upstash_redis_token]="Upstash Redis REST token (gQAAAAAA...)"
+  [resend_pre_launch_audience_id]="Resend Audience UUID for pre-launch signups"
+  [resend_from_address]="Resend From address for contact notifications (e.g. hello@tukio.one)"
+  [contact_inbox]="Inbox that receives contact form notifications (e.g. ismael.mohamed@tukio.one)"
 )
 
 declare -A SECRETS_DATA=(
