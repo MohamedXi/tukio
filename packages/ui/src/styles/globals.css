@@ -3,9 +3,13 @@
 
 @import 'tailwindcss';
 /* Explicit source scan: Tailwind v4 ignores node_modules (symlinked workspace packages).
-   @source forces scanning of @tukio/ui component/util files for structural utility classes
-   (inline-flex, border, font-medium, rounded-full, etc.) that are not auto-generated from @theme. */
+   @source forces scanning of @tukio/ui component/util/pattern files for structural utility
+   classes (inline-flex, border, font-medium, rounded-full, etc.) that are not auto-generated
+   from @theme. Without @source on patterns/, consumer apps that don't use SiteHeader/Footer/
+   etc.'s utilities elsewhere render those patterns un-styled — e.g. seller's SiteHeader had
+   no padding/bg because px-10/py-5/bg-cream-50 were never generated for that app's bundle. */
 @source "../components/**/*.{tsx,ts}";
+@source "../patterns/**/*.{tsx,ts}";
 @source "../utils/**/*.{ts}";
 @import './theme.css';
 
