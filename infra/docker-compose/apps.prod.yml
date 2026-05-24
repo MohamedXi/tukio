@@ -235,6 +235,18 @@ services:
       # Story 0.21 — Plausible Analytics (cookie-less, RGPD).
       # Tokenized script URL per site. Empty = disabled.
       NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL: ${PLAUSIBLE_SCRIPT_URL_PUBLIC:-}
+      # Story 0.20 — Pre-launch handlers (POST /api/pre-launch/signup + /contact).
+      # All 6 vars exported by deploy script from /home/tukio/tukio/secrets/*
+      # before `docker compose up`. Empty = handler returns 502 (env guard at
+      # apps/public/src/app/api/pre-launch/contact/route.ts:126).
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL:-}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_PRE_LAUNCH_AUDIENCE_ID: ${RESEND_PRE_LAUNCH_AUDIENCE_ID:-}
+      RESEND_FROM_ADDRESS: ${RESEND_FROM_ADDRESS:-}
+      CONTACT_INBOX: ${CONTACT_INBOX:-}
+      # Origin check (CSRF same-origin guard) needs the canonical apex.
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://tukio.one}
       PORT: '3000'
     networks: [tukio-apps]
 
