@@ -59,7 +59,18 @@ export function Block({ title, children, className }: BlockProps) {
   return (
     <section className={cn(className)}>
       <h2 className="text-2xl font-display font-medium text-charcoal-800 mb-3.5">{title}</h2>
-      <div className="mt-2 text-[15px] text-charcoal-700 leading-[1.7]">{children}</div>
+      <div
+        className={cn(
+          'mt-2 text-[15px] text-charcoal-700 leading-[1.7]',
+          // Auto-style inline anchors in editorial body content — brand orange,
+          // underline, medium weight. Matches design ref (public-pages.jsx) and
+          // user preference. Works on any descendant <a> regardless of parent tag.
+          '[&_a]:font-medium [&_a]:text-brand-700 [&_a]:underline [&_a]:underline-offset-2',
+          '[&_a]:transition-colors [&_a:hover]:text-brand-800',
+        )}
+      >
+        {children}
+      </div>
     </section>
   );
 }
