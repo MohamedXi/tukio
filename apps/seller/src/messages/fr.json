@@ -234,7 +234,10 @@
       "bannerTitle": "tukio.one n'est pas encore ouverte",
       "bannerBody": "Cette page décrit comment la plateforme fonctionnera. Vous pourrez créer votre compte pro à l'ouverture.",
       "bannerCta": "Soyez prévenu·e en priorité",
-      "visualAlt": "Visuel décoratif marketplace événementielle"
+      "visualAlt": "Aperçu de l'espace pro tukio.one",
+      "previewBadge": "Aperçu produit",
+      "previewCalendarAlt": "Aperçu du calendrier pro : réservations, disponibilités et stock par jour",
+      "previewPricingAlt": "Aperçu de la création de service : tarif, options payantes et disponibilités"
     },
     "professions": {
       "kicker": "Pour qui",
