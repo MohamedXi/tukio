@@ -232,6 +232,10 @@ services:
       # An operator can override at deploy-time without editing this YAML
       # via `export COMING_SOON_MODE=false; docker compose up -d public`.
       NEXT_PUBLIC_COMING_SOON_MODE: ${COMING_SOON_MODE:-true}
+      # Story 0.21 — Plausible Analytics (cookie-less, RGPD). Set to `true`
+      # once the tukio.one site is created in Plausible Cloud.
+      # Override: `export PLAUSIBLE_ENABLED=true; docker compose up -d public`.
+      NEXT_PUBLIC_PLAUSIBLE_ENABLED: ${PLAUSIBLE_ENABLED:-false}
       PORT: '3000'
     networks: [tukio-apps]
 
@@ -246,6 +250,8 @@ services:
       NEXT_PUBLIC_KEYCLOAK_REALM: tukio
       # Story 0.15 — pre-launch toggle (see `public` service above).
       NEXT_PUBLIC_COMING_SOON_MODE: ${COMING_SOON_MODE:-true}
+      # Story 0.21 — Plausible Analytics (seller.tukio.one site).
+      NEXT_PUBLIC_PLAUSIBLE_ENABLED: ${PLAUSIBLE_ENABLED:-false}
       PORT: '3002'
     networks: [tukio-apps]
 
