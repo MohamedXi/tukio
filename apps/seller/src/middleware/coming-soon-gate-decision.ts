@@ -25,7 +25,7 @@ export type ComingSoonDecision =
   | { kind: 'pass' }
   | { kind: 'rewrite'; locale: string; target: string };
 
-const DEFAULT_LOCALE = 'fr';
+const DEFAULT_LOCALE = 'en';
 
 export function safeLocaleFromPath(pathname: string, locales: readonly string[]): string {
   const candidate = pathname.split('/')[1];

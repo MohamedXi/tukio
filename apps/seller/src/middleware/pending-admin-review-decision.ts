@@ -16,7 +16,7 @@ const ALLOWED_WHILE_PENDING: readonly RegExp[] = [
 ];
 export const ACCESS_TOKEN_COOKIE = 'tukio-access-token';
 export const PENDING_STATUS = 'pending_admin_review';
-const DEFAULT_LOCALE = 'fr';
+const DEFAULT_LOCALE = 'en';
 
 function isAllowedWhilePending(pathname: string): boolean {
   return ALLOWED_WHILE_PENDING.some((p) => p.test(pathname));
