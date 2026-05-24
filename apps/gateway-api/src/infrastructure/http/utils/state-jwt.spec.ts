@@ -111,7 +111,13 @@ describe('state-jwt — error paths', () => {
   it('rejects a tampered payload (modified char in signature segment)', async () => {
     const token = await encodeState(basePayload(), SECRET);
     const parts = token.split('.');
-    parts[2] = parts[2]!.replace(/.$/, (c) => (c === 'A' ? 'B' : 'A'));
+    // Modify a character in the middle of the signature — the last character of
+    // a 43-char base64url HMAC-SHA256 signature carries only 2 significant bits
+    // (the remaining 4 are ignored during decode), so flipping it is unreliable.
+    const sig = parts[2]!;
+    const pos = Math.floor(sig.length / 2);
+    parts[2] =
+      sig.slice(0, pos) + (sig[pos] === 'A' ? 'B' : 'A') + sig.slice(pos + 1);
     const tampered = parts.join('.');
     await expect(decodeState(tampered, SECRET)).rejects.toBeInstanceOf(
       AuthInvalidStateException,
