@@ -32,11 +32,11 @@ export async function PrivacyContent({ locale }: PrivacyContentProps) {
         </div>
       </div>
 
-      <Block title={t('blocks.whoCollects.title')}>
+      <Block title={t('blocks.whoCollects.title')} className="mt-5">
         <p>{t('blocks.whoCollects.body')}</p>
       </Block>
 
-      <Block title={t('blocks.whatCollected.title')}>
+      <Block title={t('blocks.whatCollected.title')} className="mt-5">
         <ul className="pl-5 m-0">
           {(['0', '1', '2'] as const).map((i) => (
             <li key={i} className="mb-2 last:mb-0">
@@ -47,27 +47,27 @@ export async function PrivacyContent({ locale }: PrivacyContentProps) {
         </ul>
       </Block>
 
-      <Block title={t('blocks.whyCollected.title')}>
+      <Block title={t('blocks.whyCollected.title')} className="mt-5">
         <p>{t('blocks.whyCollected.body')}</p>
       </Block>
 
-      <Block title={t('blocks.retention.title')}>
+      <Block title={t('blocks.retention.title')} className="mt-5">
         <p>{t('blocks.retention.body')}</p>
       </Block>
 
-      <Block title={t('blocks.postLaunch.title')}>
+      <Block title={t('blocks.postLaunch.title')} className="mt-5">
         <p>{t('blocks.postLaunch.body')}</p>
       </Block>
 
-      <Block title={t('blocks.yourRights.title')}>
+      <Block title={t('blocks.yourRights.title')} className="mt-5">
         <p>{t('blocks.yourRights.body')}</p>
       </Block>
 
-      <Block title={t('blocks.hosting.title')}>
+      <Block title={t('blocks.hosting.title')} className="mt-5">
         <p>{t('blocks.hosting.body')}</p>
       </Block>
 
-      <Block title={t('blocks.complaint.title')}>
+      <Block title={t('blocks.complaint.title')} className="mt-5">
         <p>{t('blocks.complaint.body')}</p>
       </Block>
     </>

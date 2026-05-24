@@ -4,6 +4,7 @@ import { EditorialPageShell } from '@tukio/ui/patterns/EditorialPageShell';
 import { SiteHeader } from '@tukio/ui/patterns/SiteHeader';
 import { Footer } from '@tukio/ui/patterns/Footer';
 import { PrivacyContent } from '../../../features/public-pages/components/PrivacyContent.js';
+import { LinkedLogo } from '../../../components/LinkedLogo.js';
 import { LocaleSwitcherClient } from '../../../components/LocaleSwitcherClient.js';
 
 type PageProps = { params: Promise<{ locale: string }> };
@@ -62,7 +63,10 @@ export default async function ConfidentialitePage({ params }: PageProps) {
           >
             Aller au contenu / Skip to content
           </a>
-          <SiteHeader localeSwitcher={<LocaleSwitcherClient />} />
+          <SiteHeader
+            logo={<LinkedLogo locale={locale} />}
+            localeSwitcher={<LocaleSwitcherClient />}
+          />
         </>
       }
       footer={
