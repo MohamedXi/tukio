@@ -41,7 +41,7 @@ export function ProSidebar({
       aria-label="Seller navigation"
     >
       <div className="px-2 pb-4 mb-4 border-b border-charcoal-600">
-        <Logo size={28} mono color="var(--color-cream-50)" />
+        <Logo size={28} variant="icon" />
       </div>
       <nav className="flex flex-col gap-1 flex-1">
         {NAV_ITEMS.map(({ key, icon: Icon, defaultLabel, href }) => {
