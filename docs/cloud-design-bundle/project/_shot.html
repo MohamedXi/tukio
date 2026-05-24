@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>tukio.one — screenshot harness</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="styles/tokens.css" />
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #ffffff;
+    color: var(--charcoal-700);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Render the target screen at its native artboard width so the screenshot
+     is crisp and laid out exactly as designed. */
+  #root { width: 1440px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Shared building blocks + all screen definitions (same set as tukio.one.html,
+     minus app.jsx — we mount a single screen instead of the design canvas).
+     The full set is loaded because screens cross-reference each other's globals
+     (e.g. the pricing screen uses ProTopNav defined in seller-bookings.jsx). -->
+<script type="text/babel" src="screens/_shared.jsx"></script>
+<script type="text/babel" src="screens/seller-bookings.jsx"></script>
+<script type="text/babel" src="screens/seller-calendar.jsx"></script>
+<script type="text/babel" src="screens/seller-profile-edit.jsx"></script>
+<script type="text/babel" src="screens/seller-reviews.jsx"></script>
+<script type="text/babel" src="screens/seller-service-create.jsx"></script>
+<script type="text/babel" src="screens/pro-dashboard.jsx"></script>
+<script type="text/babel" src="screens/pro-onboarding.jsx"></script>
+<script type="text/babel" src="screens/mvp-service-create.jsx"></script>
+
+<!-- Mount one screen based on ?screen= and flag readiness for Playwright. -->
+<script type="text/babel">
+  const params = new URLSearchParams(window.location.search);
+  const which = params.get('screen');
+  const map = {
+    calendar: window.SellerCalendarScreen,
+    pricing: window.SellerServicePricingScreen,
+  };
+  const Screen = map[which];
+  if (!Screen) {
+    document.getElementById('root').textContent = 'Unknown screen: ' + which;
+    window.__SHOT_ERROR = 'unknown-screen';
+  } else {
+    ReactDOM.createRoot(document.getElementById('root')).render(<Screen />);
+    // Render is async; flip the flag on the next frame after paint.
+    requestAnimationFrame(() => requestAnimationFrame(() => { window.__SHOT_READY = 1; }));
+  }
+</script>
+</body>
+</html>

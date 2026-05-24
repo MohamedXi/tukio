@@ -234,7 +234,10 @@
       "bannerTitle": "tukio.one is not open yet",
       "bannerBody": "This page describes how the platform will work. You'll be able to create your pro account at launch.",
       "bannerCta": "Be notified in priority",
-      "visualAlt": "Decorative event marketplace visual"
+      "visualAlt": "Preview of the tukio.one pro space",
+      "previewBadge": "Product preview",
+      "previewCalendarAlt": "Pro calendar preview: bookings, availability and daily stock",
+      "previewPricingAlt": "Service creation preview: pricing, paid options and availability"
     },
     "professions": {
       "kicker": "For whom",
