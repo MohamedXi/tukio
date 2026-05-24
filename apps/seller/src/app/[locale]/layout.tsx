@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
@@ -82,19 +83,19 @@ export default async function RootLayout({
       lang={locale}
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <head>
+      <body>
         {PLAUSIBLE_SCRIPT_URL && (
           <>
-            <script async src={PLAUSIBLE_SCRIPT_URL} />
-            <script
+            <Script strategy="beforeInteractive" src={PLAUSIBLE_SCRIPT_URL} />
+            <Script
+              id="plausible-init"
+              strategy="beforeInteractive"
               dangerouslySetInnerHTML={{
                 __html: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`,
               }}
             />
           </>
         )}
-      </head>
-      <body>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
