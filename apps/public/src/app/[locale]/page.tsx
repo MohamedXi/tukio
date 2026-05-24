@@ -10,7 +10,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'Home' });
   return {
-    title: `Tukio — ${t('titleEmphasis')}`,
+    title: `Tukio · ${t('titleEmphasis')}`,
     description: t('subtitle'),
   };
 }

@@ -40,11 +40,11 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://tukio.one';
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    template: '%s — tukio.one',
-    default: 'tukio.one — Bientôt en Pays de la Loire',
+    template: '%s · tukio.one',
+    default: 'tukio.one · Bientôt en Pays de la Loire',
   },
   description:
-    "Marketplace des professionnels de l'événementiel en Pays de la Loire — tentes, mobilier, traiteur, décoration.",
+    "Marketplace des professionnels de l'événementiel en Pays de la Loire : tentes, mobilier, traiteur, décoration.",
 };
 
 const PLAUSIBLE_SCRIPT_URL = process.env.NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL;
@@ -58,8 +58,8 @@ function buildOrganizationJsonLd(locale: 'fr' | 'en'): string {
     url: 'https://tukio.one',
     description:
       locale === 'fr'
-        ? "Marketplace des professionnels de l'événementiel en Pays de la Loire — tentes, mobilier, traiteur, décoration."
-        : 'Marketplace for event service professionals in Pays de la Loire — tents, furniture, catering, decoration.',
+        ? "Marketplace des professionnels de l'événementiel en Pays de la Loire : tentes, mobilier, traiteur, décoration."
+        : 'Marketplace for event service professionals in Pays de la Loire: tents, furniture, catering, decoration.',
     foundingDate: '2026',
     foundingLocation: {
       '@type': 'Place',

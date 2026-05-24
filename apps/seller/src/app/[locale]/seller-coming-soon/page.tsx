@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: t('description'),
       type: 'website',
       locale: locale === 'fr' ? 'fr_FR' : 'en_US',
-      siteName: 'tukio.one — Pros',
+      siteName: 'tukio.one · Pros',
       images: [
         {
           url: `${sellerBaseUrl}/og/seller-coming-soon.png`,

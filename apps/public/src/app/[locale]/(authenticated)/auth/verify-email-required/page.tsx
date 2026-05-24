@@ -14,7 +14,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'auth.verifyEmailRequired' });
   return {
-    title: `${t('title')} — Tukio`,
+    title: `${t('title')} · Tukio`,
   };
 }
 

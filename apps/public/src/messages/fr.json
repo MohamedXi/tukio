@@ -12,7 +12,7 @@
     "title": "Vos événements,",
     "titleEmphasis": "réservés",
     "titleSuffix": "avec les meilleurs pros près de chez vous.",
-    "subtitle": "Trouvez tentes, mobilier, traiteur — réservez en ligne, payez en sécurité. Pas d'appels, pas de devis qui traînent.",
+    "subtitle": "Trouvez tentes, mobilier, traiteur : réservez en ligne, payez en sécurité. Pas d'appels, pas de devis qui traînent.",
     "ctaSearch": "Rechercher",
     "ctaSignup": "S'inscrire gratuitement",
     "ctaLogin": "Déjà un compte ? Connexion",
@@ -97,7 +97,7 @@
         "quote": "« Notre première location s'est faite trois jours après l'inscription. Le client était à 12 km. »",
         "author": {
           "name": "Léa Martineau",
-          "role": "Atelier Tente Loire — pro depuis mars 2026"
+          "role": "Atelier Tente Loire · pro depuis mars 2026"
         }
       }
     },
@@ -130,7 +130,7 @@
         "quote": "« Notre première location s'est faite trois jours après l'inscription. Le client était à 12 km. »",
         "author": {
           "name": "Léa Martineau",
-          "role": "Atelier Tente Loire — pro depuis mars 2026"
+          "role": "Atelier Tente Loire · pro depuis mars 2026"
         }
       }
     },
@@ -165,7 +165,7 @@
         "quote": "« On a reçu notre première demande dans la semaine, ça a tout déclenché. »",
         "author": {
           "name": "Marc Dubois",
-          "role": "Loire Réceptions — pro depuis février 2026"
+          "role": "Loire Réceptions · pro depuis février 2026"
         }
       }
     }
@@ -222,7 +222,7 @@
           "professional": { "title": "Professionnel", "sub": "Je propose des services" }
         },
         "rgpd": {
-          "label": "J'accepte de recevoir un email lors du lancement de tukio.one. Conforme RGPD — ",
+          "label": "J'accepte de recevoir un email lors du lancement de tukio.one. Conforme RGPD. ",
           "linkLabel": "politique de confidentialité",
           "errors": { "required": "Vous devez accepter pour soumettre" }
         }
@@ -257,9 +257,9 @@
       "linkContactEmail": "contact@tukio.one"
     },
     "meta": {
-      "title": "tukio.one — Bientôt en Pays de la Loire",
+      "title": "tukio.one · Bientôt en Pays de la Loire",
       "description": "La marketplace des professionnels de l'événementiel en Pays de la Loire. Tentes, mobilier, traiteur, décoration. Soyez prévenu·e dès l'ouverture.",
-      "successTitle": "Inscription confirmée — tukio.one",
+      "successTitle": "Inscription confirmée · tukio.one",
       "successDescription": "Vous êtes sur la liste d'attente tukio.one. On vous écrit dès l'ouverture, pas avant."
     }
   },
@@ -276,7 +276,7 @@
   },
   "about": {
     "meta": {
-      "title": "À propos — tukio.one",
+      "title": "À propos · tukio.one",
       "description": "tukio.one rassemble les professionnels de l'événementiel et les personnes qui ont quelque chose à célébrer. Marketplace française dédiée à l'événementiel local."
     },
     "kicker": "À propos",
@@ -359,7 +359,7 @@
   "privacy": {
     "_NEEDS_LEGAL_REVIEW": "true",
     "meta": {
-      "title": "Politique de confidentialité — tukio.one",
+      "title": "Politique de confidentialité · tukio.one",
       "description": "Vos données en clair. tukio.one décrit ce qu'il fait des données collectées en phase de pré-lancement : liste d'attente, contact, RGPD."
     },
     "kicker": "Politique de confidentialité",
@@ -425,7 +425,7 @@
   "legal": {
     "_NEEDS_LEGAL_REVIEW": "true",
     "meta": {
-      "title": "Mentions légales — tukio.one",
+      "title": "Mentions légales · tukio.one",
       "description": "Mentions légales tukio.one : responsable du projet, société en cours de création (SAS), hébergement DigitalOcean Frankfurt, propriété intellectuelle."
     },
     "kicker": "Mentions légales",
@@ -481,7 +481,7 @@
   },
   "contact": {
     "meta": {
-      "title": "Contact — tukio.one",
+      "title": "Contact · tukio.one",
       "description": "Contactez tukio.one : support général, données personnelles (RGPD), signalement urgent, presse et partenariats. Réponse sous 48h ouvrées."
     },
     "kicker": "Contact",

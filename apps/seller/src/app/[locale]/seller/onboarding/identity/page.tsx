@@ -12,7 +12,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'seller.onboarding.common' });
   return {
-    title: `${t('steps.identity')} — ${t('brandName')}`,
+    title: `${t('steps.identity')} · ${t('brandName')}`,
     description: 'Démarrez votre dossier pro tukio.one',
   };
 }
@@ -41,7 +41,7 @@ export default async function OnboardingIdentityPage({
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   if (!apiUrl) {
     throw new Error(
-      'NEXT_PUBLIC_API_URL is required — set it in .env.local or the deployment environment.',
+      'NEXT_PUBLIC_API_URL is required. Set it in .env.local or the deployment environment.',
     );
   }
 
