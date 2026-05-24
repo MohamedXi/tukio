@@ -5,12 +5,12 @@ export default function SellerComingSoonSuccessPlaceholderPage() {
   return (
     <main style={{ padding: 48, fontFamily: 'system-ui, sans-serif', maxWidth: 720 }}>
       <h1>Merci !</h1>
-      <p>Placeholder success state — Story 0.18 will deliver the full design.</p>
+      <p>Placeholder success state. Story 0.18 will deliver the full design.</p>
     </main>
   );
 }
 
 export const metadata: Metadata = {
-  title: 'seller.tukio.one — Merci',
+  title: 'seller.tukio.one · Merci',
   robots: { index: false, follow: false },
 };

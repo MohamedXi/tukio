@@ -35,7 +35,7 @@ export function ContactEmail(props: ContactEmailProps) {
     <Html lang={locale}>
       <Body>
         <Container style={containerStyle}>
-          <Heading style={headingStyle}>Nouveau message — Contact tukio.one</Heading>
+          <Heading style={headingStyle}>Nouveau message · Contact tukio.one</Heading>
           <Text style={textStyle}>
             <strong>De :</strong> {firstName} {lastName}
           </Text>

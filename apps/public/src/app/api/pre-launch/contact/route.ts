@@ -162,7 +162,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       from: fromAddress,
       to: [contactInbox],
       replyTo: data.email,
-      subject: `[Contact tukio.one] ${categoryLabel} — ${subjectLabel}`,
+      subject: `[Contact tukio.one]  · `,
       html: renderedHtml,
     });
 

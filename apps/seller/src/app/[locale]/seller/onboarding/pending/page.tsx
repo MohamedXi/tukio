@@ -10,7 +10,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'seller.onboarding.pending' });
   return {
-    title: `${t('kicker')} — tukio`,
+    title: `${t('kicker')} · tukio`,
     description: t('title'),
   };
 }

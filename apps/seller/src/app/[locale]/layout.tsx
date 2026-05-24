@@ -35,11 +35,11 @@ const SELLER_BASE_URL = process.env.NEXT_PUBLIC_SELLER_BASE_URL ?? 'https://sell
 export const metadata: Metadata = {
   metadataBase: new URL(SELLER_BASE_URL),
   title: {
-    template: '%s — tukio.one Pro',
-    default: "tukio.one Pro — Pour les pros de l'événementiel",
+    template: '%s · tukio.one Pro',
+    default: "tukio.one Pro · Pour les pros de l'événementiel",
   },
   description:
-    "Espace pro tukio.one — onboarding, fiches service, réservations pour les professionnels de l'événementiel en Pays de la Loire.",
+    "Espace pro tukio.one : onboarding, fiches service, réservations pour les professionnels de l'événementiel en Pays de la Loire.",
 };
 
 const PLAUSIBLE_SCRIPT_URL = process.env.NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL;

@@ -12,7 +12,7 @@
     "title": "Your events,",
     "titleEmphasis": "booked",
     "titleSuffix": "with the best local pros near you.",
-    "subtitle": "Find marquees, furniture, caterers — book online, pay securely. No calls, no endless quotes.",
+    "subtitle": "Find marquees, furniture, caterers: book online, pay securely. No calls, no endless quotes.",
     "ctaSearch": "Search",
     "ctaSignup": "Sign up for free",
     "ctaLogin": "Already have an account? Log in",
@@ -97,7 +97,7 @@
         "quote": "“Our first booking came in three days after sign-up. The customer was 12 km away.”",
         "author": {
           "name": "Léa Martineau",
-          "role": "Atelier Tente Loire — pro since March 2026"
+          "role": "Atelier Tente Loire · pro since March 2026"
         }
       }
     },
@@ -130,7 +130,7 @@
         "quote": "“Our first booking came in three days after sign-up. The customer was 12 km away.”",
         "author": {
           "name": "Léa Martineau",
-          "role": "Atelier Tente Loire — pro since March 2026"
+          "role": "Atelier Tente Loire · pro since March 2026"
         }
       }
     },
@@ -162,10 +162,10 @@
       },
       "editorial": {
         "kicker": "Pays de la Loire · 2026 pilot",
-        "quote": "“We got our first request within a week — that's when it all kicked off.”",
+        "quote": "“We got our first request within a week, that's when it all kicked off.”",
         "author": {
           "name": "Marc Dubois",
-          "role": "Loire Réceptions — pro since February 2026"
+          "role": "Loire Réceptions · pro since February 2026"
         }
       }
     }
@@ -195,7 +195,7 @@
       "kicker": "Stay informed",
       "titleLine1": "Be among the",
       "titleEmphasis": "first",
-      "subtitle": "We'll email you once — on launch day. No spam, we promise.",
+      "subtitle": "We'll email you once, on launch day. No spam, we promise.",
       "fields": {
         "firstName": {
           "label": "First name",
@@ -222,7 +222,7 @@
           "professional": { "title": "Professional", "sub": "I offer services" }
         },
         "rgpd": {
-          "label": "I agree to receive one email when tukio.one launches. GDPR compliant — ",
+          "label": "I agree to receive one email when tukio.one launches. GDPR compliant. ",
           "linkLabel": "privacy policy",
           "errors": { "required": "You must accept to submit" }
         }
@@ -257,9 +257,9 @@
       "linkContactEmail": "contact@tukio.one"
     },
     "meta": {
-      "title": "tukio.one — Coming Soon to Pays de la Loire",
+      "title": "tukio.one · Coming Soon to Pays de la Loire",
       "description": "The marketplace for event professionals in Pays de la Loire. Tents, furniture, catering, decoration. Be notified at launch.",
-      "successTitle": "Registration confirmed — tukio.one",
+      "successTitle": "Registration confirmed · tukio.one",
       "successDescription": "You're on the tukio.one waitlist. We'll email you when we open, not before."
     },
     "_NEEDS_HUMAN_REVIEW": "true"
@@ -277,7 +277,7 @@
   },
   "about": {
     "meta": {
-      "title": "About — tukio.one",
+      "title": "About · tukio.one",
       "description": "tukio.one brings together event professionals and people who have something to celebrate. A French marketplace dedicated to local event services."
     },
     "kicker": "About",
@@ -288,7 +288,7 @@
       "why": {
         "title": "Why tukio.one",
         "p1": "Organising an event often means ten phone calls, three lost quotes, two unreachable pros and a budget that spirals. We wanted to change that.",
-        "p2": "tukio.one is a French marketplace dedicated to local event services. You'll find tents, marquees, furniture, catering, lighting, entertainment — all in one place, with verified professionals, transparent pricing and secured payments until the event is delivered."
+        "p2": "tukio.one is a French marketplace dedicated to local event services. You'll find tents, marquees, furniture, catering, lighting, entertainment, all in one place, with verified professionals, transparent pricing and secured payments until the event is delivered."
       },
       "whatPlatform": {
         "title": "What the platform offers",
@@ -313,7 +313,7 @@
       },
       "comparison": {
         "title": "What changes compared to today",
-        "intro": "Today, to organise a wedding or a seminar, you go through Yellow Pages, Leboncoin, Google Maps, Instagram and three agencies. Each has their own quote, follow-up, SMS, cheque. The risk, the tracking, the responsibility — it all falls on you.",
+        "intro": "Today, to organise a wedding or a seminar, you go through Yellow Pages, Leboncoin, Google Maps, Instagram and three agencies. Each has their own quote, follow-up, SMS, cheque. The risk, the tracking, the responsibility: it all falls on you.",
         "without": {
           "kicker": "Without tukio.one",
           "items": [
@@ -360,7 +360,7 @@
   "privacy": {
     "_NEEDS_LEGAL_REVIEW": "true",
     "meta": {
-      "title": "Privacy policy — tukio.one",
+      "title": "Privacy policy · tukio.one",
       "description": "Your data, plain and simple. tukio.one explains what it does with data collected in the pre-launch phase: waitlist, contact form, GDPR."
     },
     "kicker": "Privacy policy",
@@ -429,7 +429,7 @@
   "legal": {
     "_NEEDS_LEGAL_REVIEW": "true",
     "meta": {
-      "title": "Legal notice — tukio.one",
+      "title": "Legal notice · tukio.one",
       "description": "tukio.one legal notice: project owner, company in formation (SAS), DigitalOcean Frankfurt hosting, intellectual property."
     },
     "kicker": "Legal notice",
@@ -485,7 +485,7 @@
   },
   "contact": {
     "meta": {
-      "title": "Contact — tukio.one",
+      "title": "Contact · tukio.one",
       "description": "Contact tukio.one: general support, personal data (GDPR), urgent reports, press and partnerships. Response within 48 business hours."
     },
     "kicker": "Contact",
