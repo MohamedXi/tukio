@@ -23,11 +23,13 @@ export async function ContactPageShell({ locale }: ContactPageShellProps) {
       <h1 className="font-display font-normal tracking-[-0.025em] leading-[1.05] text-charcoal-800 mt-3.5 text-[52px] max-md:text-[40px]">
         {t('titleLine1')} <em className="italic text-brand-600">{t('titleEmphasis')}</em>.
       </h1>
-      <p className="text-[17px] text-charcoal-600 mt-4 leading-[1.6] max-w-[600px]">{t('intro')}</p>
+      <p className="text-[17px] text-charcoal-600 mt-[18px] leading-[1.6] max-w-[600px]">
+        {t('intro')}
+      </p>
 
       <div className="grid grid-cols-[1.2fr_1fr] gap-12 mt-14 max-md:grid-cols-1">
-        {/* Form */}
-        <div>
+        {/* Form — wrapped in a card to mirror design ref `<form class="tk-card">` */}
+        <div className="p-8 rounded-xl bg-cream-50 border border-cream-200 max-md:p-6">
           <ContactFormClient locale={locale} />
         </div>
 

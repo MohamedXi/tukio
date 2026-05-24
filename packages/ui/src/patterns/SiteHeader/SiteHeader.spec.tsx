@@ -84,7 +84,12 @@ describe('SiteHeader', () => {
   it('merges custom className with the default header chrome', () => {
     render(<SiteHeader className="custom-extra" />);
     expect(screen.getByRole('banner').className).toContain('custom-extra');
-    expect(screen.getByRole('banner').className).toContain('bg-white');
+    expect(screen.getByRole('banner').className).toContain('bg-cream-50');
+  });
+
+  it('renders the badge slot inside the left group (next to Logo)', () => {
+    render(<SiteHeader badge={<span data-testid="badge-chip">En construction</span>} />);
+    expect(screen.getByTestId('badge-chip')).toBeInTheDocument();
   });
 
   it('passes axe a11y check (no nav)', async () => {
