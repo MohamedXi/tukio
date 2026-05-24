@@ -106,8 +106,18 @@ jobs:
             set -euo pipefail
             cd ~/tukio-apps
             # Persist the deployed tag so the next release can read it for rollback.
-            sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_TAG}|" .env.production || \\
-              echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.production
+            # Uses the upsert-via-grep idiom: \`sed -i || echo\` is broken because
+            # sed returns 0 on no-match (so the fallback never fires and the line
+            # is never bootstrapped). See deploy-staging.yml for the helper.
+            upsert_env() {
+              local key="\$1" val="\$2"
+              if grep -q "^\${key}=" .env.production 2>/dev/null; then
+                sed -i "s|^\${key}=.*|\${key}=\${val}|" .env.production
+              else
+                echo "\${key}=\${val}" >> .env.production
+              fi
+            }
+            upsert_env IMAGE_TAG "${IMAGE_TAG}"
             export DB_USER=\$(cat /home/tukio/tukio/secrets/pg_user)
             export DB_PASSWORD=\$(cat /home/tukio/tukio/secrets/pg_password)
             export MEILI_MASTER_KEY=\$(cat /home/tukio/tukio/secrets/meili_key)
