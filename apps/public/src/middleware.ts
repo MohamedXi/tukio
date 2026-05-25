@@ -41,10 +41,12 @@ export default async function middleware(request: NextRequest) {
 }
 
 // Matcher excludes Next.js internals (_next/*, api/*) and static assets
-// (anything ending in a known extension). Previously the pattern
-// `/((?!_next|api|.*\\..*).*) `excluded ANY URL containing a dot, which would
-// break legitimate routes like `/v1.0/docs` or hashed slugs. The new pattern
-// restricts the file-extension exclusion to a trailing `.\w{2,4}$` suffix.
+// (anything ending in a file extension). The `$`-anchored `\.\w+$` only
+// matches a trailing extension, so mid-path dots like `/v1.0/docs` still hit
+// the middleware (they are pages, not assets). The length is unbounded on
+// purpose: a `\w{2,4}` cap silently let `/fonts/*.woff2` (5-char extension)
+// through, so the OG route's same-origin font fetch resolved to the rewritten
+// coming-soon HTML and crashed satori ("Unsupported OpenType signature").
 export const config = {
-  matcher: ['/((?!_next|api|.*\\.\\w{2,4}$).*)'],
+  matcher: ['/((?!_next|api|.*\\.\\w+$).*)'],
 };
