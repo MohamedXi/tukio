@@ -107,6 +107,11 @@ case $ENV in
     export KEYCLOAK_CLIENT_SECRET_TUKIO_API="$_client_secret_api"
     export KEYCLOAK_CLIENT_SECRET_SMOKE_TEST="$_client_secret_smoke"
     export KEYCLOAK_WEBHOOK_SECRET="$_webhook_secret"
+    # Story 1.13 (ADR-0018) — social IdP creds (optional: skip IdP if absent).
+    export GOOGLE_CLIENT_ID="$(read_secret_optional google_client_id)"
+    export GOOGLE_CLIENT_SECRET="$(read_secret_optional google_client_secret)"
+    export MICROSOFT_CLIENT_ID="$(read_secret_optional microsoft_client_id)"
+    export MICROSOFT_CLIENT_SECRET="$(read_secret_optional microsoft_client_secret)"
     # Health probe uses the local data-private-IP management port (9000) exposed
     # by data.prod.yml so we bypass Caddy/TLS handshake.
     DATA_PRIV_IP_FILE="${SECRETS_DIR}/data_priv_ip"
@@ -312,6 +317,81 @@ for role in data['roles']:
       log_info "Role '${role_name}' created"
     fi
   done
+
+  # ─── Story 1.13 (ADR-0018): default role `client` for self-registration ──────
+  # Composing `client` into default-roles-tukio makes Keycloak self-registration
+  # assign it automatically (preserves the ADR-0017 client-first invariant).
+  # `add-roles` is idempotent in practice — re-adding an existing composite is a
+  # no-op / benign error, swallowed by the `||`.
+  log_step "Default role composite (client → default-roles-tukio)"
+  if kcadm add-roles -r tukio --rname default-roles-tukio --rolename client </dev/null >/dev/null 2>&1; then
+    log_info "client added to default-roles-tukio"
+  else
+    log_info "client already in default-roles-tukio (or no-op)"
+  fi
+
+  # ─── Story 1.13 (ADR-0018): social identity providers (Google + Microsoft) ───
+  # Skipped when the OAuth client secrets are absent (creds not yet provisioned).
+  # Config in realm-config/identity-providers.json; secrets injected from env
+  # (provision-secrets.sh) via python substitution of `$VAR` placeholders.
+  log_step "Social identity providers (Google + Microsoft)"
+  if [ -n "${GOOGLE_CLIENT_ID:-}" ] && [ -n "${MICROSOFT_CLIENT_ID:-}" ]; then
+    readarray -t IDP_LINES < <(python3 -c "
+import json, os
+data = json.load(open(os.path.join(os.environ['KC_CONFIG_DIR'], 'identity-providers.json')))
+def sub(v):
+    return os.environ.get(v[1:], '') if isinstance(v, str) and v.startswith('\$') else v
+for idp in data['identityProviders']:
+    idp['config'] = {k: sub(v) for k, v in idp['config'].items()}
+    print(json.dumps(idp))
+")
+    for idp_json in "${IDP_LINES[@]}"; do
+      idp_alias="$(echo "$idp_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['alias'])")"
+      if kcadm get "identity-provider/instances/${idp_alias}" -r tukio >/dev/null 2>&1; then
+        echo "$idp_json" | kcadm update "identity-provider/instances/${idp_alias}" -r tukio -f - >/dev/null
+        log_info "IdP '${idp_alias}' updated"
+      else
+        echo "$idp_json" | kcadm create identity-provider/instances -r tukio -f - >/dev/null
+        log_info "IdP '${idp_alias}' created"
+      fi
+    done
+  else
+    log_warn "Google/Microsoft client IDs absent — skipping social IdP (provision google_client_id/secret + microsoft_client_id/secret, then re-run)"
+  fi
+
+  # ─── Story 1.13 (ADR-0018): declare `marketing_consent` user attribute ───────
+  # KC 24+ uses a declarative user profile — the register.ftl checkbox
+  # (user.attributes.marketing_consent) is only persisted if the attribute is
+  # declared. GET the live profile, append marketing_consent if absent, PUT back
+  # (idempotent; preserves KC's managed base attributes — username/email/etc.).
+  log_step "User profile attribute (marketing_consent)"
+  TMP_UP=$(mktemp)
+  if kcadm get users/profile -r tukio > "$TMP_UP" 2>/dev/null && [ -s "$TMP_UP" ]; then
+    python3 - "$TMP_UP" <<'PYEOF'
+import json, sys
+path = sys.argv[1]
+with open(path) as f:
+    profile = json.load(f)
+attrs = profile.setdefault('attributes', [])
+if not any(a.get('name') == 'marketing_consent' for a in attrs):
+    attrs.append({
+        'name': 'marketing_consent',
+        'displayName': '${marketingConsent}',
+        'permissions': {'view': ['admin', 'user'], 'edit': ['admin', 'user']},
+        'multivalued': False,
+    })
+    with open(path, 'w') as f:
+        json.dump(profile, f)
+PYEOF
+    if kcadm update users/profile -r tukio -f - < "$TMP_UP" >/dev/null 2>&1; then
+      log_info "marketing_consent attribute ensured in user profile"
+    else
+      log_warn "could not update user profile — reconcile marketing_consent live"
+    fi
+  else
+    log_warn "users/profile endpoint unavailable — declare marketing_consent live"
+  fi
+  rm -f "$TMP_UP"
 
   # ─── MFA flow: tukio-admin-mfa-required (P-M5: rollback on partial failure)
   # NOTE: Keycloak API expects flow ALIAS in the URL (not UUID) for
