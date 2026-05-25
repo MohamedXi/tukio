@@ -194,7 +194,7 @@ development_status:
   1-12-post-login-role-router: done
   # Stories 1.13-1.15 NEW 2026-05-25 (ADR-0018, cf. sprint-change-proposal-2026-05-25-adr-0018.md) —
   # bascule de l'inscription sur page Keycloak hostée. Séquence : 1.13 + 1.15 (parallélisables) → 1.14 (cutover front).
-  1-13-keycloak-self-registration-provisioning: ready-for-dev  # realm: default-role client, IdP Google+Microsoft, Terms required-action, champ marketing register.ftl
+  1-13-keycloak-self-registration-provisioning: in-progress  # config implémentée + validée statiquement (dev-story 2026-05-25). Validation LIVE en attente (Keycloak + creds Google/MS Ismael). Realm: default-role client, IdP Google+Microsoft, Terms, champ marketing register.ftl.
   1-14-frontend-kc-registration-redirect-deprecate-local: backlog  # dépend 1.13+1.15 — initiate-register + redirect + retrait SignUpForm/endpoint/contracts
   1-15-reactive-user-profile-on-kc-registration-event: ready-for-dev  # webhook Phasetwo REGISTER → identity-svc /internal/keycloak-events (HMAC) → user_profile + outbox (remplace dual-write 1.2b). PAS de SPI Java (Phasetwo déjà en place, Story 1.1). Effort modéré.
   epic-1-retrospective: optional
