@@ -59,6 +59,13 @@ declare -A SECRETS_APPS=(
   [resend_pre_launch_audience_id]="Resend Audience UUID for pre-launch signups"
   [resend_from_address]="Resend From address for contact notifications (e.g. hello@tukio.one)"
   [contact_inbox]="Inbox that receives contact form notifications (e.g. ismael.mohamed@tukio.one)"
+  # Story 1.13 (ADR-0018) — social IdP brokering. Register the OAuth apps first:
+  # Google → Google Cloud Console (OAuth 2.0 Client ID, Web) ; Microsoft → Azure
+  # Entra ID app registration. Redirect URI: https://auth.tukio.one/realms/tukio/broker/<google|microsoft>/endpoint
+  [google_client_id]="Google OAuth client ID (…apps.googleusercontent.com)"
+  [google_client_secret]="Google OAuth client secret"
+  [microsoft_client_id]="Microsoft (Azure Entra) application (client) ID"
+  [microsoft_client_secret]="Microsoft (Azure Entra) client secret value"
 )
 
 declare -A SECRETS_DATA=(

@@ -1,6 +1,6 @@
 # Story 1.13: Provisioning realm Keycloak pour self-registration + social IdP
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -68,8 +68,41 @@ Status: ready-for-dev
 
 ### Agent Model Used
 
+claude-opus-4-7[1m] (dev-story, 2026-05-25)
+
 ### Debug Log References
+
+- Static validation (sans Keycloak live) : `python3 -m json.tool` OK sur `realm-base.json` + `identity-providers.json` ; `bash -n` OK sur `bootstrap-keycloak-realm.sh`, `smoke-test-keycloak-realm.sh`, `provision-secrets.sh`.
 
 ### Completion Notes List
 
+> ⚠️ **Implémenté + validé STATIQUEMENT, validation LIVE en attente** (pas de Keycloak en cours d'exécution — accord Ismael « implémenter config now, différer validation »). Les cases Tasks restent décochées tant que `smoke-test-keycloak-realm.sh` n'a pas tourné vert contre un realm réel. Statut : `in-progress`.
+
+**Implémenté :**
+- **Task 1 (default-role)** : bloc bootstrap `kcadm add-roles --rname default-roles-tukio --rolename client` (idempotent). Assertion smoke-test T9.
+- **Task 2 (CGU + marketing)** : `realm-base.json` → `requiredActions` `TERMS_AND_CONDITIONS` (enabled + defaultAction) ; `register.ftl` → checkbox `user.attributes.marketing_consent` + clé i18n `marketingConsent` (fr/en) ; bloc bootstrap GET-modify-PUT `users/profile` pour déclarer l'attribut `marketing_consent` (préserve les attributs managés). Assertion smoke-test T10.
+- **Task 3 (IdP)** : `identity-providers.json` (Google + Microsoft, secrets via `$VAR`) + bloc bootstrap (substitution python des `$VAR`, **skip si secrets absents**) ; clés `provision-secrets.sh` (google/microsoft client id/secret). Assertion smoke-test T11 (conditionnelle). **Apple différé.**
+- **Task 4 (smoke-test)** : T9 (default-role client) + T10 (Terms) + T11 (IdP, conditionnel).
+
+**Prérequis externes Ismael (bloquants pour la validation live de l'IdP) :**
+- Enregistrer les apps OAuth : **Google Cloud Console** (Web client) + **Azure Entra ID** (app registration). Redirect URI : `https://auth.tukio.one/realms/tukio/broker/{google|microsoft}/endpoint`.
+- `provision-secrets.sh apps` → renseigner `google_client_id/secret`, `microsoft_client_id/secret`.
+
+**Validation live à exécuter (Ismael) :** `pnpm docker:up:wait && pnpm docker:bootstrap` puis `smoke-test-keycloak-realm.sh` → vérifier T9/T10/T11 verts + rebuild thème (`infra/scripts/build-keycloak-themes.sh`) pour le champ marketing + tester un self-register (rôle `client` + CGU + checkbox marketing persistée).
+
+**À reconfirmer en live :** schéma déclaratif user-profile (`marketing_consent` permissions) ; provider IdP Microsoft (`microsoft` vs `oidc` générique selon version KC) ; `add-roles` idempotence exacte.
+
 ### File List
+
+- `infra/keycloak/realm-config/realm-base.json` (M) — requiredActions TERMS_AND_CONDITIONS
+- `infra/keycloak/realm-config/identity-providers.json` (NEW) — Google + Microsoft IdP (secrets via env)
+- `infra/keycloak/themes/tukio/login/register.ftl` (M) — checkbox marketing_consent
+- `infra/keycloak/themes/tukio/login/messages/messages_fr.properties` (M) — clé marketingConsent
+- `infra/keycloak/themes/tukio/login/messages/messages_en.properties` (M) — clé marketingConsent
+- `infra/scripts/bootstrap-keycloak-realm.sh` (M) — default-role + IdP + user-profile blocks + secret reads
+- `infra/scripts/provision-secrets.sh` (M) — clés google/microsoft client id/secret
+- `infra/scripts/smoke-test-keycloak-realm.sh` (M) — assertions T9/T10/T11
+
+### Change Log
+
+- 2026-05-25 — Implémentation config (Tasks 1-4) + validation statique. Validation live + creds IdP externes en attente (Ismael). Statut `in-progress`.

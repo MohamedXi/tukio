@@ -276,6 +276,32 @@ for k in ('loginTheme', 'accountTheme', 'emailTheme'):
 # already validates the realm is wired to the tukio theme at the realm level.
 # A future Playwright E2E (Story 1.4) will exercise the actual page render.
 
+# ── Story 1.13 (ADR-0018): self-registration provisioning ───────────────────
+run_test "T9 — default role 'client' in default-roles-tukio (Story 1.13)" \
+  "kcadm get 'roles/default-roles-tukio/composites' -r tukio | python3 -c \"
+import sys, json
+d = json.load(sys.stdin)
+names = [r.get('name') for r in d]
+assert 'client' in names, f'client not in default-roles-tukio composites: {names!r}'
+\""
+
+run_test "T10 — TERMS_AND_CONDITIONS required action enabled+default (Story 1.13)" \
+  "kcadm get 'authentication/required-actions/TERMS_AND_CONDITIONS' -r tukio | python3 -c \"
+import sys, json
+d = json.load(sys.stdin)
+assert d.get('enabled') is True, f'TERMS_AND_CONDITIONS not enabled: {d!r}'
+assert d.get('defaultAction') is True, f'TERMS_AND_CONDITIONS not defaultAction: {d!r}'
+\""
+
+# Social IdP — conditional: skipped when creds not yet provisioned (like T8).
+T11_IDP="$(kcadm get 'identity-provider/instances' -r tukio --fields alias --format csv --noquotes 2>/dev/null | tr -d '\r' | tr '\n' ' ')"
+if echo "$T11_IDP" | grep -qw google && echo "$T11_IDP" | grep -qw microsoft; then
+  RESULTS+=("✅ T11 — social IdP google+microsoft present (Story 1.13)")
+  PASSED=$((PASSED + 1))
+else
+  RESULTS+=("⏭️  T11 — social IdP skipped (not provisioned: '${T11_IDP}')")
+fi
+
 # ── Test 8 (AC8): Phasetwo Orgs API — P-L8: opt-out for vanilla Keycloak ──────
 if [[ "$SKIP_PHASETWO_TESTS" != "true" ]]; then
   # Auto-detect: probe endpoint, accept only 200 + JSON array as available
