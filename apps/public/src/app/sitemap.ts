@@ -1,5 +1,11 @@
 import type { MetadataRoute } from 'next';
-import { LOCALES, DEFAULT_LOCALE } from '@tukio/i18n-client/config';
+import { LOCALES } from '@tukio/i18n-client/config';
+
+// SEO x-default points to French: tukio.one is a France-first marketplace, so
+// users whose language matches no listed hreflang should land on /fr. This is
+// deliberately decoupled from the runtime fallback locale (DEFAULT_LOCALE='en'),
+// which only governs Accept-Language resolution, not the canonical landing.
+const X_DEFAULT_LOCALE = 'fr';
 
 // Static lastModified (Story 0.15 post-review P4) — recomputing per request
 // defeats crawler caches and inflates re-crawl frequency for no benefit.
@@ -29,7 +35,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         languages: {
           fr: `${baseUrl}/fr${route.path}`,
           en: `${baseUrl}/en${route.path}`,
-          'x-default': `${baseUrl}/${DEFAULT_LOCALE}${route.path}`,
+          'x-default': `${baseUrl}/${X_DEFAULT_LOCALE}${route.path}`,
         },
       },
     })),

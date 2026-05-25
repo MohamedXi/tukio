@@ -69,7 +69,7 @@ function buildOrganizationJsonLd(locale: 'fr' | 'en'): string {
         addressCountry: 'FR',
       },
     },
-    areaServed: { '@type': 'AdministrativeArea', name: 'Pays de la Loire' },
+    areaServed: { '@type': 'Country', name: 'France' },
     contactPoint: {
       '@type': 'ContactPoint',
       email: 'contact@tukio.one',

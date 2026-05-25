@@ -55,7 +55,7 @@ function buildOrganizationJsonLd(locale: 'fr' | 'en'): string {
       locale === 'fr'
         ? "Espace professionnel tukio.one pour les pros de l'événementiel."
         : 'tukio.one professional portal for event service providers.',
-    areaServed: { '@type': 'AdministrativeArea', name: 'Pays de la Loire' },
+    areaServed: { '@type': 'Country', name: 'France' },
     contactPoint: {
       '@type': 'ContactPoint',
       email: 'contact@tukio.one',

@@ -30,11 +30,15 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<Response> {
   const { slug } = await params;
-  if (!isSlug(slug)) {
+  // Metadata references carry a `.png` suffix (e.g. /og/seller-coming-soon.png)
+  // so they stay out of the middleware locale-prefix matcher (which skips
+  // dotted paths). Strip the extension before matching the slug table.
+  const cleanSlug = slug.replace(/\.(png|jpe?g|webp)$/i, '');
+  if (!isSlug(cleanSlug)) {
     return new Response('Not Found', { status: 404 });
   }
   const locale = pickLocale(new URL(request.url).searchParams.get('locale'));
-  const tagline = SLUGS[slug][locale];
+  const tagline = SLUGS[cleanSlug][locale];
 
   type OgFont = {
     name: string;
