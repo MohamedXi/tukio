@@ -5,12 +5,12 @@ export const runtime = 'edge';
 
 const SLUGS = {
   home: {
-    fr: 'Bientôt en Pays de la Loire',
-    en: 'Coming soon to Pays de la Loire',
+    fr: 'Bientôt en France',
+    en: 'Coming soon in France',
   },
   'coming-soon': {
-    fr: 'Bientôt en Pays de la Loire',
-    en: 'Coming soon to Pays de la Loire',
+    fr: 'Bientôt en France',
+    en: 'Coming soon in France',
   },
   about: {
     fr: 'Une plateforme, un événement',
@@ -50,11 +50,15 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<Response> {
   const { slug } = await params;
-  if (!isSlug(slug)) {
+  // Metadata references carry a `.png` suffix (e.g. /og/about.png) so they stay
+  // out of the middleware locale-prefix matcher (which skips dotted paths).
+  // Strip the extension before matching the slug table.
+  const cleanSlug = slug.replace(/\.(png|jpe?g|webp)$/i, '');
+  if (!isSlug(cleanSlug)) {
     return new Response('Not Found', { status: 404 });
   }
   const locale = pickLocale(new URL(request.url).searchParams.get('locale'));
-  const tagline = SLUGS[slug][locale];
+  const tagline = SLUGS[cleanSlug][locale];
 
   // Fraunces is fetched same-origin from /public/fonts/ — Edge runtime resolves
   // `new URL('/fonts/...', request.url)` to the absolute URL of the deployed asset.
