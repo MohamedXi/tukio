@@ -1417,7 +1417,7 @@ Aucune migration DB, aucun backoffice, aucun feature flag tiers.
 
 #### Story 1.6: Email verification flow (`POST /v1/auth/email/verify` + landing page)
 
-> 🔄 **Amendée 2026-05-25 (ADR-0017, cf. sprint-change-proposal-2026-05-25.md)** : le redirect post-vérification délègue désormais au **routeur post-login par rôle (Story 1.12)**. L'AC « redirect intelligent `signup_intent` » (hérité de la Story 1.11 dual-portal, désormais annulée) est **supprimée** — plus de cookie `tukio-signup-intent` ni de DB column lue ici.
+> 🔄 **Amendée 2026-05-25 (ADR-0017, cf. sprint-change-proposal-2026-05-25.md)** : le redirect post-vérification doit **réutiliser le resolver gateway existant `resolvePostLoginRedirect`** (`redirect-resolver.ts`, livré Story 1.4b) — PAS de `post-verify-redirect-resolver.ts` séparé. L'AC « redirect intelligent `signup_intent` » (hérité de la Story 1.11 dual-portal, désormais annulée) est **supprimée** — plus de cookie `tukio-signup-intent` ni de DB column lue ici.
 
 **As a** Customer / Pro,
 **I want** to verify my email address by clicking a link,
@@ -1426,7 +1426,7 @@ Aucune migration DB, aucun backoffice, aucun feature flag tiers.
 **Acceptance Criteria :**
 
 - **Given** un user fraîchement inscrit, **When** il reçoit l'email "Vérifiez votre adresse" template Resend, **Then** il contient un lien `tukio.one/fr/auth/email/verify?token=...` (TTL 7 jours).
-- **Given** le user clique le lien, **When** il arrive sur la landing page, **Then** identity-svc valide le token via Keycloak, set `email_verified=true` dans Keycloak, publie `identity.email.verified.v1`, et la page affiche un message succès avec CTA "Continuer" qui **délègue la destination au routeur post-login par rôle (Story 1.12)** — pas de `/account/dashboard` hardcodé ni de lecture `signup_intent` (mécanisme dual-portal abandonné, ADR-0017). Le routeur envoie `client` → `/account/dashboard`, `pro` → `seller.tukio.one/{locale}/seller/dashboard`, `admin` → `admin.tukio.one`. L'option "Devenir pro" reste accessible depuis le dropdown avatar (wizard conversion, cf. Story 1.3).
+- **Given** le user clique le lien, **When** il arrive sur la landing page, **Then** identity-svc valide le token via Keycloak, set `email_verified=true` dans Keycloak, publie `identity.email.verified.v1`, et la page affiche un message succès avec CTA "Continuer" dont la destination est calculée par **`resolvePostLoginRedirect` (`redirect-resolver.ts`, gateway-api, livré Story 1.4b)** — pas de `/account/dashboard` hardcodé ni de lecture `signup_intent` (mécanisme dual-portal abandonné, ADR-0017). Le resolver envoie `client` → `/account/dashboard`, `pro` → `seller.tukio.one/{locale}/seller/dashboard`, `admin` → `admin.tukio.one`. L'option "Devenir pro" reste accessible depuis le dropdown avatar (wizard conversion, cf. Story 1.3).
 - **Given** la landing page de verification (UX-DR10 — gap MVP critique à designer Sprint 0), **When** elle render, **Then** elle utilise les composants `<EmptyState variant="success">` (Story 0.5) avec icône check + titre Fraunces + description.
 - **Given** un token expiré, **When** le user clique, **Then** la page affiche "Lien expiré" + CTA "Renvoyer un email de vérification" qui appelle `POST /v1/auth/email/resend` (rate-limit 1/5 min).
 - **Given** un Customer email non vérifié qui essaie de réserver (FR17), **When** il accède `/customer/bookings/checkout`, **Then** middleware redirige vers `/auth/verify-email-required` qui affiche "Vérifiez votre email pour continuer" + CTA "Renvoyer le lien".
@@ -1531,6 +1531,8 @@ Customer authentifié — une proposition contextualisée de conversion vers le 
 > Comble le seul vrai manque révélé par le correct-course : aucun aiguillage **fiable** par rôle après auth.
 > Unifie le redirect login (Story 1.4) + le redirect post-email-verify (Story 1.6) en **un seul resolver
 > gateway-side** (au lieu d'un par flow). Décision gateway-side actée 2026-05-25 (révise l'esquisse apex de l'ADR).
+
+> ✅ **CLÔTURÉE le 2026-05-25 (dev-story) — DÉJÀ IMPLÉMENTÉE par Stories 1.4b + 1.4c.** Le resolver `resolvePostLoginRedirect` (`apps/gateway-api/src/infrastructure/http/utils/redirect-resolver.ts`) existe, route admin/pro/client (+ nuances statut), est branché sur le login (`handle-callback.usecase.ts:107`) et testé (`redirect-resolver.spec.ts` + `handle-callback.usecase.spec.ts`). Les AC ci-dessous sont satisfaits, **sauf AC4** (email-verify) qui reste une contrainte sur la Story 1.6 (réutiliser `resolvePostLoginRedirect`, pas de resolver séparé). Aucun code n'a été écrit pour 1.12 (l'écrire aurait dupliqué l'existant).
 
 **As a** utilisateur authentifié (client, pro converti, ou admin),
 **I want** être redirigé après login / email-verify vers l'espace correspondant à mon rôle,
