@@ -1,6 +1,15 @@
 # Story 1.12: Resolver post-login par rôle unifié (gateway-api)
 
-Status: ready-for-dev
+Status: done
+
+> ✅ **CLÔTURÉE le 2026-05-25 (dev-story) — DÉJÀ IMPLÉMENTÉE par Stories 1.4b + 1.4c.**
+> L'analyse dev-story a révélé que le resolver visé existe déjà : `resolvePostLoginRedirect`
+> (`apps/gateway-api/src/infrastructure/http/utils/redirect-resolver.ts`, livré Story 1.4b).
+> Il route `admin*`→admin / `pro`→seller (avec nuances `pending`/`rejected`/`suspended`) / `client`→account,
+> est branché sur le login (`handle-callback.usecase.ts:107`) et testé
+> (`redirect-resolver.spec.ts` + `handle-callback.usecase.spec.ts`). **Aucun code écrit** — créer
+> `post-login-destination-resolver.ts` aurait dupliqué l'existant. Seul reste **AC4** (email-verify),
+> tracé comme contrainte sur la Story 1.6 (réutiliser `resolvePostLoginRedirect`). Voir Dev Agent Record.
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -91,8 +100,27 @@ Avec son `.spec.ts` colocalisé. Même esprit que `coming-soon-gate-decision.ts`
 
 ### Agent Model Used
 
+claude-opus-4-7[1m] (dev-story, 2026-05-25)
+
 ### Debug Log References
+
+- `apps/gateway-api/src/infrastructure/http/utils/redirect-resolver.ts` — `resolvePostLoginRedirect` + `sanitizeNextUrl` (existant, Story 1.4b).
+- `apps/gateway-api/src/usecases/auth/handle-callback.usecase.ts:107` — login consomme déjà le resolver.
+- `apps/gateway-api/src/infrastructure/http/utils/redirect-resolver.spec.ts` + `handle-callback.usecase.spec.ts` — couverture existante.
+- `apps/public/src/app/[locale]/auth/callback/route.ts:54-62` — relais du `Location` (Story 1.4c, mergée #51).
 
 ### Completion Notes List
 
+- **Story clôturée sans écrire de code.** dev-story a établi que le resolver post-login par rôle existe déjà (Story 1.4b) et dépasse la spec 1.12 (nuances de statut pro `pending_admin_review`/`rejected`/`suspended`/`active`, garde anti open-redirect `sanitizeNextUrl`, blocage sous-domaines retirés ADR-016).
+- **AC satisfaits par l'existant** : AC1 (resolver précédence), AC2 (dual-rôle admin>pro>client), AC3 (login le consomme), AC5 (apex relaie le Location), AC6 (bounce pending — géré directement par le resolver ET le middleware seller), AC7 (tests ≥90% via 2 specs).
+- **AC4 non satisfait — reporté sur Story 1.6** : le flow email-verify (pas encore codé) devra réutiliser `resolvePostLoginRedirect` plutôt que créer un resolver dédié. Contrainte inscrite dans le bandeau de la Story 1.6.
+- **Décision** : créer `post-login-destination-resolver.ts` aurait dupliqué `redirect-resolver.ts` → réinvention rejetée. Note : la décision « gateway-side » d'ADR-0017 correspond à l'implémentation réelle (le resolver est gateway-side).
+- **Symptôme « tout le monde atterrit pareil »** : non reproduit côté login (résolveur correct + testé). Cause probable = parcours post-inscription via email-verify (Story 1.6 non codée) ou observation antérieure à 1.4b/1.4c. À confirmer en testant le login avec un compte `pro` réel une fois Keycloak peuplé.
+
 ### File List
+
+_Aucun fichier de code créé ou modifié_ (story clôturée comme déjà implémentée). Mises à jour documentaires uniquement : `_bmad-output/implementation-artifacts/sprint-status.yaml`, `_bmad-output/planning-artifacts/epics.md`, `_bmad-output/implementation-artifacts/1-6-email-verification-flow-landing-page.md`, ce fichier.
+
+### Change Log
+
+- 2026-05-25 — Story clôturée `done` (déjà implémentée par 1.4b/1.4c). AC4 reporté sur Story 1.6. Aucun code écrit.
