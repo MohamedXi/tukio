@@ -191,6 +191,13 @@ run_test "T5 — tukio:locale claim in JWT (AC4)" "$(cat <<SHELLEOF
     -H "Authorization: Bearer \$ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
     -d '{"type":"password","value":"Smoke!Test1234","temporary":false}' >/dev/null
+  # Story 1.13: TERMS_AND_CONDITIONS is now a defaultAction → Keycloak re-adds it
+  # to Admin-API-created users even with requiredActions:[] at create, which would
+  # block this non-interactive password grant. Clear it for the smoke user.
+  curl -sS -X PUT "${KC}/admin/realms/tukio/users/\${SMOKE_USER_ID}" \
+    -H "Authorization: Bearer \$ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"requiredActions":[]}' >/dev/null
   TOKEN_RESPONSE=\$(curl -sS -X POST "${KC}/realms/tukio/protocol/openid-connect/token" \
     -d "grant_type=password&username=${SMOKE_USER}&password=Smoke!Test1234&client_id=tukio-smoke-test&client_secret=${KEYCLOAK_CLIENT_SECRET_SMOKE_TEST}")
   ACCESS_TOKEN=\$(echo "\$TOKEN_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('access_token', ''))" 2>/dev/null || true)
