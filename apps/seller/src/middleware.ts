@@ -35,6 +35,10 @@ export default async function middleware(request: NextRequest) {
   return acquisitionCookieMiddleware(request);
 }
 
+// Unbounded extension length on purpose: a `\w{2,4}` cap let `/fonts/*.woff2`
+// (5-char extension) through to the middleware, breaking the OG route's
+// same-origin font fetch. The `$` anchor keeps mid-path dots (e.g. `/v1.0/x`)
+// routed as pages.
 export const config = {
-  matcher: ['/((?!_next|api|.*\\.\\w{2,4}$).*)'],
+  matcher: ['/((?!_next|api|.*\\.\\w+$).*)'],
 };
