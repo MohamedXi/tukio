@@ -19,7 +19,10 @@ export async function ComingSoonHeader({ locale }: ComingSoonHeaderProps) {
     >
       <LinkedLogo locale={locale} />
       <div className="flex items-center gap-4">
-        <span className="text-xs font-mono uppercase tracking-wider text-charcoal-500">
+        {/* Hidden below md: the badge text ("Bientôt · Pilote Pays de la Loire")
+            collides with the logo on narrow phones. The hero's "En construction"
+            pill already carries the coming-soon signal there. */}
+        <span className="hidden md:inline text-xs font-mono uppercase tracking-wider text-charcoal-500">
           {t('badge')}
         </span>
         <LocaleSwitcherClient />
