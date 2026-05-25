@@ -114,7 +114,6 @@ export class KeycloakOAuthClient {
       state: input.state,
       kc_locale: input.locale,
       scope: SCOPE,
-      prompt: 'login',
     });
     return `${this.realmBaseUrl()}/protocol/openid-connect/auth?${params.toString()}`;
   }

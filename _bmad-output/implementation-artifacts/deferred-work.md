@@ -1,5 +1,15 @@
 # Deferred Work
 
+## Deferred from: code review of 0-21-seo-foundation-analytics-pre-launch (2026-05-23)
+
+- **trackEvent helper dupliqué** — `ComingSoonFormClient.tsx` + `ContactFormClient.tsx` ont la même `type PlausibleFn` + `function trackEvent`. Acceptable par code style projet (≤10 lignes), candidat extraction vers `@tukio/api-client/utils/plausible.ts` post-launch.
+- **NEXT_PUBLIC_* baked at build time** — `robots.ts`, `sitemap.ts`, `og/route.ts` lisent `NEXT_PUBLIC_COMING_SOON_MODE` et `NEXT_PUBLIC_BASE_URL` qui sont inlinés au build. Toggle nécessite un full rebuild (documenté dans `docs/runbook/pre-launch-toggle.md`).
+- **308 redirect caching** — `/og/route.ts` (apex + seller) redirigent en 308 permanent. Peut bloquer les updates CDN post-launch si le slug de destination change. Passer à 307 Temporary post-launch si besoin.
+- **Seller RootLayout `hasLocale()`/`notFound()` guard absent** — [`apps/seller/src/app/[locale]/layout.tsx`] — pré-existant Story 0.15, pas introduit par 0.21. Ajouter avant Story 1.x seller auth.
+- **Post-launch `PRIVATE_DISALLOW` conservatif** — `robots.ts` public désallow 10 paths (auth/account/cart/checkout locale-préfixés) quand flag OFF. Spec voulait `['/api/', '/_next/']` minimal. Implémentation plus sécurisée ; revoir post-launch si des pages Epic 1+ ont besoin d'être indexables.
+- **`buildOrganizationJsonLd` dupliqué** — apex + seller layouts ont des versions légèrement différentes de la fonction. Candidat extraction vers `@tukio/i18n-client` ou `@tukio/ui` post-launch V1.
+- **`Coming-soon` priority 1.0 + noindex à vérifier** — sitemap public donne `priority: 1.0` à `/coming-soon`. Vérifier post-deploy que la page n'a pas un `robots: noindex` résiduel (le noindex concerne uniquement `/coming-soon/success`).
+
 ## Deferred from: code review of 1-4b-gateway-api-endpoints-usecases-csrf-e2e (2026-05-18, round 2)
 
 - **D9** — `auth-customer-register.e2e-spec.ts:2509` + `auth-pro-register.e2e-spec.ts:2635` bumped `jest.setTimeout(30_000)` (6× the 5s default) to mask slow module-wiring boot. Either 6s real boot (alarming) or hedge against flake. Root cause investigation deferred to ops sprint.
@@ -279,3 +289,83 @@
 - **D6-review (1.4b) — ThrottlerModule.forFeature not used** — Spec called for `ThrottlerModule.forFeature` scopes; implementation uses per-route `@Throttle({ default: … })` overrides which achieve identical rate-limit values. Behaviour equivalent.
 - **D7-review (1.4b) — getCsrfTimingSafe() absent from EnvironmentConfigService** — AC8 spec called for this method but no code path uses it and the CsrfGuard always uses `timingSafeEqual`. Low-risk spec wording gap.
 - **D8-review (1.4b) — safeEqual length short-circuit leaks 1 bit** — CSRF guard returns `false` early when token lengths differ instead of comparing a dummy buffer. Fixed-length base64url tokens (always 43 chars for `randomBytes(32).toString('base64url')`) make this theoretical. Documented acceptable for MVP.
+
+## Deferred from: code review of story-0.15 (2026-05-21)
+
+- **W1-review (0.15) — Locale-prefixed `/fr/api/*` not in TECH_BYPASS** — `coming-soon-gate-decision.ts` TECH_BYPASS regex only matches `^/api/`, not locale-prefixed. No current locale-prefixed API routes exist; future RSC payload endpoints with locale segment could be silently rewritten.
+- **W2-review (0.15) — POST/PUT/DELETE rewritten to GET coming-soon page** — Middleware rewrites all HTTP methods. Stale form submissions during pre-launch return coming-soon HTML instead of parseable error. Acceptable since pre-launch traffic is ~100% GET.
+- **W3-review (0.15) — `x-next-intl-locale` unconditional override** — `coming-soon-gate.ts` unconditionally sets the header from URL-derived locale, overriding any upstream proxy value. No upstream proxy currently sets this.
+- **W4-review (0.15) — `decision.kind` not exhaustively narrowed in TS** — Wrapper only early-returns for `'pass'`; a future `ComingSoonDecision` variant would crash accessing `decision.locale`.
+- **W5-review (0.15) — `safeLocaleFromPath('//foo')` returns DEFAULT_LOCALE silently** — Double-slash URLs normalised by Next.js upstream.
+- **W6-review (0.15) — Whitelist regex `[a-z]{2}` permissive** — Invalid locales like `/zz/coming-soon` pass through whitelist; layout's `hasLocale()` cleanup via `notFound()` works as designed but loose.
+- **W7-review (0.15) — Seller layout missing `hasLocale()` guard before `setRequestLocale`** — Pre-existing Sprint 0 condition. Seller layout never validated locale param before `setRequestLocale(locale)` call.
+- **W8-review (0.15) — Rewrite drops query string (UTM/reset-tokens/OAuth state)** — Pre-launch tradeoff acknowledged in runbook section 4. Affects deferred deep-links e.g. password-reset URLs sent during testing window.
+- **W9-review (0.15) — Sitemap missing hreflang alternates** — Story 0.21 scope (spec explicit). Pre-launch sitemap entries treated as duplicates across locales.
+- **W10-review (0.15) — Hardcoded `https://tukio.one` base URL in robots.ts + sitemap.ts** — Story 0.21 will introduce `NEXT_PUBLIC_SITE_URL` indirection. Staging deployments emit prod sitemap reference.
+- **W11-review (0.15) — No CSP/Cache-Control headers on rewrite response** — Broader caching strategy needed. CDN may serve stale coming-soon HTML for paths that switch to Epic 1 content post-launch.
+- **W12-review (0.15) — Sitemap noindex contradiction** — `coming-soon/page.tsx` has `robots:{index:false}` but sitemap advertises it at priority 1.0. Story 0.17 + 0.21 will resolve by shipping final content + flipping robots:true.
+- **W13-review (0.15) — Cleanup PR section 3 of runbook incomplete** — Missing references to layout `setRequestLocale` edits + apps.prod.yml env block. Update during cleanup PR sprint.
+- **W14-review (0.15) — Coming-soon noindex propagates to rewritten URL** — `/fr/auth/sign-up` rewritten during pre-launch inherits noindex from coming-soon page; Google cache may persist after flag flip. Story 0.21 SEO foundation will flip robots policy.
+- **W15-review (0.15) — Apex `/devenir-pro` whitelist orphans seller `/devenir-pro` final destination** — Apex placeholder is whitelisted; placeholder comment says "final landing on seller.tukio.one/devenir-pro". Story 0.18 will deliver the seller version with apex CTA cross-zone redirect.
+- **W16-review (0.15) — Strict flag parsing fail-open posture** — `process.env.NEXT_PUBLIC_COMING_SOON_MODE === 'true'` means typos (`'TRUE'`, `'1'`, whitespace) silently disable the gate. By spec AC1 design.
+- **W17-review (0.15) — UTM cookie dropped during entire pre-launch window** — `acquisitionCookieMiddleware` runs after gate, so rewrite responses skip cookie set. Spec design (Story 0.20 landing form is the acquisition path).
+- **W18-review (0.15) — Two parallel `decideComingSoon` implementations (apex + seller)** — By spec design; whitelist contents + rewrite target differ between apps. Drift risk acknowledged.
+- **W19-review (0.15) — `setRequestLocale` only in layouts, not in pages** — Placeholders don't use i18n; Stories 0.17/0.18/0.19 will add per-page `setRequestLocale` when pages start consuming `getTranslations`.
+- **W20-review (0.15) — Tests use literal FR strings → break post-Story 0.17** — Test selectors coupled to placeholder copy. Story 0.17 will rewrite tests with stable selectors (`data-testid`).
+- **W21-review (0.15) — Apex AC13 reversibility test doesn't submit form** — Only checks heading + 2 input labels visible. Stories 1.2b-d convention "specs livrées + non-exécutées" — Ismael runs manual smoke.
+- **W22-review (0.15) — Seller robots `Allow: ['/']` indexes URLs rewritten as duplicate** — Story 0.21 SEO foundation will add canonical tags + scope crawl exclusions for seller subdomain.
+
+## Deferred from: code review of 0-16-design-system-atoms-pre-launch (2026-05-21)
+
+- **W23-review (0.16) — Copyright FR hardcodé dans Footer minimal default** — `© tukio.one · ${year} · Made in Loire-Atlantique` est un fallback FR dans `@tukio/ui`. Stories 0.17-0.19 overrideront toujours via prop `legal={t('footer.legal')}`. Fallback de sécurité, jamais utilisé en production bilingue.
+- **W24-review (0.16) — `role="banner"` redondant sur SiteHeader `<header>`** — `<header>` hors sectioning content a le rôle implicit `banner`. Explicit override inoffensif. À nettoyer si règle ESLint `jsx-a11y/no-redundant-roles` est ajoutée.
+- **W25-review (0.16) — Nom `Block` générique dans exports EditorialPageShell** — Subpath imports `@tukio/ui/patterns/EditorialPageShell` protège des collisions. Si un 2e `Block` apparaît dans le design system, renommer en `EditorialBlock`.
+- **W26-review (0.16) — `key={item.href}` dans SiteHeader navItems + Footer inlineLinks** — Si 2 items partagent un href, React drop silencieusement l'un. Consumer doit garantir uniquicité des hrefs passés.
+- **W27-review (0.16) — SiteHeader pas de gestion overflow nav mobile (<768px avec 3+ items)** — Wrapping potentiel sur 320-375px. Hamburger/drawer = post-launch Epic 1+.
+- **W28-review (0.16) — `maxWidth` prop sans validation (0 ou négatif collapse layout)** — TypeScript `number` ne garantit pas les positifs. Consumer responsibility. Branded type `PositiveInt` = over-engineering MVP.
+- **W29-review (0.16) — `globals.css` `@source` ne scanne pas `../patterns/`** — Classes Tailwind des patterns (SiteHeader, Footer, EditorialPageShell) dépendent du bundler Next.js pour la résolution via symlink. Risque si packaging change. Monitorer si pnpm pack ou Storybook est ajouté.
+- **W30-review (0.16) — Pill `icon` sans mécanisme d'accessible label** — `aria-hidden="true"` sur le wrapper icon = décoratif par design. Si un icône doit être sémantique, ajouter prop `iconLabel?: string` → V1+.
+- **W31-review (0.16) — Multiples navItems `active: true` possibles par type** — Viole ARIA `aria-current="page"` single-element constraint. Active state doit être calculé par le consumer (Next.js `usePathname()`).
+- **W32-review (0.16) — Pill contraste ratio non vérifié avec Lighthouse** — axe-core en jsdom ne compute pas les couleurs CSS custom properties. Variants `cream` et `charcoal` à vérifier en Story 0.17 (Lighthouse + DevTools Accessibility panel).
+- **W33-review (0.16) — `children: ReactNode` dans h1/h2 (EditorialPageShell + Block)** — Block-level JSX dans h1/h2 est invalid HTML. Spec permet ReactNode pour composition `<em>`. Consumer responsibility de n'utiliser que des inline elements.
+- **W34-review (0.16) — `animations.ts` token `pulse` string duplique la valeur CSS var** — Deux sources de vérité: `animations.ts` + `theme.css`. Pattern existant (typing/shimmer pareil). Le test `tokens-css-sync.spec.ts` pourrait être étendu pour assertions d'animations.
+- **W35-review (0.16) — `mainClassName` absent sur EditorialPageShell** — Pas de prop override pour le padding du `<main>`. Stories 0.17-0.19 n'ont pas ce besoin. Si Story 0.19 Contact page nécessite full-bleed, ajouter `mainClassName`.
+
+## Deferred from: code review of 0-17-landing-coming-soon-apex (2026-05-21)
+
+- **W36-review (0.17) — PII firstName + position en query string `/coming-soon/success?firstName=...&position=...`** — Pattern post-signup standard (équivalent verify-email-required Story 1.6 spec). Plausible Analytics et access logs à configurer pour scrub ces params pre-launch.
+- **W37-review (0.17) — `rgpdOptIn` defaultValue `undefined` au lieu de `true` (spec AC3)** — Implementation GDPR-conforme (opt-in affirmatif requis par CNIL). Spec à corriger pour ce point précis : pre-checked viole guidance CNIL post-2017.
+- **W38-review (0.17) — Position max validation 999_999** — Story 0.20 livrera positions réelles depuis Resend Audience count. Clamp à 9999 max possible si Story 0.20 confirme range.
+- **W39-review (0.17) — `Math.random()` non-déterministe dans mock hook** — Mock only, Story 0.20 remplace par real fetch retournant position from Resend.
+- **W40-review (0.17) — setState après unmount dans mock hook** — React 19 gère gracieusement (warn, pas error). Story 0.20 real hook utilise TanStack Query qui gère natively l'unmount.
+- **W41-review (0.17) — Sanitizer firstName denylist `[<>'"&]` vs allowlist Unicode names** — Hardening V1+ post-MVP. Denylist suffit pour XSS standard ; allowlist plus strict requis si firstName passe dans email templates non-React (Resend handler Story 0.20 → JSON-LD Story 0.21).
+- **W42-review (0.17) — FR `selectordinal` `two`/`few` branches dead code** — CLDR fr ordinal n'a que `one` + `other`. Branches `two`/`few` jamais sélectionnées par Intl.PluralRules mais output accidentellement correct via `other` fallback. Cosmetic clean-up V1+.
+- **W43-review (0.17) — `handleSubmit` ne `await` pas la Promise `mutate`** — Pattern Story 1.2d strict. `isSubmitting` RHF drop avant fin mutate, mais `isPending` du hook reste correct → UI safe. Si Story 0.20 hook utilise `useMutation` TanStack, await sera nécessaire.
+- **W44-review (0.17) — `?role=professional` whitelist strict (seulement `?role=pro`)** — UX enhancement V1+ : accepter `professional` + `pro` + `org` + `organizer` comme alias. Si Marketing emails utilisent format différent, casser silencieusement.
+- **W45-review (0.17) — Bundle size landing ~30 KB gzip (RHF + Zod core + Radix Checkbox + lucide icons)** — Sous le seuil ≤ 50 KB AC10. Story 0.21 ajoutera Plausible (~1 KB). Monitorer Lighthouse perf.
+- **W46-review (0.17) — `validation` kind manquant dans `classifyPreLaunchError`** — Spec AC3 inclut `validation` avec `fieldErrors?`. Story 0.20 ajoutera quand le real handler retournera 422 + Zod issues. Pour le moment classifier minimal suffit.
+- **W47-review (0.17) — Mock hook pas de path `onError` simulé** — Story 0.20 fournira real `onError` paths (rate_limited, network, validation, generic). Mock minimal aujourd'hui ne permet pas de tester les branches error en dev sans manual injection.
+
+## Deferred from: code review of story-0.20-resend-audiences (2026-05-22)
+
+- **DF1 (0.20)** — `emailHash` 8-char sha256 truncation (32 bits) brute-forceable via rainbow tables of common emails. Spec line 274 explicitly defines this as the design pattern (Story 1.2b P10). Accept spec choice; revisit if logs become a sensitive surface.
+- **DF2 (0.20)** — `@react-email/components@0.0.35` marked deprecated in pnpm lockfile ("Package no longer supported"). Templates still functional today. Investigate replacement (`@react-email/components@latest` or successor) as part of post-launch dependency audit.
+- **DF3 (0.20)** — Contact form rate limit 5 req/min/IP allows up to 7200 spam emails/day per IP. MVP-acceptable; tighten to 2/min + per-email rate limit if abuse observed post-launch.
+- **DF4 (0.20)** — Pino default synchronous stdout transport blocks event loop under load. Premature optimization for pre-launch waitlist volumes; reconsider when traffic > 100 RPS.
+- **DF5 (0.20)** — `mapPreLaunchError` `parseInt(retry-after)` doesn't handle HTTP-date format per RFC 7231 (`Retry-After: Wed, 21 Oct 2026 07:28:00 GMT`). Falls back to 60s — acceptable degradation; rare for Upstash/Resend to send dates.
+- **DF6 (0.20)** — No test for `rgpdOptIn: false` rejection at handler level. Zod schema `z.literal(true)` already enforces it (verified indirectly via validation test). Add explicit test if schema is ever softened.
+- **DF7 (0.20)** — No test for `Content-Length: 0` empty POST body (only `null` body tested). Edge case; bot pattern, low priority.
+- **DF8 (0.20)** — Position cache 5min TTL approximation accepted per spec L502 ("user perçoit '247ᵉ personne' comme indicatif"). Separate from P23 atomicity patch.
+- **DF9 (0.20)** — `ContactEmail.tsx` hardcodes French labels ("De :", "Email :", "Nouveau message"). Email is internal (inbox `contact@tukio.one`) so FR is acceptable, but `<Html lang={locale}>` says EN for English submissions — minor mismatch. Clarify with Ismael if EN locale submissions should send EN-localized internal email.
+- **DF10 (0.20)** — `vitest.config.ts` aliases manually duplicate `package.json#exports` subpaths. Maintenance burden; consolidate via `vite-tsconfig-paths` plugin in a follow-up infra PR.
+- **DF11 (0.20)** — Upstash Redis REST API unreachable in `signupRatelimit.limit()` / `compute-position` propagates to 500. Design call: fail-open (allow + log) vs fail-closed (return 503). MVP keeps current fail-closed behavior; revisit if Upstash availability drops.
+
+## Deferred from: code review of 1-4c-frontend-login-callback-authprovider-logout (2026-05-25)
+
+- **DEF1 (1.4c)** — `sanitizeNextUrl` non appelée depuis `callback/route.ts` — La gateway-api fait la sanitization server-side (redirect-resolver Story 1.4a). La fonction côté Next.js est réservée à la defence-in-depth client. Design intentionnel documenté dans AC4.
+- **DEF2 (1.4c)** — Flag `--webpack` dans scripts `next build --webpack` (admin + seller) — Flag potentiellement invalide en Next.js 16 (correct flag = `--no-turbopack`). CI rapportée verte ; surveiller si rechargement turbopack config inattendu. Cleanup Story 1.4d ou script fix.
+- **DEF3 (1.4c)** — `silent-check-sso.html` orphelin dans `apps/public/public/` — Keycloak.js retiré, fichier non supprimé. Cleanup Story 1.4d lors du wiring du nouveau provider cookie-based.
+- **DEF4 (1.4c)** — `waitForTimeout(300)` dans e2e login spec (cas 7 + 12) — Anti-pattern Playwright flaky sous charge. Remplacer par `waitForRequest`/`waitForURL` avec condition explicite. Story 1.4d lors de l'ajout des cas testcontainer.
+- **DEF5 (1.4c)** — Cookie CSRF non-HttpOnly par design (Double Submit Cookie pattern) — Lisible en JavaScript, risque XSS si jamais une XSS est introduite. Architecture décidée en Story 1.4a (ADR-level). Acknowledged.
+- **DEF6 (1.4c)** — Paramètre `locale` non validé dans `callback/route.ts` avant usage dans URL — Next.js i18n middleware contraint les valeurs. Risque minimal. Validation défensive à ajouter en Story 1.4d si le middleware est finalisé.
+- **DEF7 (1.4c)** — État `isAuthenticated` de `PublicHeader` non mis à jour côté React après logout — `window.location.assign` force un rechargement complet donc l'état stale n'est jamais rendu. Cleanup Story 1.4d avec provider cookie-based.

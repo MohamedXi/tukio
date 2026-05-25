@@ -18,19 +18,46 @@ export const runtime = 'nodejs';
  *  2. Call gateway-api with that cookie + code + state.
  *  3. Forward the session cookies from gateway-api to the browser.
  *  4. Redirect the browser to the post-login destination.
+ *
+ * Review patches (code-review 2026-05-25):
+ *  - P1: ?error → redirect to login page with ?error param (not home)
+ *  - P7: AbortSignal.timeout(5000) to prevent gateway hangs
+ *  - P8: GATEWAY_INTERNAL_URL for server-to-server (falls back to NEXT_PUBLIC_GATEWAY_URL)
+ *  - P9: validate Location header before redirect (allowlist *.tukio.one)
  */
+
+/** Returns true if destination is safe to redirect to (same origin or *.tukio.one). */
+function isSafeRedirect(destination: string, requestUrl: string): boolean {
+  try {
+    const dest = new URL(destination, requestUrl);
+    const reqHost = new URL(requestUrl).hostname;
+    const h = dest.hostname;
+    return h === reqHost || h === 'tukio.one' || h.endsWith('.tukio.one');
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const url = new URL(req.url);
   const error = url.searchParams.get('error');
 
+  // P1 — forward error to login page so the Alert can render (AC3)
   if (error) {
-    return NextResponse.redirect(new URL(`/${locale}`, req.url));
+    return NextResponse.redirect(
+      new URL(`/${locale}/auth/login?error=${encodeURIComponent(error)}`, req.url),
+    );
   }
 
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
-  const gatewayUrl = process.env['NEXT_PUBLIC_GATEWAY_URL'] ?? 'http://localhost:4000';
+
+  // P8 — prefer internal URL for server-to-server call (container-safe)
+  const gatewayUrl =
+    process.env['GATEWAY_INTERNAL_URL'] ??
+    process.env['NEXT_PUBLIC_GATEWAY_URL'] ??
+    'http://localhost:4000';
 
   const gatewayCallbackUrl = new URL(`${gatewayUrl}/v1/auth/callback`);
   if (code) gatewayCallbackUrl.searchParams.set('code', code);
@@ -42,6 +69,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ loca
   const cookieHeader = pkceCookie ? `tukio-pkce-state=${pkceCookie.value}` : '';
 
   try {
+    // P7 — 5s timeout to prevent hanging when gateway-api is unreachable
     const gwResponse = await fetch(gatewayCallbackUrl.toString(), {
       method: 'GET',
       headers: {
@@ -49,6 +77,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ loca
         'User-Agent': req.headers.get('user-agent') ?? '',
       },
       redirect: 'manual',
+      signal: AbortSignal.timeout(5000),
     });
 
     const redirectTo = gwResponse.headers.get('location');
@@ -58,7 +87,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ loca
       ? gwResponse.headers.getSetCookie()
       : [];
 
-    const destination = redirectTo ?? `/${locale}`;
+    // P9 — only follow the Location header if it points to a safe destination
+    const destination =
+      redirectTo && isSafeRedirect(redirectTo, req.url) ? redirectTo : `/${locale}`;
     const nextResponse = NextResponse.redirect(new URL(destination, req.url));
 
     for (const cookie of setCookies) {
@@ -67,7 +98,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ loca
 
     return nextResponse;
   } catch {
-    // Gateway unreachable — go home
+    // Gateway unreachable or timed out — go home
     return NextResponse.redirect(new URL(`/${locale}`, req.url));
   }
 }

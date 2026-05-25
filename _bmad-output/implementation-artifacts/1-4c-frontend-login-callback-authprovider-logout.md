@@ -1,6 +1,6 @@
 # Story 1.4c: frontend login page + callback route handler + `AuthProvider` wiring ×3 apps + `LogoutButton` ×3
 
-Status: ready-for-dev
+Status: done
 
 > ℹ️ **Sub-story de [[1-4-login-flow-keycloak-authorization-code-pkce]]** — split via `/bmad-correct-course` 2026-05-17-bis
 > (cf. `_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-17-bis.md`).
@@ -247,9 +247,44 @@ apps/admin/src/
 - AC7 ✅ : Playwright e2e 13 cases spec (9 static + 4 testcontainer Keycloak deferred Story 1.4d). Axe-core, link checks, CTA navigation, ?error Alert, ?next propagation.
 - Dépendances ajoutées à admin : `next-intl`, `@tukio/auth-client`, `@tukio/i18n-client`, `@tukio/contracts` (workspace). Scope justifié par la spec 1.4c.
 
+### Review Findings
+
+<!-- généré par /bmad-code-review (Sonnet 4.6) — 2026-05-25 -->
+
+#### Décisions requises (résolues — 2026-05-25)
+
+- [x] [Review][Decision] D1 — AuthProvider complètement retiré des 3 layouts au lieu d'être wiré (AC5) — **RÉSOLU → DÉFÉRÉ** : AC5 amendé, AuthProvider cookie-based déplacé entièrement à Story 1.4d. Keycloak.js retiré définitivement (AUTH_SESSION corruption). Scope 1.4c réduit en conséquence.
+- [x] [Review][Decision] D2 — `prompt: 'login'` ajouté inconditionnellement à l'URL authorize Keycloak — **RÉSOLU → P11 APPLIQUÉ** : `prompt: 'login'` supprimé de `buildAuthorizeUrl()`, SSO cross-app préservé.
+- [x] [Review][Decision] D3 — Image Keycloak basculée de `phasetwo-keycloak:latest` vers `keycloak:26.2` (standard) sans ADR — **RÉSOLU → P12 APPLIQUÉ** : abandon PhasetTwo validé, ADR-0019 rédigé (`docs/adr/0019-phasetwo-abandonment-standard-keycloak.md`). Story 1.13 re-scopée vers SPI Java event listener.
+
+#### Patches (appliqués — 2026-05-25)
+
+- [x] [Review][Patch] P1 — AC3 VIOLATED: callback route redirige vers `/${locale}` sur ?error (pas vers `/${locale}/auth/login?error=${error}`) — l'Alert de la login page ne s'affiche jamais [apps/public/src/app/[locale]/auth/callback/route.ts:27]
+- [x] [Review][Patch] P2 — i18n crash: `PublicHeader` appelle `t('logout')` via namespace `'header'` mais la clé `header.logout` n'existe pas dans `messages/{fr,en}.json` — rendu vide ou runtime error [apps/public/src/messages/en.json + fr.json]
+- [x] [Review][Patch] P3 — AC7 MANQUANT: test Playwright `?next=https://evil.com/ sanitized → redirect default` absent (cas de sécurité obligatoire selon spec) [apps/public/e2e/auth/login.spec.ts]
+- [x] [Review][Patch] P4 — AC7 MANQUANT: test Playwright logout ("button visible authenticated → click → redirect") absent [apps/public/e2e/auth/login.spec.ts]
+- [x] [Review][Patch] P5 — `login.ftl` contient uniquement du texte FR hardcodé ("Connexion", "Bon retour.", copy éditoriale) — violation hard rule bilingue FR/EN dès jour 1 [infra/keycloak/themes/tukio/login/login.ftl]
+- [x] [Review][Patch] P6 — `login.ftl` footer liens `href="#"` pour CGU et politique de confidentialité — liens morts sur la page de login Keycloak [infra/keycloak/themes/tukio/login/login.ftl]
+- [x] [Review][Patch] P7 — Aucun timeout sur le `fetch()` vers gateway-api dans le callback route — une indisponibilité gateway bloque le handler indéfiniment [apps/public/src/app/[locale]/auth/callback/route.ts:44]
+- [x] [Review][Patch] P8 — `NEXT_PUBLIC_GATEWAY_URL` utilisé pour un appel server-to-server dans le callback route — variable baked côté client, peut être inaccessible depuis le container en prod (utiliser `GATEWAY_INTERNAL_URL`) [apps/public/src/app/[locale]/auth/callback/route.ts:32]
+- [x] [Review][Patch] P9 — L'en-tête `Location` retourné par gateway-api n'est pas validé avant le redirect navigateur — open redirect potentiel si gateway compromise [apps/public/src/app/[locale]/auth/callback/route.ts:60]
+- [x] [Review][Patch] P10 — Middleware admin sans `export const config = { matcher }` — **DISMISSED**: `export const config = { matcher: [...] }` déjà présent, faux positif basé sur diff incomplet [apps/admin/src/middleware.ts]
+- [x] [Review][Patch] P11 — (de D2) `prompt: 'login'` supprimé de `buildAuthorizeUrl()` — SSO cross-app préservé [apps/gateway-api/src/infrastructure/external/keycloak/keycloak-oauth.client.ts]
+- [x] [Review][Patch] P12 — (de D3) ADR-0019 rédigé : abandon PhasetTwo → standard Keycloak 26.2, Story 1.13 re-scopée vers SPI Java event listener [docs/adr/0019-phasetwo-abandonment-standard-keycloak.md]
+
+#### Déférés
+
+- [x] [Review][Defer] DEF1 — `sanitizeNextUrl` non appelée depuis `callback/route.ts` (la gateway fait la sanitization côté serveur, fonction réservée au client-side defence-in-depth) [apps/public/src/lib/redirect-url.ts] — deferred, design intentionnel
+- [x] [Review][Defer] DEF2 — Flags `--webpack` dans les scripts build admin/seller — potentiellement non-reconnu par Next.js 16, CI rapportée verte (à surveiller si rechargement de config turbopack) [apps/admin/package.json, apps/seller/package.json] — deferred, CI green
+- [x] [Review][Defer] DEF3 — `silent-check-sso.html` orphelin — Keycloak.js retiré, fichier inutilisé mais non supprimé [apps/public/public/silent-check-sso.html] — deferred, cleanup Story 1.4d
+- [x] [Review][Defer] DEF4 — `waitForTimeout(300)` anti-pattern dans e2e login spec — flaky sous charge (utiliser `waitForRequest`/`waitForURL`) [apps/public/e2e/auth/login.spec.ts:444,469] — deferred, amélioration 1.4d
+- [x] [Review][Defer] DEF5 — Cookie CSRF non-HttpOnly (Double Submit Cookie pattern, par design) — risque XSS acknowledged, architecture 1.4a [apps/public/src/components/PublicHeader.tsx] — deferred, pre-existing design
+- [x] [Review][Defer] DEF6 — Paramètre `locale` non validé dans callback route (Next.js routing contraint les valeurs via middleware i18n) [apps/public/src/app/[locale]/auth/callback/route.ts] — deferred, pre-existing
+- [x] [Review][Defer] DEF7 — État `isAuthenticated` de PublicHeader non mis à jour post-logout côté React (window.location.assign force un rechargement complet de toute façon) [apps/public/src/components/PublicHeader.tsx] — deferred, cleanup 1.4d
+
 ## Story Completion Status
 
-- **Story Status** : `review`
+- **Story Status** : `done` (code-review 2026-05-25 — 12 patches appliqués, D1 déféré à 1.4d, ADR-0019 rédigé)
 - **Created** : 2026-05-17 (via /bmad-correct-course sprint-change-proposal-2026-05-17-bis.md)
 - **Parent umbrella** : Story 1.4 (`split-umbrella`)
 - **Estimation effort** : 2-2.5j
