@@ -56,3 +56,4 @@ Never reuse a number. Never edit an Accepted ADR — create a new one with
 | [0015](0015-mvp-infra-pivot-do-droplets.md) | MVP infra pivot: DO Droplets + docker-compose | `architecture`, `ops` | 2026-05-14 |
 | [0016](0016-frontend-topology-pivot-apex-unified.md) | Frontend topology pivot — apex `tukio.one` unified B2C tunnel (supersedes 0013) | `architecture`, `frontend`, `ops` | 2026-05-15 |
 | [0017](0017-auth-client-first-conversion-pro.md) | Auth — client-first registration, pro role by conversion only (**Proposed**; supersedes UX Doc 4 §C.1-C.2 + dual-portal 2026-05-17) | `architecture`, `security`, `frontend` | 2026-05-25 |
+| [0018](0018-registration-keycloak-hosted-social-idp.md) | Registration moves to Keycloak-hosted themed page + social IdP (**Proposed**; supersedes Story 1.2 local form + ADR-0017 single register endpoint) | `architecture`, `security`, `frontend` | 2026-05-25 |
