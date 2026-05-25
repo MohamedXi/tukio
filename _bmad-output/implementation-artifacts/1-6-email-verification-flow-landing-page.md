@@ -2,6 +2,13 @@
 
 Status: ready-for-dev
 
+> 🔄 **Amendée 2026-05-25 (ADR-0017, cf. `sprint-change-proposal-2026-05-25.md`)**
+> Le redirect par rôle décrit ci-dessous (Customer → `/account/dashboard`, Pro pending →
+> `/seller/onboarding/pending`, Pro active → `/seller/dashboard`) est **conservé** mais doit
+> **consommer le resolver unifié `post-login-destination-resolver.ts` (Story 1.12, gateway-api)**
+> au lieu de créer un `post-verify-redirect-resolver.ts` dédié — un seul resolver pour login + email-verify.
+> Aucun mécanisme `signup_intent` (dual-portal Story 1.11 annulé). À aligner au moment du dev.
+
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
 ## Story

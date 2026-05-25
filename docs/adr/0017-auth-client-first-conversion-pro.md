@@ -31,18 +31,25 @@ comes into existence, and the codebase has drifted into a hybrid of both:
    separate, pro-branded signup portal on `seller.tukio.one` (Story 1.11),
    on top of a client-first backend.
 
-The implementation built pieces of all three, producing the confusion this
-ADR resolves:
+A closer reading of the codebase (correct-course, 2026-05-25) shows the
+backend has **already converged** on the IA-doc model, while the docs and
+backlog still describe the others:
 
-- A **direct** pro registration endpoint exists — `POST /v1/auth/pro/register`
-  (multipart SIRET + KYC, Story 1.3c, `gateway-api auth-pro.controller.ts:59`).
-- A **conversion** path also exists — `ProConversionWizard.tsx` (seller) and
-  `become-pro/page.tsx` (apex).
-- `seller.tukio.one` has **no** auth pages (the Story 1.11 portal was never
-  built).
-- There is **no post-login role router**: every authenticated user lands the
-  same way. The only routing today is the seller middleware bouncing pros in
-  `tukio:status=pending_admin_review` to `/seller/onboarding/pending`.
+- `POST /v1/auth/pro/register` is **not** an anonymous direct registration:
+  since Story 1.3b-bis it is an **auth-gated Customer→Pro conversion**
+  endpoint (`gateway-api auth-pro.controller.ts` — no `@Public()`,
+  `@CurrentActor()` injects the JWT `sub`). The `?role=pro` signup entry was
+  already removed in the Story 1.4 re-scope (2026-05-17).
+- The conversion path is built and shipped — `ProConversionWizard.tsx`
+  (Story 1.3d v2) calls that endpoint via `use-register-pro-mutation.ts`;
+  the `become-pro` page and avatar-dropdown CTA exist on the apex.
+- `seller.tukio.one` has **no** auth pages (the dual-portal Story 1.11 was
+  never built — and is cancelled by this ADR).
+- The one real gap: **no post-login role router**. Every authenticated user
+  lands the same way; the apex `/auth/callback` merely forwards the gateway
+  `Location`. The only role-aware routing today is the seller middleware
+  bouncing `tukio:status=pending_admin_review` pros to
+  `/seller/onboarding/pending`.
 
 Forces in tension: a single product mental model vs. the sunk cost of the
 already-shipped direct-pro path; one extra hop for pros vs. a single
@@ -52,20 +59,26 @@ the invariant "a pro is a client who converted".
 ## Decision
 
 1. **One registration flow, on the apex.** Every account is created with
-   role `client`. There is no direct pro registration — the
-   `registration?role=pro` entry and the dedicated pro signup portal are
-   dropped.
+   role `client`; there is no direct pro registration. This is already the
+   case in the backend: the `?role=pro` signup entry was removed in the
+   Story 1.4 re-scope (2026-05-17) and `POST /v1/auth/pro/register` is an
+   auth-gated Customer→Pro _conversion_ endpoint (Story 1.3b-bis), not an
+   anonymous registration. This ADR ratifies that conversion-only backend
+   and cancels the dual-portal pro signup portal (Story 1.11).
 2. **The `pro` role is granted exclusively by the post-signup conversion
    wizard** (KYC + Stripe Connect + admin validation →
    `assignRealmRole('pro')`, status `pending_admin_review` → `active`).
    `seller.tukio.one` hosts no auth pages; it is a workspace gated to
    converted, admin-validated pros.
-3. **A server-side post-login role router lives on the apex `/auth/callback`.**
-   It reads the roles from the ID token and redirects with this precedence:
-   `admin*` → `admin.tukio.one`; else `pro` → `seller.tukio.one/{locale}/seller/dashboard`
-   (priority for dual-role accounts, per IA §I.3); else `client` →
-   `/{locale}/account/dashboard`. Zone middlewares only **enforce access** —
-   they do not decide the landing destination.
+3. **A single post-login role resolver lives in `gateway-api`** — a pure,
+   testable function reused by both the login flow (Story 1.4) and the
+   email-verification flow (Story 1.6). It reads the roles + status and
+   returns the destination with this precedence: `admin*` → `admin.tukio.one`;
+   else `pro` → `seller.tukio.one/{locale}/seller/dashboard` (priority for
+   dual-role accounts, per IA §I.3); else `client` → `/{locale}/account/dashboard`.
+   The apex / seller / mobile callbacks relay that `Location`; zone
+   middlewares only **enforce access**, they do not decide the landing
+   destination.
 
 ## Consequences
 
@@ -82,8 +95,9 @@ the invariant "a pro is a client who converted".
 
 ### Negative / Trade-offs
 
-- Requires **deprecating then removing** `POST /v1/auth/pro/register` and the
-  direct pro registration page (Story 1.3c) — sunk cost + migration work.
+- No endpoint removal: the conversion backend already matches this decision.
+  The endpoint is merely **misnamed** (`register` vs `convert`) — an optional
+  rename is deferred churn, not a blocker.
 - Pros incur one extra hop (sign up as client → convert) instead of a single
   pro form. Mitigated by a prominent "Devenir pro" CTA in the apex header and
   the `/sell` landing.
@@ -131,27 +145,33 @@ server-side callback on the apex is simpler and testable.
 - [ADR-0009](./0009-keycloak-identity-svc-split.md) — realm + clients (extended).
 - [ADR-0016](./0016-frontend-topology-pivot-apex-unified.md) — apex unified +
   `.tukio.one` cookie (built on).
-- Current code: `apps/gateway-api/src/infrastructure/http/controllers/auth-pro.controller.ts:59`
-  (endpoint to deprecate), `apps/seller/src/features/seller-onboarding/components/ProConversionWizard.tsx`
+- Current code: `apps/gateway-api/src/infrastructure/http/controllers/auth-pro.controller.ts`
+  (auth-gated conversion endpoint — keep), `apps/seller/src/features/seller-onboarding/components/ProConversionWizard.tsx`
   (canonical path), `apps/seller/src/middleware/pending-admin-review-decision.ts`.
-- Follow-up: `/bmad-correct-course` for Story 1.3c (deprecate → remove),
-  Stories 1.4 / 1.6 (login + email-verify redirect), and a new story for the
-  post-login role router.
+- Follow-up: `/bmad-correct-course` (2026-05-25) — cancel Story 1.11, amend
+  Story 1.6 redirect, add the post-login role-router story. See
+  `sprint-change-proposal-2026-05-25.md`.
 
 ## Implementation Notes
 
-- **Role router.** Apex `/auth/callback` (server-side) decodes the ID token
-  roles and issues a 302 with the precedence above. Keep it pure and unit-
-  testable (a decision function fed the roles + locale, returning a target
-  URL), mirroring the existing `*-decision.ts` pattern used by the
-  coming-soon and pending-admin-review middlewares.
-- **Migration sequence (deprecate then remove).**
-  1. Point all pro-facing UI to the conversion wizard (`become-pro` →
-     wizard); ensure no caller hits `POST /v1/auth/pro/register`.
-  2. Mark the endpoint deprecated — return `410 Gone` (or gate behind a
-     kill-switch flag) once traffic is confirmed zero.
-  3. Remove the endpoint, the direct-registration page, and the now-unused
-     `register-pro` contracts in a later story.
+- **Role resolver (gateway-side).** A pure function in `gateway-api` fed the
+  roles + status + locale, returning a target URL. The Story 1.6
+  `post-verify-redirect-resolver.ts` and the Story 1.4 login redirect logic
+  are **unified into this one resolver**; frontends relay the resulting
+  `Location` (the apex `/auth/callback` already does — `route.ts:54-62`).
+  Gateway-side is chosen over an apex-side router because it is more
+  centralized for multiple frontends (apex, seller, mobile) and matches the
+  shipped Story 1.4 pattern. Keep it unit-testable, mirroring the
+  `*-decision.ts` pattern (coming-soon / pending-admin-review).
+- **No endpoint migration.** The conversion-only backend is already in
+  place; nothing to deprecate or remove. Optional, deferred: rename
+  `POST /v1/auth/pro/register` → `.../convert` (+ the `register-pro`
+  contracts) so the name stops implying anonymous registration — the very
+  misnomer that caused this confusion.
+- **Backlog repercussions (correct-course 2026-05-25).** Cancel the
+  dual-portal Story 1.11. Add a new story for the post-login role router.
+  Amend Story 1.6 (email-verify) to delegate its redirect to that router
+  instead of the dropped `signup_intent` mechanism.
 - **Conversion happy path.** client signs up → `become-pro` → wizard
   (profile + KYC + Stripe) → admin validation → `assignRealmRole('pro')` +
   `tukio:status` flips to `active` → seller workspace unlocks.
