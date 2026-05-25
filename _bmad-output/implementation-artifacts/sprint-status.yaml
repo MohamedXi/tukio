@@ -196,7 +196,7 @@ development_status:
   # bascule de l'inscription sur page Keycloak hostée. Séquence : 1.13 + 1.15 (parallélisables) → 1.14 (cutover front).
   1-13-keycloak-self-registration-provisioning: ready-for-dev  # realm: default-role client, IdP Google+Microsoft, Terms required-action, champ marketing register.ftl
   1-14-frontend-kc-registration-redirect-deprecate-local: backlog  # dépend 1.13+1.15 — initiate-register + redirect + retrait SignUpForm/endpoint/contracts
-  1-15-reactive-user-profile-on-kc-registration-event: ready-for-dev  # SPI Keycloak event-listener → NATS → identity-svc inbox (remplace dual-write 1.2b) — LE gros morceau
+  1-15-reactive-user-profile-on-kc-registration-event: ready-for-dev  # webhook Phasetwo REGISTER → identity-svc /internal/keycloak-events (HMAC) → user_profile + outbox (remplace dual-write 1.2b). PAS de SPI Java (Phasetwo déjà en place, Story 1.1). Effort modéré.
   epic-1-retrospective: optional
 
   # ─── Epic 2 — Pro Onboarding & Admin Verification (MVP) ───────────────
