@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 // Bare `/og` is a fallback for any caller that omits the slug. Redirects to
 // the default coming-soon variant so social previews still render something.

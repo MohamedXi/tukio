@@ -1,7 +1,10 @@
 import { ImageResponse } from 'next/og';
 import type { NextRequest } from 'next/server';
 
-export const runtime = 'edge';
+// nodejs (not edge): the app is self-hosted via `output: 'standalone'` behind
+// Caddy on DO droplets, where next/og's WASM render in the emulated edge sandbox
+// 502s. The Node runtime renders ImageResponse reliably off-Vercel.
+export const runtime = 'nodejs';
 
 const SLUGS = {
   home: {
@@ -23,6 +26,22 @@ function isSlug(value: string): value is Slug {
 
 function pickLocale(raw: string | null): Locale {
   return raw === 'en' ? 'en' : 'fr';
+}
+
+// satori (next/og's engine) parses TTF / OTF / WOFF(v1) but NOT WOFF2 — its
+// Brotli-compressed table directory throws "Unsupported OpenType signature
+// wOF2". We ship Fraunces as .ttf and validate the magic number so neither a
+// woff2 nor a non-font payload (e.g. an HTML error page) ever reaches satori.
+const USABLE_FONT_SIGNATURES = new Set([
+  0x00010000, // TrueType outlines
+  0x74727565, // 'true'
+  0x74746366, // 'ttcf' (collection)
+  0x4f54544f, // 'OTTO' (CFF / OpenType)
+  0x774f4646, // 'wOFF' (WOFF v1)
+]);
+function isUsableFont(buffer: ArrayBuffer): boolean {
+  if (buffer.byteLength < 4) return false;
+  return USABLE_FONT_SIGNATURES.has(new DataView(buffer).getUint32(0, false));
 }
 
 export async function GET(
@@ -48,10 +67,12 @@ export async function GET(
   };
   let fonts: OgFont[] = [];
   try {
-    const fontData = await fetch(new URL('/fonts/Fraunces-Regular.woff2', request.url)).then((r) =>
+    const fontData = await fetch(new URL('/fonts/Fraunces-Regular.ttf', request.url)).then((r) =>
       r.arrayBuffer(),
     );
-    fonts = [{ name: 'Fraunces', data: fontData, style: 'normal', weight: 400 }];
+    if (isUsableFont(fontData)) {
+      fonts = [{ name: 'Fraunces', data: fontData, style: 'normal', weight: 400 }];
+    }
   } catch {
     // Render with system font rather than returning 500
   }
