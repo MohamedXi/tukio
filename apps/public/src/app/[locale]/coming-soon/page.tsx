@@ -44,7 +44,10 @@ export async function generateMetadata({
         'x-default': `${baseUrl}/fr/coming-soon`,
       },
     },
-    robots: { index: false, follow: false },
+    // Indexable: this is the primary pre-launch landing — sitemap lists it at
+    // priority 1.0 and robots.txt allows it, so search engines should rank it
+    // to capture organic waitlist signups. (The /success page stays noindex.)
+    robots: { index: true, follow: true },
   };
 }
 
