@@ -9,6 +9,25 @@ Status: ready-for-dev
 > Grafana dashboard, 3 runbooks. C'est la dernière brique avant que Stories 1.5+ et
 > Epic 2-7 puissent consommer la session unifiée cross-zone.
 
+> 🔄 **Amendée 2026-05-25** (vérification auth, cf. mémoire `project_auth_verification_2026_05_25.md`).
+> **Cette story corrige le bug constaté par Ismael** : après login, le header affiche toujours Connexion/Inscription
+> (jamais Déconnexion) — `apps/public/src/components/PublicHeader.tsx:22-25` lit `tukio-session-active` dans un
+> `useState(() => readCookie(...))` dont le commentaire « runs only on the client » est **faux** (rendu SSR → cookie
+> vide → état figé déconnecté, pas de `useEffect` pour relire). **Voir AC13 + Task 16.** Le bon mécanisme = `useAuth()`
+> (AuthProvider, AC4-5) que `PublicHeader` doit consommer à la place de sa lecture ad-hoc.
+>
+> **Alignements (pivots) à appliquer au dev :**
+> - **Redirect par rôle** : les middlewares **enforcent l'accès** mais **ne décident pas** la destination post-login —
+>   celle-ci est calculée par `resolvePostLoginRedirect` (gateway, `redirect-resolver.ts`, Story 1.4b/1.12). Pas de
+>   logique de décision dupliquée côté middleware/front.
+> - **Observability AC11** : K8s/Grafana Cloud ont été **abandonnés** (ADR-015 MVP infra pivot → DO Droplets +
+>   docker-compose). Garder les **metrics prom-client** (`auth.metrics.ts`) ; le dashboard `infra/k8s/grafana-dashboards/*`
+>   est **hors-scope** (ré-évaluer un dashboard compatible stack DO si besoin).
+> - Réfs périmées à lire avec ce filtre : « Vercel rewrites » → DO/Caddy (ADR-015) ; « Customer-first » → modèle
+>   client-first + conversion d'**ADR-0017** ; l'inscription bascule sur Keycloak (**ADR-0018**, Stories 1.13-1.15).
+> - **`GET /v1/auth/whoami`** (consommé par AuthProvider AC4) : vérifier qu'il existe côté gateway-api ; sinon le créer
+>   (decode JWT validé → `{ user, role, status, locale, isAuthenticated }`).
+
 ## Story
 
 **As a** dev fullstack qui finalise le login flow end-to-end,
@@ -147,6 +166,12 @@ unifiée cross-zone** (`Domain=.tukio.one`) opérationnelle pour Stories 1.5-1.9
     - `AuthProvider` + `RefreshTokenRotation` + `CookieManager`: ≥ 80 %
     - middlewares 3 apps: ≥ 85 %
 
+13. **AC13 — `apps/public/src/components/PublicHeader.tsx` consomme `useAuth()` (fix bug auth-state)** :
+    - **Remplace** la détection ad-hoc `useState(() => readCookie('tukio-session-active') === '1')` (`:22-25`, buguée au SSR/hydratation) par `const { isAuthenticated, isLoading } = useAuth()` (AC4-5) — le header reflète l'état réel post-login (bouton Déconnexion visible, plus de Connexion/Inscription figées).
+    - `handleLogin` (`:28-34`) conservé ; `handleLogout` (`:36-49`) remplacé par `useLogout()` (AC5) pour mutualiser CSRF + broadcast cross-tabs.
+    - Pendant `isLoading` : éviter un flash logged-out (skeleton/placeholder neutre sur la zone CTA).
+    - Le header doit être enfant de `<AuthProvider>` (vérifier le layout apex). Unit test : header rendu authentifié (cookie présent + whoami OK) → Déconnexion ; non-auth → Connexion/Inscription ; pas de mismatch d'hydratation.
+
 ## Tasks/Subtasks
 
 - [ ] **Task 1** — `packages/auth-client/src/middleware/decode-jwt.ts` + spec (AC8)
@@ -164,6 +189,7 @@ unifiée cross-zone** (`Domain=.tukio.one`) opérationnelle pour Stories 1.5-1.9
 - [ ] **Task 13** — 3 Playwright spec files `apps/{public,seller,admin}/e2e/middleware/role-redirect.spec.ts` (AC10)
 - [ ] **Task 14** — `packages/auth-client/README.md` (UPDATE Story 0.8) — section "Login flow integration" + diagram
 - [ ] **Task 15** — Validation `pnpm lint && pnpm typecheck && pnpm test:cov` per workspace + Playwright local docker:up
+- [ ] **Task 16** — `apps/public/src/components/PublicHeader.tsx` : remplacer la lecture ad-hoc du cookie par `useAuth()` + `useLogout()` (AC13) ; gérer `isLoading` ; vérifier que le header est sous `<AuthProvider>` ; unit test (authentifié → Déconnexion, non-auth → Connexion/Inscription, pas de mismatch hydratation). _(Corrige le bug header constaté 2026-05-25.)_
 
 ## Dev Notes
 
