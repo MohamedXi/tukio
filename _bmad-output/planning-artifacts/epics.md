@@ -1329,6 +1329,8 @@ Aucune migration DB, aucun backoffice, aucun feature flag tiers.
 
 #### Story 1.2: Customer B2C registration (`POST /v1/auth/customer/register`)
 
+> ⚠️ **Inscription supersedée par ADR-0018 (2026-05-25, cf. `sprint-change-proposal-2026-05-25-adr-0018.md`)** : la création de compte bascule sur la **page Keycloak hostée**. Le form local + `POST /v1/auth/customer/register` + contracts `register-customer` (livrés 1.2a-d, `done`) **restent en place** jusqu'à la bascule, puis **déprécier→retirer** via Stories 1.13-1.15. Le modèle backend (dual-write synchrone 1.2b) est remplacé par une création **réactive** sur événement Keycloak (Story 1.15). 1.2 et 1.2a-d **ne sont pas rouvertes** (historique conservé).
+
 > 📌 **Décomposée 2026-05-15 via `/bmad-correct-course`** : voir sub-stories `1.2a` (contracts + identity-svc domain + use case unit), `1.2b` (identity-svc infrastructure + controller /internal/customers), `1.2c` (gateway-api Pretre + forwarder + Throttler Redis), `1.2d` (frontend sign-up + middleware + Playwright e2e + observability). Ce bloc ACs reste autorité fonctionnelle. Référence : `_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-15.md`.
 
 **As a** Visitor,
@@ -1418,6 +1420,8 @@ Aucune migration DB, aucun backoffice, aucun feature flag tiers.
 #### Story 1.6: Email verification flow (`POST /v1/auth/email/verify` + landing page)
 
 > 🔄 **Amendée 2026-05-25 (ADR-0017, cf. sprint-change-proposal-2026-05-25.md)** : le redirect post-vérification doit **réutiliser le resolver gateway existant `resolvePostLoginRedirect`** (`redirect-resolver.ts`, livré Story 1.4b) — PAS de `post-verify-redirect-resolver.ts` séparé. L'AC « redirect intelligent `signup_intent` » (hérité de la Story 1.11 dual-portal, désormais annulée) est **supprimée** — plus de cookie `tukio-signup-intent` ni de DB column lue ici.
+
+> 🔄 **Re-scopée par ADR-0018 (2026-05-25, cf. sprint-change-proposal-2026-05-25-adr-0018.md)** : la vérification email devient **native Keycloak** (`verifyEmail: true`). Story 1.6 se **réduit** à : (a) thème `verify-email.ftl` (existe déjà), (b) pages `verify-email-required` FR17 (gating booking/checkout/onboarding), (c) redirect post-verify via `resolvePostLoginRedirect`. **Supprimés** : le custom `POST /v1/auth/email/verify`, la landing « auto-verify on landing », et la table `email_verification_tokens` côté app (Keycloak gère). À ré-écrire au moment du dev une fois ADR-0018 implémenté (Stories 1.13-1.15).
 
 **As a** Customer / Pro,
 **I want** to verify my email address by clicking a link,
@@ -1548,7 +1552,53 @@ Customer authentifié — une proposition contextualisée de conversion vers le 
 
 **Note** : remplace/absorbe le redirect shippé par Story 1.4c (en review) — voir note de dépendance dans `sprint-status.yaml`. Réutilise le pattern `*-decision.ts` (`pending-admin-review-decision.ts` Story 1.3d / `coming-soon-gate-decision.ts` Story 0.15). Détail complet de la story via `*draft`.
 
-**Epic 1 — Total stories : 12 (dont 1.11 annulée → 11 actives)**
+#### Story 1.13: Provisioning realm Keycloak pour self-registration + social IdP
+
+> 🆕 **Story NEW** créée 2026-05-25 (ADR-0018, cf. `sprint-change-proposal-2026-05-25-adr-0018.md`).
+
+**As a** plateforme,
+**I want** que le realm Keycloak permette l'auto-inscription themée avec assignation du rôle + CGU + consentement + login social,
+**So that** l'inscription puisse basculer sur la page Keycloak hostée (Stories 1.14/1.15).
+
+**Acceptance Criteria :**
+
+- **Given** le realm `tukio`, **When** un user s'auto-inscrit, **Then** le rôle `client` lui est assigné automatiquement (composer `client` dans le composite `default-roles-tukio` ; vérifié par `smoke-test-keycloak-realm.sh`).
+- **Given** la page `register.ftl` (thème `tukio`, existante), **When** elle s'affiche, **Then** elle inclut un champ **consentement marketing** (opt-in) mappé sur l'attribut user `marketing_consent`, et la **required-action native « Terms and Conditions »** est activée pour les CGU.
+- **Given** les identity providers, **When** un user choisit « Continuer avec Google » ou « Continuer avec Microsoft », **Then** le brokering Keycloak fonctionne (client id/secret en secrets, pattern Story 1.1) ; **Apple différé**.
+- **Given** `infra/keycloak/realm-config/*`, **When** on bootstrappe/exporte, **Then** la config (default-roles, IdP, required-action, champ register) est versionnée et idempotente.
+
+#### Story 1.14: Frontend redirect vers l'inscription Keycloak + dépréciation du form local
+
+> 🆕 **Story NEW** créée 2026-05-25 (ADR-0018). **Dépend de 1.13 + 1.15** (ne couper qu'une fois le `user_profile` réactif en place).
+
+**As a** visiteur,
+**I want** que « S'inscrire » m'amène sur la page d'inscription Keycloak (comme le login),
+**So that** l'inscription soit cohérente avec l'authentification et 100 % Keycloak.
+
+**Acceptance Criteria :**
+
+- **Given** un nouveau `GET /v1/auth/register` sur gateway-api (**initiate-register**, miroir de `initiate-login` : PKCE verifier + state + `kc_locale`), **When** on l'appelle, **Then** il 302 vers l'URL d'inscription Keycloak ; le callback réutilise `/v1/auth/callback` + `resolvePostLoginRedirect` existants.
+- **Given** le CTA « S'inscrire » (header `PublicHeader` + tout lien signup), **When** on clique, **Then** redirect vers `GET /v1/auth/register` (fin du formulaire local).
+- **Given** le trafic confirmé nul sur `POST /v1/auth/customer/register`, **When** on nettoie, **Then** **déprécier→retirer** : `SignUpForm.tsx`, `useRegisterCustomer`, `POST /v1/auth/customer/register`, DTO/contracts `register-customer`, et les e2e associés (`customer-register.spec.ts`, etc.).
+- **Given** Playwright, **When** les tests tournent, **Then** le happy-path inscription via Keycloak est couvert (redirect + retour callback + session).
+
+#### Story 1.15: Création réactive de `user_profile` sur événement d'inscription Keycloak
+
+> 🆕 **Story NEW** créée 2026-05-25 (ADR-0018). **Le gros morceau** : inversion du modèle de création (remplace le dual-write synchrone Story 1.2b).
+
+**As a** identity-svc,
+**I want** créer le `user_profile` en réaction à l'inscription Keycloak (pas en l'orchestrant),
+**So that** l'auto-inscription Keycloak reste la source de vérité tout en peuplant la base Tukio.
+
+**Acceptance Criteria :**
+
+- **Given** un **SPI Keycloak event-listener** (Java — `infra/keycloak/spi` actuellement vide), **When** Keycloak émet l'event `REGISTER` (et `IDENTITY_PROVIDER_FIRST_LOGIN` pour le social), **Then** le SPI publie un event NATS (ex. `identity.user.registered.v1`) avec `{ keycloakUserId, email, locale, marketing_consent, ... }`.
+- **Given** identity-svc, **When** il consomme cet event (inbox dédup idempotente, redélivrance KC possible), **Then** il crée le `user_profile` (rôle `client`, statut, `marketing_consent`) + écrit l'outbox — **remplaçant** le dual-write synchrone de `register-customer.usecase.ts` (1.2b).
+- **Given** `user-profile.aggregate.ts` (champs registration ajoutés par la migration 1.2b), **When** on réconcilie, **Then** les champs nécessaires sont peuplés depuis l'event KC ; les champs orphelins (acquisition) sont retirés ou rendus optionnels.
+- **Given** CGU + consentement, **When** un user s'inscrit, **Then** l'acceptation CGU est tracée côté Keycloak (required-action) et `marketing_consent` synchronisé en `user_profile`.
+- **Given** tests, **When** ils tournent, **Then** SPI (test Keycloak) + consumer identity-svc (testcontainer NATS + PG) couverts, idempotence vérifiée.
+
+**Epic 1 — Total stories : 15 (dont 1.11 annulée → 14 actives ; 1.2 superseded par ADR-0018 mais conservée done)**
 
 ---
 

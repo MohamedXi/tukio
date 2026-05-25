@@ -141,6 +141,9 @@ development_status:
   1-1-provision-keycloak-realm-tukio-roles-clients-phasetwo: done
   # Story 1.2 décomposée en 4 sous-stories atomiques (correct-course 2026-05-15)
   # cf. _bmad-output/planning-artifacts/sprint-change-proposal-2026-05-15.md
+  # SUPERSEDED par ADR-0018 (2026-05-25) — inscription bascule sur page Keycloak hostée. Reste 'done'
+  # (historique conservé, non rouverte). Form local + POST /v1/auth/customer/register + contracts
+  # register-customer à déprécier→retirer via Stories 1.13-1.15 ; dual-write 1.2b → création réactive 1.15.
   1-2-customer-b2c-registration: done  # split umbrella — voir 1.2a-d ci-dessous
   1-2a-contracts-identity-domain-usecase: done
   1-2b-identity-svc-infrastructure-controller: done
@@ -189,6 +192,11 @@ development_status:
   # Aucun code écrit (créer post-login-destination-resolver.ts aurait dupliqué l'existant). Reste AC4 = email-verify
   # (Story 1.6) doit réutiliser `resolvePostLoginRedirect` — tracé sur 1.6, pas de resolver séparé.
   1-12-post-login-role-router: done
+  # Stories 1.13-1.15 NEW 2026-05-25 (ADR-0018, cf. sprint-change-proposal-2026-05-25-adr-0018.md) —
+  # bascule de l'inscription sur page Keycloak hostée. Séquence : 1.13 + 1.15 (parallélisables) → 1.14 (cutover front).
+  1-13-keycloak-self-registration-provisioning: ready-for-dev  # realm: default-role client, IdP Google+Microsoft, Terms required-action, champ marketing register.ftl
+  1-14-frontend-kc-registration-redirect-deprecate-local: backlog  # dépend 1.13+1.15 — initiate-register + redirect + retrait SignUpForm/endpoint/contracts
+  1-15-reactive-user-profile-on-kc-registration-event: ready-for-dev  # SPI Keycloak event-listener → NATS → identity-svc inbox (remplace dual-write 1.2b) — LE gros morceau
   epic-1-retrospective: optional
 
   # ─── Epic 2 — Pro Onboarding & Admin Verification (MVP) ───────────────
