@@ -73,6 +73,8 @@ claude-opus-4-7[1m] (dev-story, 2026-05-25)
 ### Debug Log References
 
 - Static validation (sans Keycloak live) : `python3 -m json.tool` OK sur `realm-base.json` + `identity-providers.json` ; `bash -n` OK sur `bootstrap-keycloak-realm.sh`, `smoke-test-keycloak-realm.sh`, `provision-secrets.sh`.
+- **Validation LIVE via CI (job « Keycloak realm smoke »)** — itération 1 : T9 (default-role client) ✅, T10 (TERMS enabled+default) ✅, T11 (IdP skip) ⏭️ → **mes blocs 1.13 validés live**. MAIS T5 (test existant Story 1.1) ❌ : `TERMS_AND_CONDITIONS` en `defaultAction: true` est ré-ajouté par Keycloak aux users Admin-API **même avec `requiredActions:[]` au create** → bloque le password-grant de T5. **Fix (itération 2)** : T5 purge les `requiredActions` du user smoke (PUT) avant le grant. Re-run CI.
+- ⚠️ **Effet de bord interim** : tant que l'inscription customer passe par l'Admin API (Story 1.2, avant cutover 1.14), les users créés auront `TERMS_AND_CONDITIONS` pending → page CGU redondante au 1er login Authorization-Code (le form Tukio capture déjà `acceptTerms`). Non-bloquant pour le flow réel (seul le password-grant est dur-bloqué, non utilisé par les customers). Optionnel : `keycloakAdmin.createUser` pourrait purger `requiredActions` post-création — acceptable jusqu'au cutover 1.14.
 
 ### Completion Notes List
 
