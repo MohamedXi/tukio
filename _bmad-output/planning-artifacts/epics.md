@@ -1417,6 +1417,8 @@ Aucune migration DB, aucun backoffice, aucun feature flag tiers.
 
 #### Story 1.6: Email verification flow (`POST /v1/auth/email/verify` + landing page)
 
+> 🔄 **Amendée 2026-05-25 (ADR-0017, cf. sprint-change-proposal-2026-05-25.md)** : le redirect post-vérification délègue désormais au **routeur post-login par rôle (Story 1.12)**. L'AC « redirect intelligent `signup_intent` » (hérité de la Story 1.11 dual-portal, désormais annulée) est **supprimée** — plus de cookie `tukio-signup-intent` ni de DB column lue ici.
+
 **As a** Customer / Pro,
 **I want** to verify my email address by clicking a link,
 **So that** I can unlock transactional features (booking, payment, messaging).
@@ -1424,7 +1426,7 @@ Aucune migration DB, aucun backoffice, aucun feature flag tiers.
 **Acceptance Criteria :**
 
 - **Given** un user fraîchement inscrit, **When** il reçoit l'email "Vérifiez votre adresse" template Resend, **Then** il contient un lien `tukio.one/fr/auth/email/verify?token=...` (TTL 7 jours).
-- **Given** le user clique le lien, **When** il arrive sur la landing page, **Then** identity-svc valide le token via Keycloak, set `email_verified=true` dans Keycloak, publie `identity.email.verified.v1`, et la page affiche un message succès avec CTA "Continuer" vers `/account/dashboard` (default Customer — l'option "Devenir pro" est accessible ensuite depuis le dropdown avatar pour démarrer le wizard conversion, cf. Story 1.3).
+- **Given** le user clique le lien, **When** il arrive sur la landing page, **Then** identity-svc valide le token via Keycloak, set `email_verified=true` dans Keycloak, publie `identity.email.verified.v1`, et la page affiche un message succès avec CTA "Continuer" qui **délègue la destination au routeur post-login par rôle (Story 1.12)** — pas de `/account/dashboard` hardcodé ni de lecture `signup_intent` (mécanisme dual-portal abandonné, ADR-0017). Le routeur envoie `client` → `/account/dashboard`, `pro` → `seller.tukio.one/{locale}/seller/dashboard`, `admin` → `admin.tukio.one`. L'option "Devenir pro" reste accessible depuis le dropdown avatar (wizard conversion, cf. Story 1.3).
 - **Given** la landing page de verification (UX-DR10 — gap MVP critique à designer Sprint 0), **When** elle render, **Then** elle utilise les composants `<EmptyState variant="success">` (Story 0.5) avec icône check + titre Fraunces + description.
 - **Given** un token expiré, **When** le user clique, **Then** la page affiche "Lien expiré" + CTA "Renvoyer un email de vérification" qui appelle `POST /v1/auth/email/resend` (rate-limit 1/5 min).
 - **Given** un Customer email non vérifié qui essaie de réserver (FR17), **When** il accède `/customer/bookings/checkout`, **Then** middleware redirige vers `/auth/verify-email-required` qui affiche "Vérifiez votre email pour continuer" + CTA "Renvoyer le lien".
@@ -1492,11 +1494,16 @@ Aucune migration DB, aucun backoffice, aucun feature flag tiers.
 - **Given** la table `outbox` est en place dans `tukio_identity`, **When** un use case publie un event (ex: `register-customer.usecase` → `identity.user.registered.v1`), **Then** l'event est inséré dans outbox dans la même transaction TypeORM que la création du `UserProfile` (cohérence — ADR-007).
 - **Given** la migration TypeORM identity-svc, **When** elle s'exécute, **Then** la table `audit_log` est créée avec colonnes `id (uuid)`, `actor_id (uuid)`, `actor_role (enum)`, `action_type (text)`, `aggregate_type (text)`, `aggregate_id (uuid)`, `before_state (jsonb)`, `after_state (jsonb)`, `reason (text NULL)`, `correlation_id (uuid)`, `at (timestamptz NOT NULL)`, `ip_address (inet)`, `user_agent (text)`, indexes `(actor_id, at DESC)` et `(aggregate_id, at DESC)`. Disponible dès Epic 1 pour les use cases (login audit Story 1.4, TOTP setup Story 1.7, account delete Story 1.9). Le trigger d'immutabilité + UI de consultation sont ajoutés Story 2.7.
 
-#### Story 1.11: Seller signup portal (`seller.tukio.one` sign-up + login + CTA "Devenir pro" header apex + flag intent Pro)
+#### Story 1.11: ~~Seller signup portal~~ — 🗑️ ANNULÉE (ADR-0017, 2026-05-25)
 
-> 🆕 **Story NEW** créée 2026-05-17 suite à la décision dual-portal (révision 17h) actée par Ismael
-> (cf. `_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-17-bis.md` addendum).
-> Architecture : 2 portails UX distincts (apex Customer + seller Pro) avec 1 backend Customer-first unique.
+> 🗑️ **ANNULÉE le 2026-05-25** (ADR-0017, cf. `sprint-change-proposal-2026-05-25.md`).
+> Le dual-portal est abandonné : **inscription unique sur l'apex**, rôle pro **par conversion only**.
+> Sont **supprimés** : la page sign-up/login dédiée `seller.tukio.one/auth/*`, le param `signupOrigin: 'pro_portal'`,
+> la DB column `user_profile.signup_intent` + le cookie `tukio-signup-intent`, et le redirect intelligent par
+> `signup_intent` (l'AC d'extension de Story 1.6 est retirée — le redirect passe par le routeur Story 1.12).
+> **Ce qui survit ailleurs** : le CTA "Devenir pro" (header apex + dropdown avatar) et la page `become-pro` existent
+> déjà ; le routing seller-racine "Vous êtes client, devenir pro ?" → wizard est couvert par le middleware seller + le
+> wizard de conversion (Story 1.3 v2 ✅). Le contenu ci-dessous est conservé pour mémoire historique.
 
 **As a** Pro prospect (visiteur ou Customer existant souhaitant devenir Pro),
 **I want** un portail signup/login dédié sur `seller.tukio.one` avec branding/storytelling Pro, accessible
@@ -1518,7 +1525,28 @@ Customer authentifié — une proposition contextualisée de conversion vers le 
 - **Given** la page login seller `seller.tukio.one/{locale}/auth/login`, **When** elle render, **Then** brandée pro, `<LoginCta>` initie Keycloak OAuth (`clientId=tukio-web`, MÊME que apex), avec lien "Pas encore de compte pro ? Créez-en un" (mène vers AC2). Pas de lien "Customer signup".
 - **Given** Playwright e2e `apps/seller/e2e/auth/signup-pro-portal.spec.ts`, **When** il tourne, **Then** il valide 14 cases × 2 locales : CTA header apex visible + redirect cross-zone + axe-core 0 violations sur 3 pages + happy path signup + cookie + DB column + Customer auth conversion proposée + non-auth redirect sign-up + email non-verified redirect verify-email-required.
 
-**Epic 1 — Total stories : 11**
+#### Story 1.12: Resolver post-login par rôle unifié (gateway-api)
+
+> 🆕 **Story NEW** créée 2026-05-25 (ADR-0017, cf. `sprint-change-proposal-2026-05-25.md`).
+> Comble le seul vrai manque révélé par le correct-course : aucun aiguillage **fiable** par rôle après auth.
+> Unifie le redirect login (Story 1.4) + le redirect post-email-verify (Story 1.6) en **un seul resolver
+> gateway-side** (au lieu d'un par flow). Décision gateway-side actée 2026-05-25 (révise l'esquisse apex de l'ADR).
+
+**As a** utilisateur authentifié (client, pro converti, ou admin),
+**I want** être redirigé après login / email-verify vers l'espace correspondant à mon rôle,
+**So that** je n'atterris pas tous au même endroit (bug actuel constaté : tout le monde atterrit pareil).
+
+**Acceptance Criteria :**
+
+- **Given** une pure function `post-login-destination-resolver.ts` dans `gateway-api` (≥ 90 % coverage), **When** on lui passe `{ roles, tukioStatus, locale }`, **Then** elle retourne la destination avec précédence : `admin*` → `https://admin.tukio.one`, sinon `pro` → `https://seller.tukio.one/{locale}/seller/dashboard` (priorité dual-rôle, IA §I.3 ; un pro `pending_admin_review` sera ensuite bounce vers `/seller/onboarding/pending` par le middleware seller), sinon `client` → `https://tukio.one/{locale}/account/dashboard`.
+- **Given** le flow login (Story 1.4) et le flow email-verify (Story 1.6), **When** ils calculent leur redirect, **Then** ils consomment **ce même resolver** — pas de `post-verify-redirect-resolver.ts` séparé (la version Story 1.6 est fusionnée dedans).
+- **Given** les callbacks front (apex `auth/callback/route.ts:54-62`, seller, mobile futur), **When** l'auth réussit, **Then** ils **relaient** le `Location` calculé par la gateway (pas de logique de décision dupliquée côté front).
+- **Given** un user `client + pro` (pro converti), **When** il se connecte, **Then** il atterrit sur `/seller/dashboard` (priorité pro) ; l'accès à `/account` reste possible via le menu in-app.
+- **Given** les middlewares de zone (apex groupe `(authenticated)` + seller racine), **When** un user sans le rôle requis accède à une zone, **Then** ils **enforcent l'accès** (bounce) sans décider l'atterrissage — la décision reste centralisée dans le resolver gateway.
+
+**Note** : remplace/absorbe le redirect shippé par Story 1.4c (en review) — voir note de dépendance dans `sprint-status.yaml`. Réutilise le pattern `*-decision.ts` (`pending-admin-review-decision.ts` Story 1.3d / `coming-soon-gate-decision.ts` Story 0.15). Détail complet de la story via `*draft`.
+
+**Epic 1 — Total stories : 12 (dont 1.11 annulée → 11 actives)**
 
 ---
 

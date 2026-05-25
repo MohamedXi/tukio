@@ -167,6 +167,8 @@ development_status:
   1-4-login-flow-keycloak-authorization-code-pkce: split-umbrella  # voir 1.4a-d ci-dessous
   1-4a-contracts-utils-keycloak-oauth-client: done
   1-4b-gateway-api-endpoints-usecases-csrf-e2e: done
+  # NOTE 2026-05-25 (ADR-0017) : le redirect du callback est absorbé/superseded par le resolver gateway
+  # unifié (Story 1.12). Ne pas hardcoder /account/dashboard ici ; le callback relaie le Location gateway.
   1-4c-frontend-login-callback-authprovider-logout: review
   1-4d-middlewares-auth-client-hooks-observability: ready-for-dev
   1-5-password-reset-flow: ready-for-dev
@@ -175,11 +177,17 @@ development_status:
   1-8-profile-management: ready-for-dev
   1-9-account-deletion-soft-delete-rgpd: ready-for-dev
   1-10-identity-svc-pretre-implementation: ready-for-dev
-  # Story 1.11 NEW créée 2026-05-17 (révision dual-portal 17h, cf. sprint-change-proposal-2026-05-17-bis.md addendum)
-  # Implémente le portail Pro frontend seller.tukio.one + CTA "Devenir pro" header apex
-  # + flag intent (DB column user_profile.signup_intent + cookie 24h) + middleware seller racine.
-  # Backend reste Customer-first unique (POST /v1/auth/customer/register), pas de duplication.
-  1-11-seller-signup-portal: ready-for-dev
+  # Story 1.11 ANNULÉE 2026-05-25 (ADR-0017, cf. sprint-change-proposal-2026-05-25.md).
+  # Le dual-portal (page sign-up dédiée seller.tukio.one + signup_intent DB column + cookie
+  # signupOrigin) est abandonné : inscription unique sur l'apex, rôle pro par conversion only.
+  # Le CTA "Devenir pro" + la page become-pro + le wizard conversion existent déjà (Story 1.3 v2).
+  1-11-seller-signup-portal: cancelled  # ADR-0017 — dual-portal abandonné
+  # Story 1.12 NEW 2026-05-25 (ADR-0017) — resolver post-login par rôle UNIFIÉ côté gateway-api.
+  # Pure function post-login-destination-resolver.ts : admin* → admin.tukio.one, pro → seller/dashboard,
+  # client → account/dashboard. Consommé par login (1.4) + email-verify (1.6) ; les callbacks front relaient
+  # le Location. Fusionne le post-verify-redirect-resolver.ts de 1.6. Gateway-side acté (révise l'esquisse apex
+  # de l'ADR-0017 AC3). Détail story via *draft.
+  1-12-post-login-role-router: ready-for-dev
   epic-1-retrospective: optional
 
   # ─── Epic 2 — Pro Onboarding & Admin Verification (MVP) ───────────────
