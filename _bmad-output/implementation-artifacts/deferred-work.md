@@ -359,3 +359,13 @@
 - **DF9 (0.20)** — `ContactEmail.tsx` hardcodes French labels ("De :", "Email :", "Nouveau message"). Email is internal (inbox `contact@tukio.one`) so FR is acceptable, but `<Html lang={locale}>` says EN for English submissions — minor mismatch. Clarify with Ismael if EN locale submissions should send EN-localized internal email.
 - **DF10 (0.20)** — `vitest.config.ts` aliases manually duplicate `package.json#exports` subpaths. Maintenance burden; consolidate via `vite-tsconfig-paths` plugin in a follow-up infra PR.
 - **DF11 (0.20)** — Upstash Redis REST API unreachable in `signupRatelimit.limit()` / `compute-position` propagates to 500. Design call: fail-open (allow + log) vs fail-closed (return 503). MVP keeps current fail-closed behavior; revisit if Upstash availability drops.
+
+## Deferred from: code review of 1-4c-frontend-login-callback-authprovider-logout (2026-05-25)
+
+- **DEF1 (1.4c)** — `sanitizeNextUrl` non appelée depuis `callback/route.ts` — La gateway-api fait la sanitization server-side (redirect-resolver Story 1.4a). La fonction côté Next.js est réservée à la defence-in-depth client. Design intentionnel documenté dans AC4.
+- **DEF2 (1.4c)** — Flag `--webpack` dans scripts `next build --webpack` (admin + seller) — Flag potentiellement invalide en Next.js 16 (correct flag = `--no-turbopack`). CI rapportée verte ; surveiller si rechargement turbopack config inattendu. Cleanup Story 1.4d ou script fix.
+- **DEF3 (1.4c)** — `silent-check-sso.html` orphelin dans `apps/public/public/` — Keycloak.js retiré, fichier non supprimé. Cleanup Story 1.4d lors du wiring du nouveau provider cookie-based.
+- **DEF4 (1.4c)** — `waitForTimeout(300)` dans e2e login spec (cas 7 + 12) — Anti-pattern Playwright flaky sous charge. Remplacer par `waitForRequest`/`waitForURL` avec condition explicite. Story 1.4d lors de l'ajout des cas testcontainer.
+- **DEF5 (1.4c)** — Cookie CSRF non-HttpOnly par design (Double Submit Cookie pattern) — Lisible en JavaScript, risque XSS si jamais une XSS est introduite. Architecture décidée en Story 1.4a (ADR-level). Acknowledged.
+- **DEF6 (1.4c)** — Paramètre `locale` non validé dans `callback/route.ts` avant usage dans URL — Next.js i18n middleware contraint les valeurs. Risque minimal. Validation défensive à ajouter en Story 1.4d si le middleware est finalisé.
+- **DEF7 (1.4c)** — État `isAuthenticated` de `PublicHeader` non mis à jour côté React après logout — `window.location.assign` force un rechargement complet donc l'état stale n'est jamais rendu. Cleanup Story 1.4d avec provider cookie-based.

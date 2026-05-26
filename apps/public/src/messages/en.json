@@ -5,7 +5,8 @@
     "becomePro": "Become a pro",
     "help": "Help",
     "login": "Log in",
-    "signup": "Sign up"
+    "signup": "Sign up",
+    "logout": "Sign out"
   },
   "Home": {
     "kicker": "Pilot 2026 · Loire-Atlantique (44) · Maine-et-Loire (49)",
@@ -106,8 +107,12 @@
       "title": "Welcome back to Tukio",
       "subtitle": "Access your bookings and favourite pros.",
       "fields": {
-        "email": { "label": "Email" },
-        "password": { "label": "Password" }
+        "email": {
+          "label": "Email"
+        },
+        "password": {
+          "label": "Password"
+        }
       },
       "forgotPassword": "Forgot password?",
       "cta": "Sign in",
@@ -200,12 +205,18 @@
         "firstName": {
           "label": "First name",
           "placeholder": "Camille",
-          "errors": { "required": "First name required", "tooLong": "Maximum 80 characters" }
+          "errors": {
+            "required": "First name required",
+            "tooLong": "Maximum 80 characters"
+          }
         },
         "lastName": {
           "label": "Last name",
           "placeholder": "Renaud",
-          "errors": { "required": "Last name required", "tooLong": "Maximum 80 characters" }
+          "errors": {
+            "required": "Last name required",
+            "tooLong": "Maximum 80 characters"
+          }
         },
         "email": {
           "label": "Email address",
@@ -218,13 +229,21 @@
         },
         "role": {
           "label": "You are…",
-          "organizer": { "title": "Organizer", "sub": "I'm looking for pros" },
-          "professional": { "title": "Professional", "sub": "I offer services" }
+          "organizer": {
+            "title": "Organizer",
+            "sub": "I'm looking for pros"
+          },
+          "professional": {
+            "title": "Professional",
+            "sub": "I offer services"
+          }
         },
         "rgpd": {
           "label": "I agree to receive one email when tukio.one launches. GDPR compliant. ",
           "linkLabel": "privacy policy",
-          "errors": { "required": "You must accept to submit" }
+          "errors": {
+            "required": "You must accept to submit"
+          }
         }
       },
       "submit": "Notify me at launch",
@@ -497,9 +516,18 @@
     "form": {
       "title": "Write to us",
       "fields": {
-        "firstName": { "label": "First name", "placeholder": "Alex" },
-        "lastName": { "label": "Last name", "placeholder": "Smith" },
-        "email": { "label": "Email", "placeholder": "you@example.com" },
+        "firstName": {
+          "label": "First name",
+          "placeholder": "Alex"
+        },
+        "lastName": {
+          "label": "Last name",
+          "placeholder": "Smith"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "you@example.com"
+        },
         "category": {
           "label": "You are",
           "placeholder": "Select…",
@@ -542,9 +570,16 @@
           "required": "Last name is required.",
           "tooLong": "Last name too long (80 characters max)."
         },
-        "email": { "invalid": "Invalid email address.", "tooLong": "Email too long." },
-        "category": { "invalid": "Please select your profile." },
-        "subject": { "invalid": "Please select a subject." },
+        "email": {
+          "invalid": "Invalid email address.",
+          "tooLong": "Email too long."
+        },
+        "category": {
+          "invalid": "Please select your profile."
+        },
+        "subject": {
+          "invalid": "Please select a subject."
+        },
         "message": {
           "tooShort": "Message too short (10 characters min).",
           "tooLong": "Message too long (2000 characters max)."

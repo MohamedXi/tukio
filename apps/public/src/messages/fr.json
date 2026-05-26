@@ -5,7 +5,8 @@
     "becomePro": "Devenir pro",
     "help": "Aide",
     "login": "Connexion",
-    "signup": "S'inscrire"
+    "signup": "S'inscrire",
+    "logout": "Se déconnecter"
   },
   "Home": {
     "kicker": "Pilote 2026 · Loire-Atlantique (44) · Maine-et-Loire (49)",
@@ -106,8 +107,12 @@
       "title": "Bon retour sur Tukio",
       "subtitle": "Accédez à vos réservations et vos pros favoris.",
       "fields": {
-        "email": { "label": "Email" },
-        "password": { "label": "Mot de passe" }
+        "email": {
+          "label": "Email"
+        },
+        "password": {
+          "label": "Mot de passe"
+        }
       },
       "forgotPassword": "Mot de passe oublié ?",
       "cta": "Se connecter",
@@ -200,12 +205,18 @@
         "firstName": {
           "label": "Prénom",
           "placeholder": "Camille",
-          "errors": { "required": "Prénom requis", "tooLong": "Maximum 80 caractères" }
+          "errors": {
+            "required": "Prénom requis",
+            "tooLong": "Maximum 80 caractères"
+          }
         },
         "lastName": {
           "label": "Nom",
           "placeholder": "Renaud",
-          "errors": { "required": "Nom requis", "tooLong": "Maximum 80 caractères" }
+          "errors": {
+            "required": "Nom requis",
+            "tooLong": "Maximum 80 caractères"
+          }
         },
         "email": {
           "label": "Adresse email",
@@ -218,13 +229,21 @@
         },
         "role": {
           "label": "Vous êtes…",
-          "organizer": { "title": "Organisateur", "sub": "Je cherche des pros" },
-          "professional": { "title": "Professionnel", "sub": "Je propose des services" }
+          "organizer": {
+            "title": "Organisateur",
+            "sub": "Je cherche des pros"
+          },
+          "professional": {
+            "title": "Professionnel",
+            "sub": "Je propose des services"
+          }
         },
         "rgpd": {
           "label": "J'accepte de recevoir un email lors du lancement de tukio.one. Conforme RGPD. ",
           "linkLabel": "politique de confidentialité",
-          "errors": { "required": "Vous devez accepter pour soumettre" }
+          "errors": {
+            "required": "Vous devez accepter pour soumettre"
+          }
         }
       },
       "submit": "Me prévenir à l'ouverture",
@@ -383,7 +402,10 @@
             "label": "Inscription liste d'attente",
             "text": "prénom, nom, email, profil (organisateur ou pro)."
           },
-          { "label": "Contact", "text": "prénom, nom, email, sujet et contenu du message." },
+          {
+            "label": "Contact",
+            "text": "prénom, nom, email, sujet et contenu du message."
+          },
           {
             "label": "Aucune autre donnée",
             "text": "n'est collectée à ce stade. Pas de cookie analytique sans consentement."
@@ -493,9 +515,18 @@
     "form": {
       "title": "Nous écrire",
       "fields": {
-        "firstName": { "label": "Prénom", "placeholder": "Camille" },
-        "lastName": { "label": "Nom", "placeholder": "Renaud" },
-        "email": { "label": "Email", "placeholder": "vous@exemple.fr" },
+        "firstName": {
+          "label": "Prénom",
+          "placeholder": "Camille"
+        },
+        "lastName": {
+          "label": "Nom",
+          "placeholder": "Renaud"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "vous@exemple.fr"
+        },
         "category": {
           "label": "Vous êtes",
           "placeholder": "Sélectionnez…",
@@ -534,10 +565,20 @@
           "required": "Prénom requis.",
           "tooLong": "Prénom trop long (80 caractères max)."
         },
-        "lastName": { "required": "Nom requis.", "tooLong": "Nom trop long (80 caractères max)." },
-        "email": { "invalid": "Adresse email invalide.", "tooLong": "Email trop long." },
-        "category": { "invalid": "Veuillez sélectionner votre profil." },
-        "subject": { "invalid": "Veuillez sélectionner un sujet." },
+        "lastName": {
+          "required": "Nom requis.",
+          "tooLong": "Nom trop long (80 caractères max)."
+        },
+        "email": {
+          "invalid": "Adresse email invalide.",
+          "tooLong": "Email trop long."
+        },
+        "category": {
+          "invalid": "Veuillez sélectionner votre profil."
+        },
+        "subject": {
+          "invalid": "Veuillez sélectionner un sujet."
+        },
         "message": {
           "tooShort": "Message trop court (10 caractères min).",
           "tooLong": "Message trop long (2000 caractères max)."

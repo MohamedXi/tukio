@@ -181,13 +181,13 @@
   <!-- Editorial column — left -->
   <div class="editorial">
     <div class="editorial-content">
-      <div class="editorial-kicker">Pays de la Loire · pilote 2026</div>
-      <p class="editorial-quote">« Notre première location s'est faite trois jours après l'inscription. Le client était à 12 km. »</p>
+      <div class="editorial-kicker">${msg("editorialKicker")}</div>
+      <p class="editorial-quote">${msg("editorialQuote")}</p>
       <div class="editorial-author">
-        <div class="editorial-avatar">LM</div>
+        <div class="editorial-avatar">${msg("editorialAvatarInitials")}</div>
         <div>
-          <div class="editorial-author-name">Léa Martineau</div>
-          <div class="editorial-author-role">Atelier Tente Loire — pro depuis mars 2026</div>
+          <div class="editorial-author-name">${msg("editorialAuthorName")}</div>
+          <div class="editorial-author-role">${msg("editorialAuthorRole")}</div>
         </div>
       </div>
     </div>
@@ -200,9 +200,9 @@
     </a>
 
     <div class="form-inner">
-      <div class="kicker">Connexion</div>
-      <h1>Bon retour.</h1>
-      <p class="subtitle">Connectez-vous pour suivre vos réservations ou gérer vos services.</p>
+      <div class="kicker">${msg("loginKicker")}</div>
+      <h1>${msg("loginHeading")}</h1>
+      <p class="subtitle">${msg("loginSubtitle")}</p>
 
       <#if message?has_content && message.type == 'error'>
         <div class="alert-error">${kcSanitize(message.summary)?no_esc}</div>
@@ -273,8 +273,9 @@
     </div>
 
     <div class="form-footer">
-      <a href="#">${msg("termsTitle")}</a>
-      <a href="#">${msg("privacyPolicy")}</a>
+      <#-- Story 0.19 — actual paths: /fr/legal/terms and /en/legal/terms -->
+      <a href="https://tukio.one/${locale.currentLanguageTag!'fr'}/legal/terms">${msg("termsTitle")}</a>
+      <a href="https://tukio.one/${locale.currentLanguageTag!'fr'}/legal/privacy">${msg("privacyPolicy")}</a>
       <span class="copyright">© tukio.one · 2026</span>
     </div>
   </div>
