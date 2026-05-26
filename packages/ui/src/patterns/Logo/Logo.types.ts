@@ -1,20 +1,16 @@
+export type LogoVariant = 'wordmark' | 'icon';
+
 export interface LogoProps {
-  /** Wordmark visual height in pixels. Default 28. */
+  /**
+   * Visual height in pixels. Width is derived from the variant's aspect ratio
+   * (wordmark ≈ 5.39:1, icon ≈ 0.81:1). Default 28.
+   */
   size?: number;
   /**
-   * Monochrome mode — collapses the brand accent (the `1` and dot) onto the
-   * word color. Used on coloured/photographic backgrounds.
+   * Asset variant. `wordmark` (default) renders the full `tukio.1ne` mark;
+   * `icon` renders the compact `io.` monogram only.
    */
-  mono?: boolean;
-  /** When true, renders the `.1ne` domain suffix (direction B). Default true. */
-  showDomain?: boolean;
-  /**
-   * When true, renders the slogan "Un événement. Une plateforme." beneath
-   * the wordmark in Fraunces italic, uppercase-mono kicker style. Default false.
-   */
-  slogan?: boolean;
-  /** Override word color (defaults to `--color-charcoal-800`). */
-  color?: string;
+  variant?: LogoVariant;
   className?: string;
   'aria-label'?: string;
 }

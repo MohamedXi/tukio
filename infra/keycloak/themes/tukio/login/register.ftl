@@ -77,6 +77,15 @@
         </#if>
       </div>
       <div class="${properties.kcFormGroupClass!}">
+        <div class="checkbox">
+          <label for="marketing_consent">
+            <input type="checkbox" id="marketing_consent" name="user.attributes.marketing_consent"
+              value="true" <#if (register.formData['user.attributes.marketing_consent']!'') == 'true'>checked</#if>/>
+            ${msg("marketingConsent")}
+          </label>
+        </div>
+      </div>
+      <div class="${properties.kcFormGroupClass!}">
         <div class="${properties.kcFormGroupClass!}">
           <div id="kc-form-buttons" class="${properties.kcFormGroupClass!}">
             <input class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!}"

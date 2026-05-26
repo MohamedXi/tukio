@@ -1,0 +1,92 @@
+import type { Metadata } from 'next';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { EditorialPageShell } from '@tukio/ui/patterns/EditorialPageShell';
+import { SiteHeader } from '@tukio/ui/patterns/SiteHeader';
+import { Footer } from '@tukio/ui/patterns/Footer';
+import { PrivacyContent } from '../../../features/public-pages/components/PrivacyContent.js';
+import { LinkedLogo } from '../../../components/LinkedLogo.js';
+import { LocaleSwitcherClient } from '../../../components/LocaleSwitcherClient.js';
+
+type PageProps = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'privacy.meta' });
+  const baseUrl = process.env['NEXT_PUBLIC_BASE_URL'] ?? 'https://tukio.one';
+  return {
+    title: t('title'),
+    description: t('description'),
+    openGraph: {
+      title: t('title'),
+      description: t('description'),
+      type: 'website',
+      locale: locale === 'fr' ? 'fr_FR' : 'en_US',
+      siteName: 'tukio.one',
+      images: [{ url: `${baseUrl}/og/privacy.png`, width: 1200, height: 630 }],
+      url: `${baseUrl}/${locale}/privacy`,
+    },
+    twitter: { card: 'summary_large_image', title: t('title'), description: t('description') },
+    alternates: {
+      canonical: `${baseUrl}/${locale}/privacy`,
+      languages: {
+        fr: `${baseUrl}/fr/privacy`,
+        en: `${baseUrl}/en/privacy`,
+        'x-default': `${baseUrl}/fr/privacy`,
+      },
+    },
+    robots: { index: true, follow: true },
+  };
+}
+
+export default async function ConfidentialitePage({ params }: PageProps) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: 'privacy' });
+  const tFooter = await getTranslations({ locale, namespace: 'privacy.footer' });
+  const sellerBaseUrl = process.env['NEXT_PUBLIC_SELLER_BASE_URL'] ?? 'https://seller.tukio.one';
+  const year = new Date().getFullYear();
+
+  return (
+    <EditorialPageShell
+      kicker={t('kicker')}
+      title={
+        <>
+          {t('titleLine1')} <em className="italic text-brand-600">{t('titleEmphasis')}</em>.
+        </>
+      }
+      intro={t('intro')}
+      header={
+        <>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:outline-none"
+          >
+            Aller au contenu / Skip to content
+          </a>
+          <SiteHeader
+            logo={<LinkedLogo locale={locale} />}
+            localeSwitcher={<LocaleSwitcherClient />}
+          />
+        </>
+      }
+      footer={
+        <Footer
+          variant="minimal"
+          legal={tFooter('legal', { year })}
+          inlineLinks={[
+            {
+              label: tFooter('linkBecomePro'),
+              href: `${sellerBaseUrl}/${locale}/seller-coming-soon`,
+            },
+            { label: tFooter('linkLegalNotice'), href: `/${locale}/legal` },
+            { label: tFooter('linkContactEmail'), href: 'mailto:contact@tukio.one' },
+          ]}
+        />
+      }
+    >
+      <div id="main-content" tabIndex={-1}>
+        <PrivacyContent locale={locale} />
+      </div>
+    </EditorialPageShell>
+  );
+}

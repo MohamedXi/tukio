@@ -13,8 +13,8 @@ describe('locales config', () => {
     expect(LOCALES).toEqual(['fr', 'en']);
   });
 
-  it('DEFAULT_LOCALE is fr (Pays de la Loire launch)', () => {
-    expect(DEFAULT_LOCALE).toBe('fr');
+  it('DEFAULT_LOCALE is en (international fallback when Accept-Language is neither fr nor en)', () => {
+    expect(DEFAULT_LOCALE).toBe('en');
   });
 
   it('LOCALE_LABELS covers every locale', () => {

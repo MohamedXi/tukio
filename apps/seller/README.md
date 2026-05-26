@@ -29,6 +29,17 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Pre-launch mode (Story 0.15)
+
+`NEXT_PUBLIC_COMING_SOON_MODE=true` rewrites every non-whitelisted route
+to `/${locale}/seller-coming-soon`. The seller whitelist is intentionally
+narrow (`seller-coming-soon` only) because seller.tukio.one is a Pro-only
+portal — there are no public marketing pages to keep accessible during
+pre-launch.
+
+`.env.local` ships with `false`; `.env.example` ships with `true`. See
+`docs/runbook/pre-launch-toggle.md` for the production toggle procedure.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.

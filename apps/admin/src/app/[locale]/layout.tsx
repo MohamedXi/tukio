@@ -30,7 +30,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Tukio — Admin',
+  title: 'Tukio · Admin',
   description: 'Tukio admin console (Story 0.1 placeholder).',
 };
 

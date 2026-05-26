@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, setRequestLocale } from 'next-intl/server';
 import './globals.css';
 // AuthProvider (Keycloak.js) removed — Story 1.4d provides the cookie-based provider.
 
@@ -29,10 +30,40 @@ const jetbrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
 });
 
+const SELLER_BASE_URL = process.env.NEXT_PUBLIC_SELLER_BASE_URL ?? 'https://seller.tukio.one';
+
 export const metadata: Metadata = {
-  title: 'Tukio — Espace Pro',
-  description: 'Espace pro tukio.one — onboarding, fiches service, réservations.',
+  metadataBase: new URL(SELLER_BASE_URL),
+  title: {
+    template: '%s · tukio.one Pro',
+    default: "tukio.one Pro · Pour les pros de l'événementiel",
+  },
+  description:
+    "Espace pro tukio.one : onboarding, fiches service, réservations pour les professionnels de l'événementiel en Pays de la Loire.",
 };
+
+const PLAUSIBLE_SCRIPT_URL = process.env.NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL;
+
+function buildOrganizationJsonLd(locale: 'fr' | 'en'): string {
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'tukio.one',
+    alternateName: 'tukio',
+    url: 'https://tukio.one',
+    description:
+      locale === 'fr'
+        ? "Espace professionnel tukio.one pour les pros de l'événementiel."
+        : 'tukio.one professional portal for event service providers.',
+    areaServed: { '@type': 'Country', name: 'France' },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: 'contact@tukio.one',
+      contactType: 'Customer Service',
+      availableLanguage: ['French', 'English'],
+    },
+  });
+}
 
 export default async function RootLayout({
   children,
@@ -42,13 +73,35 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
+  // Seed next-intl's request scope from the URL segment so middleware
+  // rewrites (Story 0.15 coming-soon gate) resolve their locale.
+  setRequestLocale(locale);
   const messages = await getMessages();
+  const localeNarrow = locale === 'en' ? 'en' : 'fr';
   return (
     <html
       lang={locale}
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>
+        {PLAUSIBLE_SCRIPT_URL && (
+          <>
+            <Script strategy="beforeInteractive" src={PLAUSIBLE_SCRIPT_URL} />
+            <Script
+              id="plausible-init"
+              strategy="beforeInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`,
+              }}
+            />
+          </>
+        )}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: buildOrganizationJsonLd(localeNarrow),
+          }}
+        />
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>
     </html>

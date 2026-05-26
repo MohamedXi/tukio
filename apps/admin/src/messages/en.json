@@ -3,7 +3,7 @@
     "logout": "Sign out"
   },
   "admin": {
-    "title": "Admin console — Tukio",
+    "title": "Admin console · Tukio",
     "description": "Tukio moderation and management."
   }
 }

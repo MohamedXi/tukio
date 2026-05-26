@@ -1,0 +1,35 @@
+{
+  "_comment": "Story 1.13 (ADR-0018) — social IdP brokering. Secrets ($GOOGLE_CLIENT_ID, $GOOGLE_CLIENT_SECRET, $MICROSOFT_CLIENT_ID, $MICROSOFT_CLIENT_SECRET) are injected at bootstrap from provision-secrets.sh — NEVER commit real values here. Apple is deferred (not in this story).",
+  "identityProviders": [
+    {
+      "alias": "google",
+      "providerId": "google",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "clientId": "$GOOGLE_CLIENT_ID",
+        "clientSecret": "$GOOGLE_CLIENT_SECRET",
+        "useJwksUrl": "true",
+        "defaultScope": "openid profile email"
+      }
+    },
+    {
+      "alias": "microsoft",
+      "providerId": "microsoft",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "clientId": "$MICROSOFT_CLIENT_ID",
+        "clientSecret": "$MICROSOFT_CLIENT_SECRET",
+        "useJwksUrl": "true",
+        "defaultScope": "openid profile email"
+      }
+    }
+  ]
+}

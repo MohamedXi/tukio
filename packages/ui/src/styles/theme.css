@@ -147,6 +147,7 @@
 
   /* ─── Animations ───────────────────────────────────────────── */
   --animate-typing: tk-typing 1.4s ease-in-out infinite;
+  --animate-pulse: tk-pulse 2s ease-in-out infinite;
 }
 
 /* ─── Keyframes (defined outside @theme) ───────────────────────── */
@@ -180,6 +181,21 @@
   }
   100% {
     background-position: 1000px 0;
+  }
+}
+
+/* Pulse — Pill "En construction" / live indicators (Story 0.16). The
+   global prefers-reduced-motion rule below clamps animation-duration to
+   ~0, so the dot stays static for users who opt out of motion. */
+@keyframes tk-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
   }
 }
 

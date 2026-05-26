@@ -11,7 +11,10 @@ describe('Skeleton', () => {
 
   it('applies pulse variant by default', () => {
     const { container } = render(<Skeleton />);
-    expect(container.firstChild).toHaveClass('animate-pulse');
+    // Uses explicit Tailwind 'pulse' keyframe (not animate-pulse utility which Story 0.16 overrides via --animate-pulse)
+    expect((container.firstChild as HTMLElement).className).toContain(
+      'animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]',
+    );
   });
 
   it('applies numeric width/height as px strings', () => {
@@ -25,7 +28,7 @@ describe('Skeleton', () => {
     const { container } = render(<Skeleton variant="shimmer" width="200px" height="20px" />);
     const el = container.firstChild as HTMLElement;
     expect(el.className).toContain('bg-gradient-to-r');
-    expect(el.className).not.toContain('animate-pulse');
+    expect(el.className).not.toContain('animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]');
   });
 
   it('passes axe a11y check', async () => {

@@ -5,15 +5,15 @@
     "becomePro": "Become a pro",
     "help": "Help",
     "login": "Log in",
-    "logout": "Sign out",
-    "signup": "Sign up"
+    "signup": "Sign up",
+    "logout": "Sign out"
   },
   "Home": {
-    "kicker": "Pays de la Loire · 142 verified pros",
+    "kicker": "Pilot 2026 · Loire-Atlantique (44) · Maine-et-Loire (49)",
     "title": "Your events,",
     "titleEmphasis": "booked",
     "titleSuffix": "with the best local pros near you.",
-    "subtitle": "Find marquees, furniture, caterers — book online, pay securely. No calls, no endless quotes.",
+    "subtitle": "Find marquees, furniture, caterers: book online, pay securely. No calls, no endless quotes.",
     "ctaSearch": "Search",
     "ctaSignup": "Sign up for free",
     "ctaLogin": "Already have an account? Log in",
@@ -98,7 +98,7 @@
         "quote": "“Our first booking came in three days after sign-up. The customer was 12 km away.”",
         "author": {
           "name": "Léa Martineau",
-          "role": "Atelier Tente Loire — pro since March 2026"
+          "role": "Atelier Tente Loire · pro since March 2026"
         }
       }
     },
@@ -107,8 +107,12 @@
       "title": "Welcome back to Tukio",
       "subtitle": "Access your bookings and favourite pros.",
       "fields": {
-        "email": { "label": "Email" },
-        "password": { "label": "Password" }
+        "email": {
+          "label": "Email"
+        },
+        "password": {
+          "label": "Password"
+        }
       },
       "forgotPassword": "Forgot password?",
       "cta": "Sign in",
@@ -131,7 +135,7 @@
         "quote": "“Our first booking came in three days after sign-up. The customer was 12 km away.”",
         "author": {
           "name": "Léa Martineau",
-          "role": "Atelier Tente Loire — pro since March 2026"
+          "role": "Atelier Tente Loire · pro since March 2026"
         }
       }
     },
@@ -163,13 +167,121 @@
       },
       "editorial": {
         "kicker": "Pays de la Loire · 2026 pilot",
-        "quote": "“We got our first request within a week — that's when it all kicked off.”",
+        "quote": "“We got our first request within a week, that's when it all kicked off.”",
         "author": {
           "name": "Marc Dubois",
-          "role": "Loire Réceptions — pro since February 2026"
+          "role": "Loire Réceptions · pro since February 2026"
         }
       }
     }
+  },
+  "coming_soon": {
+    "header": {
+      "badge": "Coming soon · Pays de la Loire pilot",
+      "navAbout": "About",
+      "navBecomePro": "Become a pro",
+      "navContact": "Contact",
+      "skipToForm": "Skip to form"
+    },
+    "hero": {
+      "pillLabel": "Under construction",
+      "titleLine1": "Your events,",
+      "titleLine2Emphasis": "booked.",
+      "pitch": "tukio.one is the French marketplace for event service professionals: tents, furniture, catering, decoration. One event, one platform, close to home. 2026 pilot launch in Pays de la Loire.",
+      "subPitch": "We're putting the finishing touches before launch. Leave your email and we'll let you know as soon as tukio.one goes live.",
+      "stat1Value": "1",
+      "stat1Label": "Person on the list",
+      "stat2Value": "44 · 49",
+      "stat2Label": "Loire-Atlantique · Maine-et-Loire",
+      "stat3Value": "€0",
+      "stat3Label": "Registration"
+    },
+    "form": {
+      "kicker": "Stay informed",
+      "titleLine1": "Be among the",
+      "titleEmphasis": "first",
+      "subtitle": "We'll email you once, on launch day. No spam, we promise.",
+      "fields": {
+        "firstName": {
+          "label": "First name",
+          "placeholder": "Camille",
+          "errors": {
+            "required": "First name required",
+            "tooLong": "Maximum 80 characters"
+          }
+        },
+        "lastName": {
+          "label": "Last name",
+          "placeholder": "Renaud",
+          "errors": {
+            "required": "Last name required",
+            "tooLong": "Maximum 80 characters"
+          }
+        },
+        "email": {
+          "label": "Email address",
+          "placeholder": "you@example.com",
+          "errors": {
+            "required": "Email required",
+            "invalid": "Invalid email",
+            "tooLong": "Email too long"
+          }
+        },
+        "role": {
+          "label": "You are…",
+          "organizer": {
+            "title": "Organizer",
+            "sub": "I'm looking for pros"
+          },
+          "professional": {
+            "title": "Professional",
+            "sub": "I offer services"
+          }
+        },
+        "rgpd": {
+          "label": "I agree to receive one email when tukio.one launches. GDPR compliant. ",
+          "linkLabel": "privacy policy",
+          "errors": {
+            "required": "You must accept to submit"
+          }
+        }
+      },
+      "submit": "Notify me at launch",
+      "submitting": "Sending…",
+      "reassurance": "Your data stays in France, never resold",
+      "errors": {
+        "generic": "Something went wrong. Please try again shortly.",
+        "network": "Service temporarily unavailable. Please try again in a few minutes.",
+        "rateLimited": "Too many attempts. Please retry in {seconds} seconds.",
+        "alreadySubscribed": "You're already on the list! We'll email you at launch."
+      }
+    },
+    "success": {
+      "headerNavAbout": "About",
+      "headerNavBecomePro": "Become a pro",
+      "headerNavContact": "Contact",
+      "kicker": "Noted",
+      "titleLine1": "See you soon,",
+      "titleEmphasisSuffix": ".",
+      "positionMessage": "You are <strong>{position, selectordinal, one {the #st person} two {the #nd person} few {the #rd person} other {the #th person}}</strong> on the list. We'll email you when we open, not before.",
+      "meanwhileTitle": "Meanwhile…",
+      "meanwhileLead": "Know an event professional in Pays de la Loire?",
+      "meanwhileCta": "Refer them →",
+      "meanwhileMailSubject": "tukio.one pro referral"
+    },
+    "footer": {
+      "legal": "© tukio.one · {year} · Made in Loire-Atlantique",
+      "linkBecomePro": "Become a pilot pro",
+      "linkLegalNotice": "Legal notice",
+      "linkContactEmail": "contact@tukio.one"
+    },
+    "meta": {
+      "title": "tukio.one · Coming Soon to France",
+      "description": "The French marketplace for event professionals: tents, furniture, catering, decoration. 2026 pilot launch in Pays de la Loire. Be notified at launch.",
+      "successTitle": "Registration confirmed · tukio.one",
+      "successDescription": "You're on the tukio.one waitlist. We'll email you when we open, not before."
+    },
+    "_NEEDS_HUMAN_REVIEW": "true"
   },
   "errors": {
     "auth": {
@@ -180,6 +292,351 @@
       "refreshExpired": "Session expired. Please sign in again.",
       "refreshReused": "Security issue detected. Please sign in again and change your password.",
       "external": "Authentication service temporarily unavailable. Please try again shortly."
+    }
+  },
+  "about": {
+    "meta": {
+      "title": "About · tukio.one",
+      "description": "tukio.one brings together event professionals and people who have something to celebrate. A French marketplace dedicated to local event services."
+    },
+    "kicker": "About",
+    "titleLine1": "A platform,",
+    "titleEmphasis": "one event",
+    "intro": "tukio.one brings together event professionals and people who have something to celebrate. No fuss, no lost quotes, no cousin who knows a guy.",
+    "blocks": {
+      "why": {
+        "title": "Why tukio.one",
+        "p1": "Organising an event often means ten phone calls, three lost quotes, two unreachable pros and a budget that spirals. We wanted to change that.",
+        "p2": "tukio.one is a French marketplace dedicated to local event services. You'll find tents, marquees, furniture, catering, lighting, entertainment, all in one place, with verified professionals, transparent pricing and secured payments until the event is delivered."
+      },
+      "whatPlatform": {
+        "title": "What the platform offers",
+        "cards": [
+          {
+            "title": "Find the right pro",
+            "description": "Search by category, city and date. Detailed profiles, real photos, verified reviews."
+          },
+          {
+            "title": "Book online",
+            "description": "No more juggling 5 websites. Multi-vendor baskets, personalised quotes, payment schedules."
+          },
+          {
+            "title": "Protected payment",
+            "description": "Tukio holds the funds until the end of your event. If something goes wrong, we step in."
+          },
+          {
+            "title": "Seamless communication",
+            "description": "Integrated messaging with each pro. Full history in one place."
+          }
+        ]
+      },
+      "comparison": {
+        "title": "What changes compared to today",
+        "intro": "Today, to organise a wedding or a seminar, you go through Yellow Pages, Leboncoin, Google Maps, Instagram and three agencies. Each has their own quote, follow-up, SMS, cheque. The risk, the tracking, the responsibility: it all falls on you.",
+        "without": {
+          "kicker": "Without tukio.one",
+          "items": [
+            "5 to 10 contacts to manage",
+            "Quotes on PDF, Excel or SMS",
+            "Payment by cheque or bank transfer",
+            "No protection in case of dispute",
+            "Search scattered across 6 platforms"
+          ]
+        },
+        "with": {
+          "kicker": "With tukio.one",
+          "items": [
+            "One single point of contact per project",
+            "Standardised, comparable, archived quotes",
+            "Secure Stripe payment, J+1 to the pro",
+            "Tukio mediation in case of dispute",
+            "Everything in one app, on all your devices"
+          ]
+        }
+      },
+      "anchored": {
+        "title": "Rooted in Pays de la Loire",
+        "p1": "We start where we live. The tukio.one pilot is focused on Loire-Atlantique (44) and Maine-et-Loire (49). This is intentional: we want to personally know our first service providers, understand the ground, adjust with them.",
+        "p2": "Brittany and the rest of western France will follow. Other regions will come in time, keeping this local-first approach."
+      },
+      "commitments": {
+        "title": "Our commitment",
+        "items": [
+          "No pay-to-rank: visibility is not for sale.",
+          "Visible, fixed commission explained at every transaction.",
+          "No opaque editorial moderation: public rules, graduated sanctions, right of appeal.",
+          "Your data stays in France and is never sold."
+        ]
+      }
+    },
+    "footer": {
+      "legal": "© tukio.one · {year} · Made in Loire-Atlantique",
+      "linkBecomePro": "Become a pro",
+      "linkLegalNotice": "Legal notice",
+      "linkContactEmail": "contact@tukio.one"
+    }
+  },
+  "privacy": {
+    "_NEEDS_LEGAL_REVIEW": "true",
+    "meta": {
+      "title": "Privacy policy · tukio.one",
+      "description": "Your data, plain and simple. tukio.one explains what it does with data collected in the pre-launch phase: waitlist, contact form, GDPR."
+    },
+    "kicker": "Privacy policy",
+    "titleLine1": "Your data,",
+    "titleEmphasis": "plain and simple",
+    "intro": "tukio.one is currently a presentation website. This page describes what we do with the only data collected in the pre-launch phase, and anticipates what will apply once the platform opens.",
+    "lastUpdated": "Last updated: {date}",
+    "preLaunchBanner": {
+      "title": "In pre-launch phase",
+      "body": "Today, tukio.one only collects information voluntarily provided via the waitlist registration form: first name, last name, email, profile. No analytics cookies, no advertising pixel, no reselling."
+    },
+    "blocks": {
+      "whoCollects": {
+        "title": "1. Who collects your data today",
+        "body": "During this preparation phase, data is collected and held by the tukio.one project founder, based in Pays de la Loire. Once the company is officially registered, it will become the data controller. A data protection officer will be appointed at that point."
+      },
+      "whatCollected": {
+        "title": "2. What we collect today",
+        "items": [
+          {
+            "label": "Waitlist registration",
+            "text": "first name, last name, email, profile (organiser or pro)."
+          },
+          {
+            "label": "Contact",
+            "text": "first name, last name, email, subject and message content."
+          },
+          {
+            "label": "No other data",
+            "text": "is collected at this stage. No analytics cookies without consent."
+          }
+        ]
+      },
+      "whyCollected": {
+        "title": "3. Why we collect it",
+        "body": "Solely to notify you when the platform launches and to respond to your questions. Your contact details will never be used for any other communications without your explicit consent. No reselling, ever."
+      },
+      "retention": {
+        "title": "4. How long we keep it",
+        "body": "Your data is kept until the platform launches, plus a maximum of 12 months. If tukio.one never launches, it will be deleted within a reasonable timeframe. You can request deletion at any time."
+      },
+      "postLaunch": {
+        "title": "5. What will apply after launch",
+        "body": "Once the platform opens, data collection will extend to what is needed for its operation: identification, payment (via Stripe, without tukio accessing banking data), KYC for pros, messaging, invoices. This page will be updated in detail, and you will be notified."
+      },
+      "yourRights": {
+        "title": "6. Your rights",
+        "body": "You have the right to access, correct, delete, object to the processing of your data, or request an export. To exercise these rights, write to contact@tukio.one. Response within 30 days maximum, as required by GDPR."
+      },
+      "hosting": {
+        "title": "7. Hosting and sub-processors in pre-launch",
+        "body": "This presentation site is hosted by DigitalOcean LLC (Frankfurt region, Germany). Waitlist emails are processed via Resend (EU region). Audience measurement runs on Plausible Analytics (Germany): no cookies set, no IP stored, GDPR compliant without a consent banner. No other sub-processor has access to your data today."
+      },
+      "complaint": {
+        "title": "8. Complaints",
+        "body": "If you believe your rights are not being respected, you can contact the ICO (ico.org.uk) or the CNIL (cnil.fr). But please write to us first. We aim to resolve every case within 48 hours."
+      }
+    },
+    "footer": {
+      "legal": "© tukio.one · {year} · Made in Loire-Atlantique",
+      "linkBecomePro": "Become a pro",
+      "linkLegalNotice": "Legal notice",
+      "linkContactEmail": "contact@tukio.one"
+    }
+  },
+  "legal": {
+    "_NEEDS_LEGAL_REVIEW": "true",
+    "meta": {
+      "title": "Legal notice · tukio.one",
+      "description": "tukio.one legal notice: project owner, company in formation (SAS), DigitalOcean Frankfurt hosting, intellectual property."
+    },
+    "kicker": "Legal notice",
+    "titleLine1": "A project",
+    "titleEmphasis": "in preparation",
+    "intro": "tukio.one is a project under development. This page will be updated with full legal details (legal form, registration number, registered address, VAT, final hosting) upon official launch.",
+    "lastUpdated": "Last updated: {date}",
+    "statusBanner": {
+      "title": "Project status",
+      "body": "As of today, tukio.one is a project in the preparation phase. The legal structure (SAS) is being registered. No commercial transaction is yet possible on the site, and no personal data is collected outside of the waitlist registration form."
+    },
+    "blocks": {
+      "responsible": {
+        "title": "Project owner",
+        "p1": "tukio.one is a project run by its founder in an individual capacity, based in Pays de la Loire.",
+        "p2": "For any enquiries, write to contact@tukio.one. The full identity of the owner and the future company details will be published upon official registration."
+      },
+      "company": {
+        "title": "Company in formation",
+        "intro": "The intended legal structure is a SAS (simplified joint-stock company), to be registered with the Nantes Companies Registry. Upon registration, this page will be updated with:",
+        "items": [
+          "the company name and final legal form",
+          "the share capital and company registration number",
+          "the SIRET number and VAT registration number",
+          "the registered office address",
+          "the name of the publication director"
+        ]
+      },
+      "hosting": {
+        "title": "Hosting of this presentation site",
+        "p1": "This presentation site is hosted by DigitalOcean LLC (101 Avenue of the Americas, 10th Floor, New York, NY 10013, USA, digitalocean.com). The main infrastructure is located in Germany (Frankfurt region).",
+        "p2": "The definitive infrastructure of the tukio.one platform (frontend, backend, database) will be specified at launch. Main servers will be located in France or Europe."
+      },
+      "nature": {
+        "title": "Current nature of the site",
+        "body": "The tukio.one website currently accessible is a presentation site. It describes a project under development. It does not allow any commercial transaction, does not store any banking data and does not act as a publisher or host within the meaning of applicable law. Its sole purpose is to communicate about the project and build a list of interested parties for the launch."
+      },
+      "ip": {
+        "title": "Intellectual property",
+        "body": "The name tukio, the logo, design, source code and editorial content of this site are the property of the project owner. Any reproduction without consent is prohibited. This property will be transferred to tukio company upon its registration."
+      },
+      "contact": {
+        "title": "Contact",
+        "body": "For any legal enquiry, press contact or information request before launch, write to contact@tukio.one. We respond within 5 business days during the preparation phase."
+      }
+    },
+    "footer": {
+      "legal": "© tukio.one · {year} · Made in Loire-Atlantique",
+      "linkBecomePro": "Become a pro",
+      "linkLegalNotice": "Legal notice",
+      "linkContactEmail": "contact@tukio.one"
+    }
+  },
+  "contact": {
+    "meta": {
+      "title": "Contact · tukio.one",
+      "description": "Contact tukio.one: general support, personal data (GDPR), urgent reports, press and partnerships. Response within 48 business hours.",
+      "successTitle": "Message received · tukio.one",
+      "successDescription": "Your message has been received. Response within 48 business hours."
+    },
+    "kicker": "Contact",
+    "titleLine1": "We're",
+    "titleEmphasis": "listening",
+    "intro": "A question, a specific need, a suggestion. Choose the right channel for your request, and we'll get back to you quickly.",
+    "form": {
+      "title": "Write to us",
+      "fields": {
+        "firstName": {
+          "label": "First name",
+          "placeholder": "Alex"
+        },
+        "lastName": {
+          "label": "Last name",
+          "placeholder": "Smith"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "you@example.com"
+        },
+        "category": {
+          "label": "You are",
+          "placeholder": "Select…",
+          "options": {
+            "organisateur": "Event organiser",
+            "professionnel": "Event professional",
+            "journaliste": "Journalist, press",
+            "partenaire": "Potential partner",
+            "autre": "Other"
+          }
+        },
+        "subject": {
+          "label": "Subject",
+          "placeholder": "Select…",
+          "options": {
+            "general": "General question",
+            "devenirPro": "Becoming a pro on tukio.one",
+            "technique": "Technical issue",
+            "partenariat": "Partnership proposal",
+            "presse": "Press and communications"
+          }
+        },
+        "message": {
+          "label": "Your message",
+          "placeholder": "Describe your request in a few lines"
+        }
+      },
+      "submit": "Send",
+      "submitting": "Sending…",
+      "disclaimer": "Your data is processed in accordance with our privacy policy. Response within 48 business hours.",
+      "errors": {
+        "generic": "An error occurred. Please try again.",
+        "network": "Network error. Check your connection and try again.",
+        "rateLimited": "Too many messages sent. Please try again in {seconds} seconds.",
+        "firstName": {
+          "required": "First name is required.",
+          "tooLong": "First name too long (80 characters max)."
+        },
+        "lastName": {
+          "required": "Last name is required.",
+          "tooLong": "Last name too long (80 characters max)."
+        },
+        "email": {
+          "invalid": "Invalid email address.",
+          "tooLong": "Email too long."
+        },
+        "category": {
+          "invalid": "Please select your profile."
+        },
+        "subject": {
+          "invalid": "Please select a subject."
+        },
+        "message": {
+          "tooShort": "Message too short (10 characters min).",
+          "tooLong": "Message too long (2000 characters max)."
+        }
+      }
+    },
+    "channels": {
+      "support": {
+        "title": "General support",
+        "email": "contact@tukio.one",
+        "description": "For any question about the platform. Response within 48 business hours."
+      },
+      "dpo": {
+        "title": "Personal data",
+        "email": "dpo@tukio.one",
+        "description": "GDPR requests: access, rectification, deletion."
+      },
+      "report": {
+        "title": "Urgent report",
+        "email": "signalement@tukio.one",
+        "description": "Illegal content, fraud, abusive behaviour."
+      },
+      "press": {
+        "title": "Press and partnerships",
+        "email": "presse@tukio.one",
+        "description": "Journalists, media partners, collaborations."
+      }
+    },
+    "preparationNote": "The tukio company is being created. The postal address and definitive contact details will be published at the time of the official launch.",
+    "preparationTitle": "In preparation",
+    "channelsAriaLabel": "Contact channels",
+    "footer": {
+      "legal": "© tukio.one · {year} · Made in Loire-Atlantique",
+      "linkBecomePro": "Become a pro",
+      "linkLegalNotice": "Legal notice",
+      "linkContactEmail": "contact@tukio.one"
+    },
+    "success": {
+      "kicker": "Message received",
+      "titleLine1": "Thanks",
+      "titleEmphasisSuffix": ", we've got your message.",
+      "lead": "We'll get back to you within 48 business hours, at the address shown below.",
+      "recapTitle": "Summary",
+      "recapEmailLabel": "Reply address",
+      "recapSubjectLabel": "Subject",
+      "recapTimeLabel": "Sent on",
+      "subjects": {
+        "general": "General question",
+        "devenirPro": "Becoming a pro on tukio.one",
+        "technique": "Technical issue",
+        "partenariat": "Partnership proposal",
+        "presse": "Press and communications"
+      },
+      "whatNextTitle": "What happens next",
+      "whatNextBody": "We read every message by hand. You'll receive our reply at the address you provided. Check your spam folder if nothing arrives within 48 hours.",
+      "ctaHome": "Back to home",
+      "ctaBecomePro": "Discover the pro space"
     }
   }
 }

@@ -1,14 +1,23 @@
 name: Deploy — staging
 
 # Story 0.12 — SSH-based deploy to DigitalOcean droplet `tukio-apps`.
-# Triggers automatically on a successful Build Images run for `develop`,
-# or manually via workflow_dispatch (defaults to the `develop` Docker tag).
+# Triggers on:
+#   1. Successful Build Images run for `develop` (app code changed → new images).
+#   2. Direct push to `develop` on infra-only paths (compose/Caddy/deploy workflow)
+#      — no new images needed, re-deploys with the existing `develop` tag.
+#   3. Manual workflow_dispatch (defaults to the `develop` Docker tag).
 
 on:
   workflow_run:
     workflows: ['Build Images']
     types: [completed]
     branches: [develop]
+  push:
+    branches: [develop]
+    paths:
+      - 'infra/docker-compose/apps.prod.yml'
+      - 'infra/docker-compose/Caddyfile'
+      - '.github/workflows/deploy-staging.yml'
   workflow_dispatch:
     inputs:
       image_tag:
@@ -28,6 +37,10 @@ env:
   DO_HOST_APPS: ${{ secrets.DO_HOST_APPS }}
   DO_DEPLOY_KEY: ${{ secrets.DO_DEPLOY_KEY }}
   SLACK_WEBHOOK_DEPLOYS: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+  # Plausible script URLs injected from GitHub repo vars (Settings → Variables → Actions).
+  # Each site has its own tokenized URL. Empty = analytics disabled for that site.
+  PLAUSIBLE_SCRIPT_URL_PUBLIC: ${{ vars.PLAUSIBLE_SCRIPT_URL_PUBLIC || '' }}
+  PLAUSIBLE_SCRIPT_URL_SELLER: ${{ vars.PLAUSIBLE_SCRIPT_URL_SELLER || '' }}
   # Default probes the gateway root (200 OK) until a dedicated /health endpoint
   # lands in gateway-api (Epic 1+ DF2). Override via repo var STAGING_HEALTH_URL.
   STAGING_HEALTH_URL: ${{ vars.STAGING_HEALTH_URL || 'https://api.tukio.one' }}
@@ -35,7 +48,7 @@ env:
 jobs:
   ssh-deploy:
     name: SSH deploy — tukio-apps
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -102,9 +115,33 @@ jobs:
           ssh -i ~/.ssh/id_ed25519 tukio@"${DO_HOST_APPS}" bash -se <<EOF
             set -euo pipefail
             cd ~/tukio-apps
-            # Persist the deployed tag to .env.staging (not .env.production).
-            sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_TAG}|" .env.staging || \\
-              echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.staging
+            # Guard — fail loudly before any docker operation if required secret
+            # files are absent. `export VAR=$(cat ...)` masks cat exit codes
+            # under set -e (bash gotcha), so we check existence first.
+            for secret_file in state_jwt_hmac_secret pkce_cookie_hmac_secret; do
+              [ -f "/home/tukio/tukio/secrets/\${secret_file}" ] || {
+                echo "::error::Missing secret file: /home/tukio/tukio/secrets/\${secret_file}"
+                echo "Run: openssl rand -base64 32 | sudo tee /home/tukio/tukio/secrets/\${secret_file}"
+                exit 1
+              }
+            done
+            # Upsert env vars in .env.staging. The previous
+            # \`sed -i 's|...|...|' file || echo ... >> file\` idiom was BROKEN
+            # because \`sed -i\` returns 0 even when nothing matched — the
+            # fallback never fired and new vars never got bootstrapped. This
+            # caused PLAUSIBLE_SCRIPT_URL_{PUBLIC,SELLER} to stay empty in
+            # public/seller containers, breaking Plausible detection silently.
+            upsert_env() {
+              local key="\$1" val="\$2"
+              if grep -q "^\${key}=" .env.staging 2>/dev/null; then
+                sed -i "s|^\${key}=.*|\${key}=\${val}|" .env.staging
+              else
+                echo "\${key}=\${val}" >> .env.staging
+              fi
+            }
+            upsert_env IMAGE_TAG "${IMAGE_TAG}"
+            upsert_env PLAUSIBLE_SCRIPT_URL_PUBLIC "${PLAUSIBLE_SCRIPT_URL_PUBLIC}"
+            upsert_env PLAUSIBLE_SCRIPT_URL_SELLER "${PLAUSIBLE_SCRIPT_URL_SELLER}"
             export DB_USER=\$(cat /home/tukio/tukio/secrets/pg_user)
             export DB_PASSWORD=\$(cat /home/tukio/tukio/secrets/pg_password)
             export MEILI_MASTER_KEY=\$(cat /home/tukio/tukio/secrets/meili_key)
@@ -114,6 +151,22 @@ jobs:
             export TUKIO_INTERNAL_SERVICE_SECRET=\$(cat /home/tukio/tukio/secrets/internal_service_secret)
             export KEYCLOAK_CLIENT_SECRET_TUKIO_API=\$(cat /home/tukio/tukio/secrets/keycloak_client_secret_tukio_api)
             export PUBLIC_BASE_URL=\$(cat /home/tukio/tukio/secrets/public_base_url 2>/dev/null || echo "https://tukio.one")
+            # Story 1.4a — Login flow PKCE secrets (required by gateway-api at boot).
+            # Use two-step assign+export to propagate cat exit code under set -e.
+            STATE_JWT_HMAC_SECRET=\$(cat /home/tukio/tukio/secrets/state_jwt_hmac_secret)
+            export STATE_JWT_HMAC_SECRET
+            PKCE_COOKIE_HMAC_SECRET=\$(cat /home/tukio/tukio/secrets/pkce_cookie_hmac_secret)
+            export PKCE_COOKIE_HMAC_SECRET
+            # Story 0.20 — pre-launch handlers (public service). Optional-fallback
+            # pattern: missing file = empty var = handler returns 502 at request
+            # time (env guard); deploy still succeeds. Provision via
+            # \`provision-secrets.sh apps\` to enable.
+            export UPSTASH_REDIS_REST_URL=\$(cat /home/tukio/tukio/secrets/upstash_redis_url 2>/dev/null || echo "")
+            export UPSTASH_REDIS_REST_TOKEN=\$(cat /home/tukio/tukio/secrets/upstash_redis_token 2>/dev/null || echo "")
+            export RESEND_API_KEY=\$(cat /home/tukio/tukio/secrets/resend_api_key 2>/dev/null || echo "")
+            export RESEND_PRE_LAUNCH_AUDIENCE_ID=\$(cat /home/tukio/tukio/secrets/resend_pre_launch_audience_id 2>/dev/null || echo "")
+            export RESEND_FROM_ADDRESS=\$(cat /home/tukio/tukio/secrets/resend_from_address 2>/dev/null || echo "")
+            export CONTACT_INBOX=\$(cat /home/tukio/tukio/secrets/contact_inbox 2>/dev/null || echo "")
             export IMAGE_TAG="${IMAGE_TAG}"
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\
@@ -159,10 +212,19 @@ jobs:
             export TUKIO_INTERNAL_SERVICE_SECRET=\$(cat /home/tukio/tukio/secrets/internal_service_secret)
             export KEYCLOAK_CLIENT_SECRET_TUKIO_API=\$(cat /home/tukio/tukio/secrets/keycloak_client_secret_tukio_api)
             export PUBLIC_BASE_URL=\$(cat /home/tukio/tukio/secrets/public_base_url 2>/dev/null || echo "https://tukio.one")
+            export STATE_JWT_HMAC_SECRET=\$(cat /home/tukio/tukio/secrets/state_jwt_hmac_secret)
+            export PKCE_COOKIE_HMAC_SECRET=\$(cat /home/tukio/tukio/secrets/pkce_cookie_hmac_secret)
             export INSEE_API_KEY=\$(cat /home/tukio/tukio/secrets/insee_api_key 2>/dev/null || echo "")
             export R2_KYC_ENDPOINT=\$(cat /home/tukio/tukio/secrets/r2_kyc_endpoint 2>/dev/null || echo "")
             export R2_KYC_ACCESS_KEY_ID=\$(cat /home/tukio/tukio/secrets/r2_kyc_access_key_id 2>/dev/null || echo "")
             export R2_KYC_SECRET_ACCESS_KEY=\$(cat /home/tukio/tukio/secrets/r2_kyc_secret_access_key 2>/dev/null || echo "")
+            # Story 0.20 — pre-launch handlers (public service)
+            export UPSTASH_REDIS_REST_URL=\$(cat /home/tukio/tukio/secrets/upstash_redis_url 2>/dev/null || echo "")
+            export UPSTASH_REDIS_REST_TOKEN=\$(cat /home/tukio/tukio/secrets/upstash_redis_token 2>/dev/null || echo "")
+            export RESEND_API_KEY=\$(cat /home/tukio/tukio/secrets/resend_api_key 2>/dev/null || echo "")
+            export RESEND_PRE_LAUNCH_AUDIENCE_ID=\$(cat /home/tukio/tukio/secrets/resend_pre_launch_audience_id 2>/dev/null || echo "")
+            export RESEND_FROM_ADDRESS=\$(cat /home/tukio/tukio/secrets/resend_from_address 2>/dev/null || echo "")
+            export CONTACT_INBOX=\$(cat /home/tukio/tukio/secrets/contact_inbox 2>/dev/null || echo "")
             export IMAGE_TAG="${PREV_TAG}"
             BACKENDS="caddy gateway-api identity-svc catalog-svc booking-svc \\
                       order-svc payment-svc messaging-svc review-svc \\

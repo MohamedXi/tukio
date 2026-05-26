@@ -3,47 +3,58 @@
 
 @import 'tailwindcss';
 /* Explicit source scan: Tailwind v4 ignores node_modules (symlinked workspace packages).
-   @source forces scanning of @tukio/ui component/util files for structural utility classes
-   (inline-flex, border, font-medium, rounded-full, etc.) that are not auto-generated from @theme. */
+   @source forces scanning of @tukio/ui component/util/pattern files for structural utility
+   classes (inline-flex, border, font-medium, rounded-full, etc.) that are not auto-generated
+   from @theme. Without @source on patterns/, consumer apps that don't use SiteHeader/Footer/
+   etc.'s utilities elsewhere render those patterns un-styled — e.g. seller's SiteHeader had
+   no padding/bg because px-10/py-5/bg-cream-50 were never generated for that app's bundle. */
 @source "../components/**/*.{tsx,ts}";
+@source "../patterns/**/*.{tsx,ts}";
 @source "../utils/**/*.{ts}";
 @import './theme.css';
 
 /* ─── Reset léger + base styles ───────────────────────────────── */
-:root {
-  font-family: var(--font-body);
-  font-size: var(--text-base);
-  color: var(--color-charcoal-700);
-  background: var(--color-cream-50);
-  font-feature-settings: 'ss01', 'cv11';
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
+/* Tailwind v4: wrap element selectors in @layer base so utility classes
+   (text-cream-50, text-brand-600, etc.) always win the cascade — otherwise
+   a bare `h2 { color: charcoal }` here lands AFTER Tailwind utilities in
+   the bundle and forces every heading to charcoal even when the consumer
+   passes a contrasting color class (regression on dark sections). */
+@layer base {
+  :root {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    color: var(--color-charcoal-700);
+    background: var(--color-cream-50);
+    font-feature-settings: 'ss01', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
 
-h1,
-h2,
-h3,
-h4 {
-  font-family: var(--font-display);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  margin: 0;
-  color: var(--color-charcoal-800);
-  text-wrap: balance;
-}
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin: 0;
+    color: var(--color-charcoal-800);
+    text-wrap: balance;
+  }
 
-p {
-  margin: 0;
-  text-wrap: pretty;
-}
+  p {
+    margin: 0;
+    text-wrap: pretty;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 
-::selection {
-  background: var(--color-brand-200);
-  color: var(--color-charcoal-800);
+  ::selection {
+    background: var(--color-brand-200);
+    color: var(--color-charcoal-800);
+  }
 }

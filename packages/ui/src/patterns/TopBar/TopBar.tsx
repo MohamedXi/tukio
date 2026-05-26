@@ -148,7 +148,7 @@ function AdminTopBar({
         className,
       )}
     >
-      <Logo size={28} mono color="var(--color-cream-50)" />
+      <Logo size={28} variant="icon" />
       <nav aria-label="Admin" className="flex items-center gap-4 flex-1">
         <a href="/admin/verifications" className="text-sm hover:text-cream-200">
           {labels?.verifications ?? 'Verifications'}

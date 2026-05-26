@@ -146,6 +146,18 @@ development_status:
   # + flag intent (DB column user_profile.signup_intent + cookie 24h) + middleware seller racine.
   # Backend reste Customer-first unique (POST /v1/auth/customer/register), pas de duplication.
   1-11-seller-signup-portal: ready-for-dev
+  # Story 1.12 CLÔTURÉE 2026-05-25 (dev-story) — DÉJÀ IMPLÉMENTÉE par Stories 1.4b + 1.4c (mergées).
+  # Le resolver post-login par rôle existe : `resolvePostLoginRedirect` (redirect-resolver.ts, gateway-api),
+  # branché sur le login (handle-callback.usecase.ts:107), testé (redirect-resolver.spec.ts +
+  # handle-callback.usecase.spec.ts : Customer / Pro pending / Pro active / Admin TOTP / next override / suspended).
+  # Aucun code écrit (créer post-login-destination-resolver.ts aurait dupliqué l'existant). Reste AC4 = email-verify
+  # (Story 1.6) doit réutiliser `resolvePostLoginRedirect` — tracé sur 1.6, pas de resolver séparé.
+  1-12-post-login-role-router: done
+  # Stories 1.13-1.15 NEW 2026-05-25 (ADR-0018, cf. sprint-change-proposal-2026-05-25-adr-0018.md) —
+  # bascule de l'inscription sur page Keycloak hostée. Séquence : 1.13 + 1.15 (parallélisables) → 1.14 (cutover front).
+  1-13-keycloak-self-registration-provisioning: in-progress  # config implémentée + validée statiquement (dev-story 2026-05-25). Validation LIVE en attente (Keycloak + creds Google/MS Ismael). Realm: default-role client, IdP Google+Microsoft, Terms, champ marketing register.ftl.
+  1-14-frontend-kc-registration-redirect-deprecate-local: backlog  # dépend 1.13+1.15 — initiate-register + redirect + retrait SignUpForm/endpoint/contracts
+  1-15-reactive-user-profile-on-kc-registration-event: ready-for-dev  # webhook Phasetwo REGISTER → identity-svc /internal/keycloak-events (HMAC) → user_profile + outbox (remplace dual-write 1.2b). PAS de SPI Java (Phasetwo déjà en place, Story 1.1). Effort modéré.
   epic-1-retrospective: optional
 
   # ─── Epic 2 — Pro Onboarding & Admin Verification (MVP) ───────────────

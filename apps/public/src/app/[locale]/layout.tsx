@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { LOCALES } from '@tukio/i18n-client/config';
+import { QueryProvider } from '@tukio/api-client/providers';
 import './globals.css';
 // AuthProvider (Keycloak.js) intentionnellement retiré — Story 1.4d le remplace
 // par un provider cookie-based (tukio-session-active + /v1/auth/whoami).
@@ -33,10 +35,49 @@ const jetbrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
 });
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://tukio.one';
+
 export const metadata: Metadata = {
-  title: 'Tukio — Public',
-  description: 'Tukio public web (Sprint 0 placeholder).',
+  metadataBase: new URL(BASE_URL),
+  title: {
+    template: '%s · tukio.one',
+    default: 'tukio.one · Bientôt en France',
+  },
+  description:
+    "Marketplace française des professionnels de l'événementiel : tentes, mobilier, traiteur, décoration. Pilote 2026 en Pays de la Loire.",
 };
+
+const PLAUSIBLE_SCRIPT_URL = process.env.NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL;
+
+function buildOrganizationJsonLd(locale: 'fr' | 'en'): string {
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'tukio.one',
+    alternateName: 'tukio',
+    url: 'https://tukio.one',
+    description:
+      locale === 'fr'
+        ? "Marketplace française des professionnels de l'événementiel : tentes, mobilier, traiteur, décoration. Pilote 2026 en Pays de la Loire."
+        : 'French marketplace for event service professionals: tents, furniture, catering, decoration. 2026 pilot in Pays de la Loire.',
+    foundingDate: '2026',
+    foundingLocation: {
+      '@type': 'Place',
+      address: {
+        '@type': 'PostalAddress',
+        addressRegion: 'Pays de la Loire',
+        addressCountry: 'FR',
+      },
+    },
+    areaServed: { '@type': 'Country', name: 'France' },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: 'contact@tukio.one',
+      contactType: 'Customer Service',
+      availableLanguage: ['French', 'English'],
+    },
+  });
+}
 
 export default async function RootLayout({
   children,
@@ -51,6 +92,11 @@ export default async function RootLayout({
   if (!hasLocale(LOCALES, locale)) {
     notFound();
   }
+  // Explicitly seed next-intl's request scope from the URL segment so
+  // requests rewritten by middleware (e.g. Story 0.15 coming-soon gate)
+  // resolve their locale without depending on a pass through next-intl's
+  // own middleware. Idempotent with the normal middleware-driven flow.
+  setRequestLocale(locale);
   const messages = await getMessages();
   return (
     <html
@@ -58,8 +104,24 @@ export default async function RootLayout({
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>
+        {PLAUSIBLE_SCRIPT_URL && (
+          <>
+            <Script strategy="beforeInteractive" src={PLAUSIBLE_SCRIPT_URL} />
+            <Script
+              id="plausible-init"
+              strategy="beforeInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`,
+              }}
+            />
+          </>
+        )}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: buildOrganizationJsonLd(locale) }}
+        />
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
+          <QueryProvider>{children}</QueryProvider>
         </NextIntlClientProvider>
       </body>
     </html>

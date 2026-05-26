@@ -43,15 +43,15 @@ export function StepReview({
 
   const identityValue = identity
     ? `${identity.firstName} ${identity.lastName} · ${identity.email}`
-    : '—';
+    : '–';
 
   const activityValue = activity
     ? `${activity.companyName} · ${tActivity(`legalForms.${activity.legalForm}`)} · SIRET ${activity.siret}`
-    : '—';
+    : '–';
 
   const categoriesValue = activity?.categories.length
     ? activity.categories.map((c) => tActivity(`categoryList.${c}`)).join(' + ')
-    : '—';
+    : '–';
 
   const documentsValue = t('documentsUploaded', { count: docCount });
   const editLabel = tCommon('edit');
