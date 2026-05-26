@@ -56,7 +56,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
@@ -245,7 +245,7 @@ jobs:
 
       - name: Notify Slack — success
         if: success() && env.SLACK_WEBHOOK_DEPLOYS != ''
-        uses: slackapi/slack-github-action@v2
+        uses: slackapi/slack-github-action@v3
         with:
           webhook: ${{ env.SLACK_WEBHOOK_DEPLOYS }}
           webhook-type: incoming-webhook
@@ -256,7 +256,7 @@ jobs:
 
       - name: Notify Slack — failure
         if: failure() && env.SLACK_WEBHOOK_DEPLOYS != ''
-        uses: slackapi/slack-github-action@v2
+        uses: slackapi/slack-github-action@v3
         with:
           webhook: ${{ env.SLACK_WEBHOOK_DEPLOYS }}
           webhook-type: incoming-webhook
