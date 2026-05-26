@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - id: filter
         run: |
           # schedule / workflow_dispatch have no PR base → always run the smoke.
