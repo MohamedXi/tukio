@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { CookieManager } from './cookie-manager.js';
 import { TUKIO_SESSION_MARKER_COOKIE, TUKIO_CSRF_COOKIE } from '../tokens.js';
 
-describe('CookieManager', () => {
+describe('CookieManager (Story 1.4d AC7)', () => {
   let mgr: CookieManager;
 
   beforeEach(() => {
@@ -11,13 +11,18 @@ describe('CookieManager', () => {
     mgr = new CookieManager();
   });
 
-  it('hasSessionCookie returns false when no cookie', () => {
-    expect(mgr.hasSessionCookie()).toBe(false);
+  it('isAuthenticated returns false when no session cookie', () => {
+    expect(mgr.isAuthenticated()).toBe(false);
   });
 
-  it('hasSessionCookie returns true when cookie is set', () => {
+  it('isAuthenticated returns true when session marker = 1', () => {
     document.cookie = `${TUKIO_SESSION_MARKER_COOKIE}=1`;
-    expect(mgr.hasSessionCookie()).toBe(true);
+    expect(mgr.isAuthenticated()).toBe(true);
+  });
+
+  it('hasSessionCookie alias mirrors isAuthenticated', () => {
+    document.cookie = `${TUKIO_SESSION_MARKER_COOKIE}=1`;
+    expect(mgr.hasSessionCookie()).toBe(mgr.isAuthenticated());
   });
 
   it('getCsrfToken returns null when no cookie', () => {
@@ -29,16 +34,31 @@ describe('CookieManager', () => {
     expect(mgr.getCsrfToken()).toBe('abc123');
   });
 
-  it('addCsrfHeader adds X-CSRF-Token header when token available', () => {
+  it('addCsrfHeader sets X-CSRF-Token on a Headers instance', () => {
     document.cookie = `${TUKIO_CSRF_COOKIE}=my-csrf`;
     const headers = mgr.addCsrfHeader(new Headers());
     expect(headers.get('X-CSRF-Token')).toBe('my-csrf');
   });
 
+  it('addCsrfHeader sets X-CSRF-Token on a plain record (axios shape)', () => {
+    document.cookie = `${TUKIO_CSRF_COOKIE}=rec-csrf`;
+    const headers = mgr.addCsrfHeader<Record<string, string>>({});
+    expect(headers['X-CSRF-Token']).toBe('rec-csrf');
+  });
+
+  it('addCsrfHeader is a no-op when no CSRF cookie present', () => {
+    const headers = mgr.addCsrfHeader(new Headers());
+    expect(headers.get('X-CSRF-Token')).toBeNull();
+  });
+
   it('clearSession removes the session marker cookie', () => {
     document.cookie = `${TUKIO_SESSION_MARKER_COOKIE}=1`;
-    expect(mgr.hasSessionCookie()).toBe(true);
+    expect(mgr.isAuthenticated()).toBe(true);
     mgr.clearSession();
-    expect(mgr.hasSessionCookie()).toBe(false);
+    expect(mgr.isAuthenticated()).toBe(false);
+  });
+
+  it('clearLocalSessionCache is a safe no-op', () => {
+    expect(() => mgr.clearLocalSessionCache()).not.toThrow();
   });
 });

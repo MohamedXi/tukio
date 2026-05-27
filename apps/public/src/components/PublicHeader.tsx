@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
+import { useAuth } from '@tukio/auth-client/hooks/use-auth';
+import { useAuthContext } from '@tukio/auth-client/provider';
+import { useLogout } from '@tukio/auth-client/hooks/use-logout';
 import { Logo } from '@tukio/ui/logo';
 import { Button } from '@tukio/ui/button';
 
@@ -10,40 +13,33 @@ interface PublicHeaderProps {
   transparent?: boolean;
 }
 
-function readCookie(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined;
-  const match = document.cookie.split(';').find((c) => c.trim().startsWith(`${name}=`));
-  return match?.trim().slice(name.length + 1);
-}
-
 export function PublicHeader({ transparent = false }: PublicHeaderProps) {
   const locale = useLocale();
   const t = useTranslations('header');
-  // Lazy initializer runs only on the client (component is 'use client').
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => readCookie('tukio-session-active') === '1',
-  );
+  // Story 1.4d AC13 — auth state comes from the AuthProvider context (whoami)
+  // instead of an ad-hoc cookie read in useState, which evaluated to "" during
+  // SSR and froze the header in the logged-out state after login.
+  const { isAuthenticated, isLoading } = useAuth();
+  const { gatewayBaseUrl } = useAuthContext();
+  const logout = useLogout();
   const [loggingOut, setLoggingOut] = useState(false);
 
   function handleLogin() {
-    const gatewayUrl = process.env['NEXT_PUBLIC_GATEWAY_URL'] ?? 'http://localhost:4000';
-    const url = new URL(`${gatewayUrl}/v1/auth/login`);
-    url.searchParams.set('clientId', 'tukio-web');
+    // Use gatewayBaseUrl from AuthProvider context (already resolved at SSR time
+    // from NEXT_PUBLIC_GATEWAY_URL) instead of bracket-notation process.env access
+    // which Next.js does not statically inline at build time.
+    const url = new URL(`${gatewayBaseUrl}/v1/auth/login`);
+    url.searchParams.set('client_id', 'tukio-web');
     url.searchParams.set('locale', locale);
     window.location.assign(url.toString());
   }
 
   async function handleLogout() {
     setLoggingOut(true);
-    const gatewayUrl = process.env['NEXT_PUBLIC_GATEWAY_URL'] ?? 'http://localhost:4000';
-    const csrfToken = readCookie('tukio-csrf-token') ?? '';
     try {
-      await fetch(`${gatewayUrl}/v1/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'X-CSRF-Token': csrfToken },
-      });
+      await logout();
     } finally {
+      // Full reload to the locale home so every client cache resets.
       window.location.assign(`/${locale}`);
     }
   }
@@ -77,7 +73,15 @@ export function PublicHeader({ transparent = false }: PublicHeaderProps) {
           {t('becomePro')}
         </a>
 
-        {isAuthenticated ? (
+        {isLoading ? (
+          // Neutral placeholder while whoami resolves — avoids a logged-out
+          // flash that then snaps to "Déconnexion" (AC13).
+          <div
+            className="h-9 w-24 rounded-md bg-cream-100 animate-pulse"
+            aria-hidden="true"
+            data-testid="auth-cta-loading"
+          />
+        ) : isAuthenticated ? (
           <Button
             variant="ghost"
             size="sm"

@@ -22,8 +22,9 @@ export default defineConfig({
         '**/index.ts',
         '**/tokens.ts',
         '**/types/**',
-        '**/providers/**', // AuthProvider tested via hook tests; full render is Story 1.x
-        '**/middleware/**', // Next.js Edge runtime, minimal testable surface
+        // Story 1.4d: AuthProvider now has a full render spec (auth-provider.spec.tsx)
+        // and decode-jwt.ts has decode-jwt.spec.ts, so providers/ + middleware/ are
+        // counted. keycloak-auth.middleware.ts retains its own spec.
       ],
     },
   },

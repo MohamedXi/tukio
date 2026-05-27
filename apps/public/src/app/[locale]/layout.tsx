@@ -6,10 +6,15 @@ import { notFound } from 'next/navigation';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { LOCALES } from '@tukio/i18n-client/config';
 import { QueryProvider } from '@tukio/api-client/providers';
+import { AuthProvider } from '@tukio/auth-client/provider';
 import './globals.css';
-// AuthProvider (Keycloak.js) intentionnellement retiré — Story 1.4d le remplace
-// par un provider cookie-based (tukio-session-active + /v1/auth/whoami).
-// Le Keycloak.js check-sso créait des AUTH_SESSION corrompues qui bloquaient le login.
+// Story 1.4d AC4/AC13 — cookie/whoami-based AuthProvider (replaces the removed
+// Keycloak.js provider, whose check-sso corrupted AUTH_SESSION and blocked login).
+// PublicHeader consumes useAuth() from this provider to reflect the real
+// post-login state.
+
+const GATEWAY_BASE_URL = process.env.NEXT_PUBLIC_GATEWAY_URL ?? 'http://localhost:4000';
+const COOKIE_DOMAIN = process.env.NODE_ENV === 'production' ? '.tukio.one' : undefined;
 
 const fraunces = Fraunces({
   subsets: ['latin', 'latin-ext'],
@@ -121,7 +126,9 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: buildOrganizationJsonLd(locale) }}
         />
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <QueryProvider>{children}</QueryProvider>
+          <AuthProvider config={{ gatewayBaseUrl: GATEWAY_BASE_URL, cookieDomain: COOKIE_DOMAIN }}>
+            <QueryProvider>{children}</QueryProvider>
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

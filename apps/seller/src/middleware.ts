@@ -1,6 +1,6 @@
 import { createTukioI18nMiddleware } from '@tukio/i18n-client/middleware';
 import type { NextRequest } from 'next/server';
-import { pendingAdminReviewRedirect } from './middleware/pending-admin-review-redirect';
+import { sellerAccessMiddleware } from './middleware/seller-access';
 import { acquisitionCookieMiddleware } from './middleware/acquisition-cookie';
 import { comingSoonGateMiddleware } from './middleware/coming-soon-gate';
 
@@ -10,8 +10,10 @@ const i18nMiddleware = createTukioI18nMiddleware();
 // 0. comingSoonGateMiddleware — rewrites non-whitelisted routes to
 //    /${locale}/seller-coming-soon when NEXT_PUBLIC_COMING_SOON_MODE=true
 //    (Story 0.15). When the flag is off, this is a no-op.
-// 1. pendingAdminReviewRedirect — bounces Pros with tukio:status=pending_admin_review
-//    to /seller/onboarding/pending for all non-whitelisted /seller paths (Story 1.3d).
+// 1. sellerAccessMiddleware — full tukio:status enforcement (Story 1.4d AC2):
+//    missing/expired JWT → cross-zone apex login; pending_admin_review →
+//    onboarding/profile/messaging whitelist else /seller/onboarding/pending;
+//    rejected → /seller/onboarding/rejected; active → no-op.
 // 2. i18n middleware — locale routing/redirect (Story 1.3d v2).
 //    Always returned when defined: carries x-next-intl-locale header that the App
 //    Router needs to resolve the [locale] dynamic segment. Without this the router
@@ -21,8 +23,8 @@ export default async function middleware(request: NextRequest) {
   const comingSoonResponse = comingSoonGateMiddleware(request);
   if (comingSoonResponse) return comingSoonResponse;
 
-  const pendingRedirect = pendingAdminReviewRedirect(request);
-  if (pendingRedirect) return pendingRedirect;
+  const accessRedirect = sellerAccessMiddleware(request);
+  if (accessRedirect) return accessRedirect;
 
   // Cast bridges Next.js 16 (app) vs @tukio/i18n-client peer (next@15) type mismatch.
   // Runtime type is compatible; the [Internal] symbol differs only in TS declarations.

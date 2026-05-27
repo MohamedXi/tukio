@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
-import { NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
+import { notFound } from 'next/navigation';
+import { LOCALES } from '@tukio/i18n-client/config';
+import { AuthProvider } from '@tukio/auth-client/provider';
 import './globals.css';
-// AuthProvider (Keycloak.js) removed — Story 1.4d provides the cookie-based provider.
+// Story 1.4d: Keycloak.js removed; cookie-based AuthProvider wired here so that
+// seller components (e.g. LogoutButton) can consume useAuth() / useLogout().
 
 const fraunces = Fraunces({
   subsets: ['latin', 'latin-ext'],
@@ -30,6 +34,8 @@ const jetbrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
 });
 
+const GATEWAY_BASE_URL = process.env.NEXT_PUBLIC_GATEWAY_URL ?? 'http://localhost:4000';
+const COOKIE_DOMAIN = process.env.NODE_ENV === 'production' ? '.tukio.one' : undefined;
 const SELLER_BASE_URL = process.env.NEXT_PUBLIC_SELLER_BASE_URL ?? 'https://seller.tukio.one';
 
 export const metadata: Metadata = {
@@ -73,6 +79,9 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
+  if (!hasLocale(LOCALES, locale)) {
+    notFound();
+  }
   // Seed next-intl's request scope from the URL segment so middleware
   // rewrites (Story 0.15 coming-soon gate) resolve their locale.
   setRequestLocale(locale);
@@ -102,7 +111,11 @@ export default async function RootLayout({
             __html: buildOrganizationJsonLd(localeNarrow),
           }}
         />
-        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
+          <AuthProvider config={{ gatewayBaseUrl: GATEWAY_BASE_URL, cookieDomain: COOKIE_DOMAIN }}>
+            {children}
+          </AuthProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
