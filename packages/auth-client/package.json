@@ -2,7 +2,7 @@
   "name": "@tukio/auth-client",
   "version": "0.0.0",
   "private": true,
-  "description": "Frontend auth state, session hooks, and Keycloak PKCE flow for Tukio Next.js apps.",
+  "description": "Frontend auth state (cookie/whoami), session hooks, silent refresh rotation, and Edge middleware helpers for Tukio Next.js apps.",
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -12,10 +12,12 @@
     "./hooks/use-role": "./src/hooks/use-role.ts",
     "./hooks/use-require-role": "./src/hooks/use-require-role.ts",
     "./hooks/use-logout": "./src/hooks/use-logout.ts",
-    "./keycloak": "./src/keycloak/keycloak-client.ts",
+    "./roles": "./src/roles.ts",
     "./refresh": "./src/refresh/refresh-token-rotation.ts",
     "./cookies": "./src/cookies/cookie-manager.ts",
     "./middleware": "./src/middleware/keycloak-auth.middleware.ts",
+    "./middleware/decode-jwt": "./src/middleware/decode-jwt.ts",
+    "./refresh/refresh-token-rotation": "./src/refresh/refresh-token-rotation.ts",
     "./types": "./src/types/index.ts",
     "./tokens": "./src/tokens.ts"
   },
@@ -25,9 +27,6 @@
     "test:cov": "vitest run --coverage",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "keycloak-js": "^26.2.4"
   },
   "peerDependencies": {
     "@tukio/contracts": "workspace:*",

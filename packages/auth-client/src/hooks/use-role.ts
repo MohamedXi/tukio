@@ -1,8 +1,13 @@
 import { useAuth } from './use-auth.js';
-import type { Role } from '../types/actor.js';
+import { toCoarseRole, type CoarseRole } from '../roles.js';
 
-export function useRole(requiredRoles: Role[]): boolean {
+/**
+ * Story 1.4d AC5 — returns the current user's coarse role bucket
+ * (`'customer' | 'pro' | 'admin'`) or `null` when unauthenticated.
+ * `client` maps to the public-facing `customer`; any `admin-*` collapses
+ * to `admin`.
+ */
+export function useRole(): CoarseRole | null {
   const { role } = useAuth();
-  if (!role) return false;
-  return requiredRoles.includes(role);
+  return toCoarseRole(role);
 }

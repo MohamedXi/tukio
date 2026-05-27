@@ -46,6 +46,14 @@ import {
   buildClearCookies,
   resolveCookieDeployment,
 } from '../utils/cookie-helpers.js';
+import {
+  authCallbackDuration,
+  authLoginTotal,
+  authLogoutTotal,
+  authRefreshTotal,
+  authWhoamiTotal,
+  recordAuthError,
+} from '../../metrics/auth.metrics.js';
 
 const ALLOWED_CLIENT_IDS = new Set(['tukio-web', 'tukio-admin']);
 const REFRESH_COOKIE = COOKIE_NAMES.REFRESH_TOKEN;
@@ -99,6 +107,7 @@ export class AuthLoginController {
       .getInstance()
       .execute({ next: next ?? null, clientId, locale });
 
+    authLoginTotal.inc({ outcome: 'initiate' });
     reply.header('Set-Cookie', [pkceCookie]);
     reply.redirect(redirectUrl, 302);
   }
@@ -122,6 +131,7 @@ export class AuthLoginController {
     // Clear the stale pkce-state cookie so the next login attempt starts fresh.
     if (!code || !state) {
       const errorParam = oauthError ?? 'invalid_request';
+      authLoginTotal.inc({ outcome: 'error' });
       const fallback = `${publicBase}/${locale}/auth/login?error=${encodeURIComponent(errorParam)}`;
       reply.header('Set-Cookie', [this.buildClearPkce()]);
       reply.redirect(fallback, 302);
@@ -134,18 +144,28 @@ export class AuthLoginController {
     // P1: clientId is now carried in the pkce-state JWE — the use case reads it
     // from the decrypted cookie so the admin flow (tukio-admin) uses the correct
     // client_id for the Keycloak token exchange instead of hardcoding tukio-web.
-    const { redirectUrl, sessionCookies, clearPkceCookie } =
-      await this.callbackProxy.getInstance().execute({
-        code,
-        state,
-        locale,
-        pkceCookie,
-        ipHash,
-        userAgentHash,
-      });
+    const endTimer = authCallbackDuration.startTimer();
+    try {
+      const { redirectUrl, sessionCookies, clearPkceCookie } =
+        await this.callbackProxy.getInstance().execute({
+          code,
+          state,
+          locale,
+          pkceCookie,
+          ipHash,
+          userAgentHash,
+        });
 
-    reply.header('Set-Cookie', [...sessionCookies, clearPkceCookie]);
-    reply.redirect(redirectUrl, 302);
+      authLoginTotal.inc({ outcome: 'success' });
+      reply.header('Set-Cookie', [...sessionCookies, clearPkceCookie]);
+      reply.redirect(redirectUrl, 302);
+    } catch (err) {
+      authLoginTotal.inc({ outcome: 'error' });
+      recordAuthError(err);
+      throw err;
+    } finally {
+      endTimer();
+    }
   }
 
   @Public()
@@ -172,11 +192,27 @@ export class AuthLoginController {
           csrfToken,
           clientId,
         });
+      authRefreshTotal.inc({ outcome: 'success' });
       reply.header('Set-Cookie', sessionCookies);
       return { expiresIn, refreshExpiresIn };
     } catch (err) {
       // P2: always clear session cookies on token errors (expired/reused/unreachable)
       // so the browser doesn't keep retrying with a permanently invalid refresh token.
+      const code =
+        typeof err === 'object' && err !== null && 'tukioCode' in err
+          ? String(err.tukioCode)
+          : '';
+      authRefreshTotal.inc({
+        // AUTH-REFRESH-REUSED-001 must map to 'reused' (security signal — non-zero
+        // rate indicates refresh-token replay / concurrent tab race). Only then check
+        // 'EXPIRED'. Anything else → 'failed' (network error, Keycloak unreachable…).
+        outcome: code.includes('REUSED')
+          ? 'reused'
+          : code.includes('EXPIRED')
+            ? 'expired'
+            : 'failed',
+      });
+      recordAuthError(err);
       reply.header('Set-Cookie', this.buildSessionClearCookies());
       throw err;
     }
@@ -194,13 +230,24 @@ export class AuthLoginController {
     const { clearCookies } = await this.logoutProxy
       .getInstance()
       .execute({ refreshToken, clientId });
+    authLogoutTotal.inc();
     reply.header('Set-Cookie', clearCookies);
     return { ok: true };
   }
 
   @Get('whoami')
   whoami(@CurrentActor() actor: BackendActor): WhoamiResponseDto {
-    return this.whoamiProxy.getInstance().execute({ actor });
+    // Note: 401 rejections come from KeycloakJwtGuard (before this handler runs)
+    // and are not countable here. This try/catch captures use-case-level errors only.
+    try {
+      const result = this.whoamiProxy.getInstance().execute({ actor });
+      authWhoamiTotal.inc({ outcome: 'success' });
+      return result;
+    } catch (err) {
+      authWhoamiTotal.inc({ outcome: 'error' });
+      recordAuthError(err);
+      throw err;
+    }
   }
 
   /** P2: derive deployment then return `buildClearCookies` headers. */

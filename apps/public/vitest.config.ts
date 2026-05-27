@@ -5,6 +5,10 @@ import { fileURLToPath } from 'node:url';
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    // Force a single React instance across the app + @tukio/* workspace
+    // packages so cross-package hooks/context (AuthProvider, useAuth) resolve
+    // the same dispatcher in the vitest sandbox.
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       // Resolve @tukio/contracts subpath exports for Vitest (Vite doesn't follow

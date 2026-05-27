@@ -15,7 +15,11 @@ const RETRY_BACKOFF_MS = [200, 500, 1500];
 
 interface RetryConfig {
   __retryCount?: number;
+  // Story 1.4d AC9 — guards the single refresh-then-retry attempt per request.
+  __authRetried?: boolean;
 }
+
+const DEFAULT_REFRESH_TRIGGER_CODES = ['AUTH-NOT-AUTHENTICATED-002'];
 
 // Factory creating a configured axios instance for Tukio gateway-api.
 //
@@ -79,6 +83,32 @@ export function createTukioApiClient(config: AxiosClientConfig): AxiosInstance {
       const isRetryable = !status || status === 0 || status >= 500;
       const cfg = error.config as (typeof error.config & RetryConfig) | undefined;
       const retryAfterSeconds = parseRetryAfter(error.response?.headers);
+
+      // AC9 — silent refresh on 401 expired/missing access token. Attempt one
+      // refresh via the injected `refreshAuth` callback, then retry the original
+      // request exactly once (the `__authRetried` flag prevents an infinite
+      // refresh→401→refresh loop when the refresh itself doesn't restore auth).
+      if (status === 401 && config.refreshAuth && cfg && !cfg.__authRetried) {
+        const code = isErrorEnvelope(responseData) ? responseData.error?.tukioCode : undefined;
+        const triggers = config.refreshTriggerCodes ?? DEFAULT_REFRESH_TRIGGER_CODES;
+        // `code === undefined` covers two cases: (a) the gateway returned an
+        // error envelope without a tukioCode (shouldn't happen, but defensive),
+        // and (b) a proxy/WAF in front of the gateway returned a bare 401 before
+        // the request reached application logic. In both cases we attempt one
+        // refresh as belt-and-suspenders — the worst outcome is a single extra
+        // POST /v1/auth/refresh followed by a second 401 that surfaces normally.
+        if (code === undefined || triggers.includes(code)) {
+          cfg.__authRetried = true;
+          let refreshed = false;
+          try {
+            refreshed = await config.refreshAuth();
+          } catch {
+            refreshed = false;
+          }
+          if (refreshed) return client.request(cfg);
+          // Refresh failed → fall through to the normal ApiError conversion.
+        }
+      }
 
       if (isRetryable) {
         if (cfg) {

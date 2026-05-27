@@ -369,3 +369,37 @@
 - **DEF5 (1.4c)** — Cookie CSRF non-HttpOnly par design (Double Submit Cookie pattern) — Lisible en JavaScript, risque XSS si jamais une XSS est introduite. Architecture décidée en Story 1.4a (ADR-level). Acknowledged.
 - **DEF6 (1.4c)** — Paramètre `locale` non validé dans `callback/route.ts` avant usage dans URL — Next.js i18n middleware contraint les valeurs. Risque minimal. Validation défensive à ajouter en Story 1.4d si le middleware est finalisé.
 - **DEF7 (1.4c)** — État `isAuthenticated` de `PublicHeader` non mis à jour côté React après logout — `window.location.assign` force un rechargement complet donc l'état stale n'est jamais rendu. Cleanup Story 1.4d avec provider cookie-based.
+
+## Deferred from: code review of 1-4d-middlewares-auth-client-hooks-observability Group A (2026-05-26)
+
+- **DF1 (1.4d-A)** — `tukio:locale` absent silencieusement normalisé en `'fr'` — `decodeJwt` retourne `'fr'` si le claim manque, design décision acceptable car Keycloak inclut toujours `tukio:locale`. Pas de log ni metric sur le cas absent. [`packages/auth-client/src/middleware/decode-jwt.ts`]
+- **DF2 (1.4d-A)** — Test unmount `stopSpy` passe potentiellement vacuellement — `vi.spyOn(RefreshTokenRotationManager.prototype, 'stop')` no-op, l'instance réelle n'est jamais stoppée dans le test. Si leakage timer inter-tests, corriger par assertion sur l'instance. [`packages/auth-client/src/providers/auth-provider.spec.tsx`]
+- **DF3 (1.4d-A)** — Pas de test pour HTTP 403 de `/v1/auth/whoami` — traité comme 401 (session nulle) sans test. Gap couverture mineur. [`packages/auth-client/src/providers/auth-provider.tsx`]
+- **DF4 (1.4d-A)** — `fetchWhoami` error réseau sans backoff ni retry limit — comportement optimiste voulu (erreur réseau transitoire ≠ logout), mais re-mount infini possible si gateway down. Feature request post-MVP. [`packages/auth-client/src/providers/auth-provider.tsx`]
+- **DF5 (1.4d-A)** — `useRequireRole` peut throw pendant re-hydration après erreur réseau — `LOGGED_OUT_STATE` set avec `isLoading: false` immédiatement sur erreur réseau ; `useRequireRole` lance `RoleRequirementError` avant que l'Error Boundary puisse l'attraper correctement. Edge case low impact. [`packages/auth-client/src/hooks/use-require-role.ts`]
+- **DF6 (1.4d-A)** — `base64UrlDecode` ne détecte pas les inputs URL-encodés — `decodeJwt` appelé avec un token `%2B`-encodé corrompt silencieusement le décodage. Usage interne uniquement. [`packages/auth-client/src/middleware/decode-jwt.ts`]
+
+## Deferred from: code review of 1-4d-middlewares-auth-client-hooks-observability Group B (2026-05-27)
+
+- **DF7 (1.4d-B)** — `cookieManager` singleton sans domain — `useLogout` importe le singleton (no domain) ; dans le cas anormal où le POST gateway échoue, `clearSession()` n'efface pas le cookie `tukio-session-active` qui a été posé avec `Domain=.tukio.one`. Le gateway efface côté serveur dans le flux normal (POST /v1/auth/logout Set-Cookie). [`packages/auth-client/src/cookies/cookie-manager.ts:82`, `packages/auth-client/src/hooks/use-logout.ts`]
+- **DF8 (1.4d-B)** — `toCoarseRole` catch-all retourne `'admin'` pour tout rôle inconnu — TypeScript `Role` union empêche les rôles hors union actuellement, mais si le type est étendu sans MAJ du mapping le nouveau rôle serait silencieusement escaladé en admin. [`packages/auth-client/src/roles.ts`]
+- **DF9 (1.4d-B)** — Pas de test pour 401 non-enveloppé dans `@tukio/api-client` — le gateway toujours enveloppe en prod ; low risk. [`packages/api-client/src/client/axios-client.ts`]
+- **DF10 (1.4d-B)** — Fenêtre stale cross-tab skip de 60s — `refreshNow()` retourne `true` (skip) jusqu'à 60s après un refresh cross-tab même si le token est expiré depuis. Limitation inhérente au pattern cookie opaque. [`packages/auth-client/src/refresh/refresh-token-rotation.ts`]
+
+## Deferred from: code review of 1-4d-middlewares-auth-client-hooks-observability Group C (2026-05-27)
+
+- **DF11 (1.4d-C)** — Page `/[locale]/auth/login` non implémentée — middleware gate redirige vers cette route ; la page DOIT, quand créée (Story 1.5 ou 1.6), convertir le `?next=` relatif en URL absolue avant passage au gateway (`sanitizeNextUrl` rejette les paths relatifs). Seller/admin passent déjà des `next` absolus. [`apps/public/src/middleware/auth-gate-decision.ts`]
+- **DF12 (1.4d-C)** — `auth-gate-decision.ts` : path dans `EMAIL_VERIFY_REQUIRED` mais PAS dans `AUTH_GATED` avec token illisible + sessionMarker='1' → `verify-email-required` au lieu de `login`. Trade-off documenté dans le fichier ; coverage assuré par le 401→refresh interceptor. [`apps/public/src/middleware/auth-gate-decision.ts`]
+
+## Deferred from: code review of 1-4d-middlewares-auth-client-hooks-observability Group D (2026-05-27)
+
+- **DF13 (1.4d-D)** — `auth.metrics.spec.ts` counter accumulation — Vitest worker isolation + `>=1` assertions rendent les tests corrects ; `resetMetrics()` détruirait le warm-up seeding (test 2). Acceptable design. [`apps/gateway-api/src/infrastructure/metrics/auth.metrics.spec.ts`]
+- **DF14 (1.4d-D)** — `authErrorsTotal{code}` cardinality — set de tukioCodes borné en production (constantes côté gateway) ; allowlist à ajouter si le set s'agrandit. [`apps/gateway-api/src/infrastructure/metrics/auth.metrics.ts`]
+- **DF15 (1.4d-D)** — `authCallbackDuration` histogram sans label `{outcome}` — impossibilité de séparer la latency success vs error dans Grafana. Enhancement post-MVP. [`apps/gateway-api/src/infrastructure/metrics/auth.metrics.ts`]
+- **DF16 (1.4d-D)** — `handleLogout` redirect dans `finally` block — UX intentionnel ; force redirect même si le logout API échoue pour nettoyer l'état UI. [`apps/public/src/components/PublicHeader.tsx`]
+- **DF17 (1.4d-D)** — `AuthContext.Provider value` inline object literal dans public layout — churn de référence à chaque render ; fix naturel : `useMemo` dans `AuthProvider` sur `contextValue`. [`apps/public/src/app/[locale]/layout.tsx`]
+
+## Deferred from: code review of 1-4d-middlewares-auth-client-hooks-observability Group E (2026-05-27)
+
+- **DF18 (1.4d-E)** — Specs Playwright e2e livrées non-exécutées localement — validation live multi-zone à faire lors du déploiement DO staging (ports 3000/3002/3003 + JWT craft forgé, middleware decode-only sans vérification signature). [`apps/public/e2e/middleware/role-redirect.spec.ts`, `apps/seller/e2e/middleware/role-redirect.spec.ts`, `apps/admin/e2e/middleware/role-redirect.spec.ts`]
+- **DF19 (1.4d-E)** — Env vars Playwright non documentées — `PLAYWRIGHT_SELLER_BASE_URL`, `PLAYWRIGHT_ADMIN_BASE_URL`, `PLAYWRIGHT_APEX_BASE_URL`, `PLAYWRIGHT_BASE_URL` utilisées dans les specs mais absentes du README ou d'un `.env.e2e.example`. Ajout recommandé lors de l'intégration CI. [`apps/*/playwright.config.ts`]
