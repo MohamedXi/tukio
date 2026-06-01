@@ -42,7 +42,7 @@
     "ioredis": "^5.7.0",
     "meilisearch": "^0.46.0",
     "nats": "^2.29.3",
-    "pg": "^8.20.0",
+    "pg": "^8.21.0",
     "testcontainers": "^11.4.0"
   },
   "peerDependencies": {
