@@ -55,7 +55,7 @@
     "@tukio/contracts": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
-    "@vitejs/plugin-react": "^4.0.0",
+    "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.5",
     "axios-mock-adapter": "^2.1.0",
     "eslint": "^9.0.0",
