@@ -44,8 +44,8 @@
     ]
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.0.0",
-    "@commitlint/config-conventional": "^21.0.0",
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.20.0",
     "eslint": "^9.0.0",
@@ -54,8 +54,8 @@
     "lint-staged": "^16.1.0",
     "pg": "^8.20.0",
     "prettier": "^3.5.0",
-    "tsx": "^4.21.0",
-    "turbo": "^2.9.0",
+    "tsx": "^4.23.10",
+    "turbo": "^2.10.8",
     "typescript": "^5.6.0"
   }
 }
